@@ -1,6 +1,6 @@
 from datetime import date
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.quest import QuestDifficulty, QuestStatus, QuestType
 
@@ -17,6 +17,14 @@ class QuestBase(BaseModel):
     due_date: date | None = None
     subject_id: int | None = None
     boss_fight_id: int | None = None
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Title cannot be blank")
+        return normalized
 
 
 class QuestCreate(QuestBase):
@@ -35,6 +43,16 @@ class QuestUpdate(BaseModel):
     due_date: date | None = None
     subject_id: int | None = None
     boss_fight_id: int | None = None
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Title cannot be blank")
+        return normalized
 
 
 class QuestRead(QuestBase):

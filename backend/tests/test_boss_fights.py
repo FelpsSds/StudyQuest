@@ -141,3 +141,22 @@ def test_boss_fight_rejects_invalid_hit_points(client):
     )
 
     assert response.status_code == 422
+
+
+def test_create_boss_fight_rejects_blank_title(client):
+    token = _create_user(client, email="boss-blank@example.com")
+    subject = _create_subject(client, token, name="Física")
+
+    response = client.post(
+        "/api/v1/boss-fights/",
+        json={
+            "subject_id": subject["id"],
+            "title": "   ",
+            "hp_max": 80,
+            "hp_current": 80,
+            "status": "active",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422

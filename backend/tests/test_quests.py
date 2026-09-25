@@ -63,6 +63,18 @@ def test_user_cannot_access_other_users_quests(client):
     assert response.status_code == 403
 
 
+def test_create_quest_rejects_blank_title(client):
+    token = _create_user(client, email="blank-quest@example.com")
+
+    response = client.post(
+        "/api/v1/quests/",
+        json={"title": "   ", "type": "study", "difficulty": "medium", "xp_reward": 30},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422
+
+
 def test_user_cannot_create_quest_for_other_users_subject(client):
     token_a = _create_user(client, email="subject-owner@example.com")
     token_b = _create_user(client, email="subject-guest@example.com")

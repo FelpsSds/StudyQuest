@@ -2,7 +2,7 @@ from datetime import datetime
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class BossFightBase(BaseModel):
@@ -12,6 +12,14 @@ class BossFightBase(BaseModel):
     hp_current: int = Field(default=100, ge=0)
     xp_reward: int = Field(default=200, ge=0)
     status: Literal["active", "completed"] = "active"
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Title cannot be blank")
+        return normalized
 
     @model_validator(mode="after")
     def validate_hit_points(self) -> "BossFightBase":

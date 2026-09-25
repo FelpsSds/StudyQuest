@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101827" />
+    <title>StudyQuest | Seu mapa de progresso</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section id="auth-view" class="auth-layout">
+        <div class="brand-panel">
+          <span class="eyebrow">STUDYQUEST / 01</span>
+          <h1>Transforme estudo em <em>aventura.</em></h1>
+          <p>Uma central tranquila para acompanhar suas missões, XP e ritmo de aprendizagem.</p>
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="brand-note">FOCO &middot; RITMO &middot; EVOLUÇÃO</div>
+        </div>
+        <div class="auth-panel">
+          <div class="panel-heading">
+            <span class="kicker">BEM-VINDO DE VOLTA</span>
+            <h2 id="auth-title">Entrar na sua jornada</h2>
+          </div>
+          <form id="auth-form">
+            <label id="name-field" class="field hidden">Nome<input id="name" type="text" autocomplete="name" /></label>
+            <label class="field">E-mail<input id="email" type="email" autocomplete="email" required /></label>
+            <label class="field">Senha<input id="password" type="password" autocomplete="current-password" required /></label>
+            <button class="primary-button" type="submit"><span id="auth-submit">Entrar</span><span aria-hidden="true">&#8594;</span></button>
+          </form>
+          <p id="auth-error" class="error-message" role="alert"></p>
+          <button id="auth-toggle" class="text-button" type="button">Ainda não tenho uma conta</button>
+        </div>
+      </section>
+
+      <section id="app-view" class="app-view hidden">
+        <header class="topbar">
+          <a class="wordmark" href="#">study<span>quest</span></a>
+          <div class="topbar-actions"><span id="user-greeting"></span><button id="logout-button" class="icon-button" type="button" title="Sair">Sair <span aria-hidden="true">&#8599;</span></button></div>
+        </header>
+        <div class="dashboard-grid">
+          <section class="intro-block"><span class="eyebrow">PAINEL DE COMANDO</span><h1 id="dashboard-title">Sua próxima conquista começa aqui.</h1><p>Pequenos avanços, registrados todos os dias.</p></section>
+          <section class="level-card"><div class="level-top"><span>NÍVEL <strong id="level-value">1</strong></span><span id="xp-value">0 XP</span></div><div class="progress-track"><span id="xp-progress"></span></div><small id="xp-caption">100 XP para o próximo nível</small></section>
+          <section class="stats-row"><article class="stat-card accent"><span class="stat-label">MISSÕES FEITAS</span><strong id="quests-completed">0</strong><span>de <span id="quests-total">0</span> no total</span></article><article class="stat-card"><span class="stat-label">SEQUÊNCIA ATUAL</span><strong id="streak-value">0 <small>dias</small></strong><span>melhor: <span id="best-streak">0</span> dias</span></article><article class="stat-card"><span class="stat-label">TEMPO DE ESTUDO</span><strong id="study-minutes">0</strong><span>minutos acumulados</span></article></section>
+          <section class="creation-grid">
+            <form id="subject-form" class="creation-card">
+              <div><span class="kicker">NOVO FOCO</span><h2>Criar disciplina</h2></div>
+              <label class="compact-field">Nome<input id="subject-name" type="text" placeholder="Ex.: História" required /></label>
+              <label class="compact-field">Cor<input id="subject-color" type="color" value="#c7f36b" /></label>
+              <button class="secondary-button" type="submit">Adicionar disciplina <span aria-hidden="true">&#8594;</span></button>
+            </form>
+            <form id="quest-form" class="creation-card wide-creation-card">
+              <div><span class="kicker">PRÓXIMO PASSO</span><h2>Criar missão</h2></div>
+              <label class="compact-field">Título<input id="quest-title" type="text" placeholder="Ex.: Revisar capítulo 3" required /></label>
+              <label class="compact-field">Disciplina<select id="quest-subject"><option value="">Sem disciplina</option></select></label>
+              <label class="compact-field">XP<input id="quest-xp" type="number" min="0" value="40" /></label>
+              <label class="compact-field">Minutos<input id="quest-minutes" type="number" min="1" value="30" /></label>
+              <button class="secondary-button" type="submit">Adicionar missão <span aria-hidden="true">&#8594;</span></button>
+            </form>
+          </section>
+          <section class="quests-section"><div class="section-heading"><div><span class="kicker">SEU MAPA</span><h2>Missões atuais</h2></div><button id="refresh-button" class="icon-button" type="button" title="Atualizar missões">Atualizar <span aria-hidden="true">&#8635;</span></button></div><div id="quests-list" class="quests-list"></div></section>
+          <aside class="side-panel"><span class="kicker">ÚLTIMO MOVIMENTO</span><h2>Recompensas</h2><div id="reward-summary" class="reward-summary"><strong>0 XP</strong><span>Seu histórico aparece aqui.</span></div><div class="side-rule"></div><span class="kicker">LEMBRETE</span><p class="quote">A consistência vence a pressa.</p></aside>
+        </div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

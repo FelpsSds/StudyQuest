@@ -43,6 +43,19 @@ def test_get_current_user_requires_token(client):
     assert response.status_code == 401
 
 
+def test_register_rejects_blank_name(client):
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "name": "   ",
+            "email": "blankname@example.com",
+            "password": "StrongPass123!",
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_email_whitespace_is_trimmed_for_register_and_login(client):
     register_response = client.post(
         "/api/v1/auth/register",

@@ -42,6 +42,18 @@ def test_list_subjects_for_current_user(client):
     assert len(response.json()) >= 1
 
 
+def test_create_subject_rejects_blank_name(client):
+    token = _create_user(client, email="subject-blank@example.com", password="StrongPass123!")
+
+    response = client.post(
+        "/api/v1/subjects/",
+        json={"name": "   ", "description": "Disciplina inválida"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422
+
+
 def test_user_cannot_access_other_users_subjects(client):
     token_a = _create_user(client, email="charlie@example.com", password="StrongPass123!")
     token_b = _create_user(client, email="daniel@example.com", password="StrongPass123!")

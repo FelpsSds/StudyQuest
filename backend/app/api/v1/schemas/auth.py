@@ -8,9 +8,10 @@ class LoginRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def validate_email(cls, value: str) -> str:
-        if "@" not in value or "." not in value.split("@")[-1]:
+        normalized = value.strip().lower()
+        if "@" not in normalized or "." not in normalized.split("@")[-1]:
             raise ValueError("Invalid email format")
-        return value.lower()
+        return normalized
 
 
 class RegisterRequest(BaseModel):
@@ -21,9 +22,10 @@ class RegisterRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def validate_email(cls, value: str) -> str:
-        if "@" not in value or "." not in value.split("@")[-1]:
+        normalized = value.strip().lower()
+        if "@" not in normalized or "." not in normalized.split("@")[-1]:
             raise ValueError("Invalid email format")
-        return value.lower()
+        return normalized
 
 
 class TokenResponse(BaseModel):

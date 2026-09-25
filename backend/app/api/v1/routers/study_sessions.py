@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.api.v1.schemas.study_session import StudySessionCreate, StudySessionRead
 from app.core.security import get_current_user
+from app.models.quest import Quest
 from app.models.study_session import StudySession
 from app.models.subject import Subject
 from app.models.user import User
@@ -51,6 +52,18 @@ def create_study_session(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
         if subject.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this subject")
+
+    if payload.quest_id is not None:
+        quest = db.query(Quest).filter(Quest.id == payload.quest_id).first()
+        if not quest:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quest not found")
+        if quest.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this quest")
+        if payload.subject_id is not None and quest.subject_id is not None and payload.subject_id != quest.subject_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Study session and quest must use the same subject",
+            )
 
     study_session = StudySession(
         user_id=current_user.id,

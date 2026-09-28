@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -160,6 +162,7 @@ def complete_quest(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quest already completed")
 
     quest.status = QuestStatus.COMPLETED
+    quest.completed_at = datetime.now(timezone.utc)
     current_user.xp += quest.xp_reward
     current_user.level = level_for_xp(current_user.xp)
 

@@ -138,6 +138,7 @@ def test_complete_quest_marks_status_and_prevents_duplicates(client):
     )
     assert complete_response.status_code == 200
     assert complete_response.json()["status"] == "completed"
+    assert complete_response.json()["completed_at"] is not None
 
     duplicate_response = client.post(
         f"/api/v1/quests/{quest_id}/complete",

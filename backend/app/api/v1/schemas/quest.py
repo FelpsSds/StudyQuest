@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -60,6 +60,7 @@ class QuestRead(QuestBase):
 
     id: int
     user_id: int
+    completed_at: datetime | None = None
 
 
 class QuestCompleteRequest(BaseModel):

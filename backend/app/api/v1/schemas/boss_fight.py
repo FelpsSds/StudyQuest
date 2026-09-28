@@ -25,6 +25,8 @@ class BossFightBase(BaseModel):
     def validate_hit_points(self) -> "BossFightBase":
         if self.hp_current > self.hp_max:
             raise ValueError("hp_current cannot be greater than hp_max")
+        if self.status == "active" and self.hp_current == 0:
+            raise ValueError("An active boss fight must have positive HP")
         if self.status == "completed" and self.hp_current != 0:
             raise ValueError("A completed boss fight must have zero HP")
         return self

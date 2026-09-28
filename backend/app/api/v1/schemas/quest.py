@@ -65,4 +65,4 @@ class QuestRead(QuestBase):
 
 
 class QuestCompleteRequest(BaseModel):
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=500)

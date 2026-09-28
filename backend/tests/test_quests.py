@@ -145,6 +145,24 @@ def test_update_quest_can_clear_optional_description_and_due_date(client):
     assert response.json()["due_date"] is None
 
 
+def test_complete_quest_rejects_notes_over_database_limit(client):
+    token = _create_user(client, email="quest-long-notes@example.com")
+    quest = client.post(
+        "/api/v1/quests/",
+        json={"title": "Resolver exercícios"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert quest.status_code == 201
+
+    response = client.post(
+        f"/api/v1/quests/{quest.json()['id']}/complete",
+        json={"notes": "n" * 501},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422
+
+
 def test_user_cannot_create_quest_for_other_users_subject(client):
     token_a = _create_user(client, email="subject-owner@example.com")
     token_b = _create_user(client, email="subject-guest@example.com")

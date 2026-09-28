@@ -260,6 +260,36 @@ def test_quest_can_be_linked_to_owned_boss_fight(client):
     assert response.json()["subject_id"] == subject["id"]
 
 
+def test_updating_quest_with_boss_fight_inherits_boss_subject(client):
+    token = _create_user(client, email="update-quest-boss-subject@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    subject = client.post(
+        "/api/v1/subjects/",
+        json={"name": "Cálculo"},
+        headers=headers,
+    ).json()
+    boss = client.post(
+        "/api/v1/boss-fights/",
+        json={"subject_id": subject["id"], "title": "Boss de Cálculo"},
+        headers=headers,
+    ).json()
+    quest = client.post(
+        "/api/v1/quests/",
+        json={"title": "Resolver integrais"},
+        headers=headers,
+    ).json()
+
+    response = client.put(
+        f"/api/v1/quests/{quest['id']}",
+        json={"boss_fight_id": boss["id"]},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["boss_fight_id"] == boss["id"]
+    assert response.json()["subject_id"] == subject["id"]
+
+
 def test_quest_cannot_link_to_other_users_boss_fight(client):
     owner_token = _create_user(client, email="quest-boss-owner@example.com")
     guest_token = _create_user(client, email="quest-boss-guest@example.com")

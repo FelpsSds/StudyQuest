@@ -1,6 +1,12 @@
 from pydantic import BaseModel, Field, field_validator
 
 
+def _validate_password_length(value: str) -> str:
+    if len(value.encode("utf-8")) > 72:
+        raise ValueError("Password cannot exceed 72 UTF-8 bytes")
+    return value
+
+
 class LoginRequest(BaseModel):
     email: str = Field(max_length=255)
     password: str
@@ -12,6 +18,11 @@ class LoginRequest(BaseModel):
         if "@" not in normalized or "." not in normalized.split("@")[-1]:
             raise ValueError("Invalid email format")
         return normalized
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return _validate_password_length(value)
 
 
 class RegisterRequest(BaseModel):
@@ -34,6 +45,11 @@ class RegisterRequest(BaseModel):
         if "@" not in normalized or "." not in normalized.split("@")[-1]:
             raise ValueError("Invalid email format")
         return normalized
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return _validate_password_length(value)
 
 
 class TokenResponse(BaseModel):

@@ -31,7 +31,7 @@ class BossFightBase(BaseModel):
 
 
 class BossFightCreate(BossFightBase):
-    pass
+    status: Literal["active"] = "active"
 
 
 class BossFightRead(BossFightBase):

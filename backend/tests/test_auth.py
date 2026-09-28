@@ -56,6 +56,33 @@ def test_register_rejects_blank_name(client):
     assert response.status_code == 422
 
 
+def test_register_rejects_name_and_email_longer_than_database_columns(client):
+    long_name_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "name": "n" * 121,
+            "email": "longname@example.com",
+            "password": "StrongPass123!",
+        },
+    )
+    long_email_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "name": "Alice",
+            "email": f"{'a' * 244}@example.com",
+            "password": "StrongPass123!",
+        },
+    )
+    long_login_email_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": f"{'a' * 244}@example.com", "password": "StrongPass123!"},
+    )
+
+    assert long_name_response.status_code == 422
+    assert long_email_response.status_code == 422
+    assert long_login_email_response.status_code == 422
+
+
 def test_email_whitespace_is_trimmed_for_register_and_login(client):
     register_response = client.post(
         "/api/v1/auth/register",

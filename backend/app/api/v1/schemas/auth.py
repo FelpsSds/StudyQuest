@@ -1,8 +1,8 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class LoginRequest(BaseModel):
-    email: str
+    email: str = Field(max_length=255)
     password: str
 
     @field_validator("email")
@@ -15,8 +15,8 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    name: str
-    email: str
+    name: str = Field(max_length=120)
+    email: str = Field(max_length=255)
     password: str
 
     @field_validator("name")

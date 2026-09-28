@@ -120,6 +120,31 @@ def test_quest_estimated_minutes_must_be_positive(client):
     assert invalid_update.status_code == 422
 
 
+def test_update_quest_can_clear_optional_description_and_due_date(client):
+    token = _create_user(client, email="clear-quest-fields@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    quest = client.post(
+        "/api/v1/quests/",
+        json={
+            "title": "Revisar álgebra",
+            "description": "Resolver exercícios extras",
+            "due_date": "2026-10-01",
+        },
+        headers=headers,
+    )
+    assert quest.status_code == 201
+
+    response = client.put(
+        f"/api/v1/quests/{quest.json()['id']}",
+        json={"description": None, "due_date": None},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["description"] is None
+    assert response.json()["due_date"] is None
+
+
 def test_user_cannot_create_quest_for_other_users_subject(client):
     token_a = _create_user(client, email="subject-owner@example.com")
     token_b = _create_user(client, email="subject-guest@example.com")

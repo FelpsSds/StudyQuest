@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -10,7 +11,7 @@ class StudySessionBase(BaseModel):
 
 
 class StudySessionCreate(StudySessionBase):
-    pass
+    status: Literal["in_progress"] = "in_progress"
 
 
 class StudySessionRead(StudySessionBase):

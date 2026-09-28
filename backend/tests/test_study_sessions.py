@@ -44,6 +44,19 @@ def test_create_study_session_for_current_user(client):
     assert data["status"] == "in_progress"
 
 
+def test_create_study_session_rejects_non_initial_status(client):
+    token = _create_user(client, email="session-invalid-status@example.com")
+
+    for invalid_status in ("pending", "completed"):
+        response = client.post(
+            "/api/v1/study-sessions/",
+            json={"status": invalid_status},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 422
+
+
 def test_complete_study_session_sets_end_time(client):
     token = _create_user(client, email="session2@example.com")
     subject = _create_subject(client, token, name="Português")

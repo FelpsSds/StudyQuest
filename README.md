@@ -10,7 +10,7 @@ StudyQuest é uma plataforma de estudos gamificada. O usuário transforma ativid
 - Autenticação com JWT e senha protegida por hash
 - Disciplinas, missões, XP, conquistas, Boss Fights e sessões de estudo
 - Frontend estático funcional consumindo a API
-- 41 testes automatizados para as principais regras de negócio
+- Testes automatizados para as principais regras de negócio
 
 A migração do frontend para React + Vite está planejada para a próxima etapa.
 

@@ -1,13 +1,13 @@
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SubjectBase(BaseModel):
-    name: str
-    description: str | None = None
-    color: str | None = None
-    icon: str | None = None
-    professor: str | None = None
-    semester: str | None = None
+    name: str = Field(max_length=120)
+    description: str | None = Field(default=None, max_length=500)
+    color: str | None = Field(default=None, max_length=32)
+    icon: str | None = Field(default=None, max_length=64)
+    professor: str | None = Field(default=None, max_length=120)
+    semester: str | None = Field(default=None, max_length=50)
 
     @field_validator("name")
     @classmethod

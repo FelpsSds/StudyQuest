@@ -54,6 +54,36 @@ def test_create_subject_rejects_blank_name(client):
     assert response.status_code == 422
 
 
+def test_subject_text_fields_respect_database_lengths(client):
+    token = _create_user(client, email="subject-lengths@example.com", password="StrongPass123!")
+    headers = {"Authorization": f"Bearer {token}"}
+    subject = client.post("/api/v1/subjects/", json={"name": "Química"}, headers=headers)
+    assert subject.status_code == 201
+
+    oversized_values = [
+        {"name": "n" * 121},
+        {"description": "d" * 501},
+        {"color": "c" * 33},
+        {"icon": "i" * 65},
+        {"professor": "p" * 121},
+        {"semester": "s" * 51},
+    ]
+    for oversized in oversized_values:
+        create_response = client.post(
+            "/api/v1/subjects/",
+            json={"name": "Outra disciplina", **oversized},
+            headers=headers,
+        )
+        update_response = client.put(
+            f"/api/v1/subjects/{subject.json()['id']}",
+            json={"name": "Química", **oversized},
+            headers=headers,
+        )
+
+        assert create_response.status_code == 422
+        assert update_response.status_code == 422
+
+
 def test_user_cannot_access_other_users_subjects(client):
     token_a = _create_user(client, email="charlie@example.com", password="StrongPass123!")
     token_b = _create_user(client, email="daniel@example.com", password="StrongPass123!")

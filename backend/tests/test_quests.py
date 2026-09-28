@@ -75,6 +75,27 @@ def test_create_quest_rejects_blank_title(client):
     assert response.status_code == 422
 
 
+def test_quest_cannot_be_marked_completed_outside_completion_endpoint(client):
+    token = _create_user(client, email="quest-status@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    quest = client.post("/api/v1/quests/", json={"title": "Estudar física"}, headers=headers)
+    assert quest.status_code == 201
+
+    create_completed = client.post(
+        "/api/v1/quests/",
+        json={"title": "Missão concluída", "status": "completed"},
+        headers=headers,
+    )
+    update_completed = client.put(
+        f"/api/v1/quests/{quest.json()['id']}",
+        json={"status": "completed"},
+        headers=headers,
+    )
+
+    assert create_completed.status_code == 422
+    assert update_completed.status_code == 422
+
+
 def test_quest_estimated_minutes_must_be_positive(client):
     token = _create_user(client, email="invalid-estimate@example.com")
     quest = client.post(

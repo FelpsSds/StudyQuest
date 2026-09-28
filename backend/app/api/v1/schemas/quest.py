@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -28,7 +29,7 @@ class QuestBase(BaseModel):
 
 
 class QuestCreate(QuestBase):
-    pass
+    status: Literal["pending", "in_progress"] = QuestStatus.PENDING
 
 
 class QuestUpdate(BaseModel):
@@ -39,7 +40,7 @@ class QuestUpdate(BaseModel):
     xp_reward: int | None = Field(default=None, ge=0)
     boss_damage: int | None = Field(default=None, ge=0)
     estimated_minutes: int | None = Field(default=None, gt=0)
-    status: QuestStatus | None = None
+    status: Literal["pending", "in_progress", "archived"] | None = None
     due_date: date | None = None
     subject_id: int | None = None
     boss_fight_id: int | None = None

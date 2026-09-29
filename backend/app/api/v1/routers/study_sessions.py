@@ -46,8 +46,9 @@ def create_study_session(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> StudySession:
-    if payload.subject_id is not None:
-        subject = db.query(Subject).filter(Subject.id == payload.subject_id).first()
+    session_subject_id = payload.subject_id
+    if session_subject_id is not None:
+        subject = db.query(Subject).filter(Subject.id == session_subject_id).first()
         if not subject:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
         if subject.user_id != current_user.id:
@@ -59,15 +60,17 @@ def create_study_session(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quest not found")
         if quest.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this quest")
-        if payload.subject_id is not None and quest.subject_id is not None and payload.subject_id != quest.subject_id:
+        if session_subject_id is not None and quest.subject_id is not None and session_subject_id != quest.subject_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Study session and quest must use the same subject",
             )
+        if session_subject_id is None:
+            session_subject_id = quest.subject_id
 
     study_session = StudySession(
         user_id=current_user.id,
-        subject_id=payload.subject_id,
+        subject_id=session_subject_id,
         quest_id=payload.quest_id,
         status=payload.status,
     )

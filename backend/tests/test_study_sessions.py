@@ -82,6 +82,26 @@ def test_complete_study_session_sets_end_time(client):
     assert data["ended_at"] is not None
 
 
+def test_study_session_inherits_subject_from_quest(client):
+    token = _create_user(client, email="session-quest-subject@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    subject = _create_subject(client, token, name="Física")
+    quest = client.post(
+        "/api/v1/quests/",
+        json={"title": "Estudar movimento", "subject_id": subject["id"]},
+        headers=headers,
+    ).json()
+
+    response = client.post(
+        "/api/v1/study-sessions/",
+        json={"quest_id": quest["id"]},
+        headers=headers,
+    )
+
+    assert response.status_code == 201
+    assert response.json()["subject_id"] == subject["id"]
+
+
 def test_create_study_session_rejects_other_users_quest(client):
     token_a = _create_user(client, email="owner@example.com")
     token_b = _create_user(client, email="visiting@example.com")

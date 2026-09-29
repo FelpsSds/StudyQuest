@@ -14,6 +14,17 @@ StudyQuest é uma plataforma de estudos gamificada. O usuário transforma ativid
 
 A migração do frontend para React + Vite está planejada para a próxima etapa.
 
+## Configuração de ambiente
+
+Antes de iniciar o projeto, copie os arquivos de exemplo para `.env` quando necessário:
+
+```powershell
+Copy-Item .env.example .env
+Copy-Item backend\.env.example backend\.env
+```
+
+Os valores padrão já servem para desenvolvimento local; ajuste `JWT_SECRET_KEY` em produção.
+
 ## Executar com Docker
 
 Pré-requisito: Docker Desktop instalado e iniciado.

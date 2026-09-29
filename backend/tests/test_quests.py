@@ -236,6 +236,32 @@ def test_complete_quest_marks_status_and_prevents_duplicates(client):
     assert duplicate_response.status_code == 400
 
 
+def test_archived_quest_cannot_be_completed_or_reward_xp(client):
+    token = _create_user(client, email="archived-quest@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    quest = client.post(
+        "/api/v1/quests/",
+        json={"title": "Missão arquivada", "xp_reward": 100},
+        headers=headers,
+    ).json()
+    archive_response = client.put(
+        f"/api/v1/quests/{quest['id']}",
+        json={"status": "archived"},
+        headers=headers,
+    )
+    assert archive_response.status_code == 200
+
+    complete_response = client.post(
+        f"/api/v1/quests/{quest['id']}/complete",
+        json={},
+        headers=headers,
+    )
+    user_response = client.get("/api/v1/users/me", headers=headers)
+
+    assert complete_response.status_code == 400
+    assert user_response.json()["xp"] == 0
+
+
 def test_quest_can_be_linked_to_owned_boss_fight(client):
     token = _create_user(client, email="quest-boss@example.com")
     subject = client.post(

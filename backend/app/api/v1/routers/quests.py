@@ -154,6 +154,8 @@ def complete_quest(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quest not found")
     if quest.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this quest")
+    if quest.status == QuestStatus.ARCHIVED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Archived quest cannot be completed")
 
     existing = (
         db.query(QuestCompletion)

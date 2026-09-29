@@ -118,7 +118,7 @@ def update_quest(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quest and boss fight must use the same subject")
 
     for field, value in payload.model_dump(exclude_unset=True).items():
-        if value is not None or field in {"description", "due_date"}:
+        if value is not None or field in {"description", "due_date", "subject_id", "boss_fight_id"}:
             setattr(quest, field, value)
 
     db.commit()

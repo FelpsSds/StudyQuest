@@ -145,6 +145,37 @@ def test_update_quest_can_clear_optional_description_and_due_date(client):
     assert response.json()["due_date"] is None
 
 
+def test_update_quest_can_clear_optional_subject_and_boss_links(client):
+    token = _create_user(client, email="clear-quest-links@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    subject = client.post(
+        "/api/v1/subjects/",
+        json={"name": "Física", "description": "Disciplina de física"},
+        headers=headers,
+    )
+    assert subject.status_code == 201
+
+    quest = client.post(
+        "/api/v1/quests/",
+        json={"title": "Estudar cinemática", "subject_id": subject.json()["id"]},
+        headers=headers,
+    )
+    assert quest.status_code == 201
+    quest_id = quest.json()["id"]
+
+    response = client.put(
+        f"/api/v1/quests/{quest_id}",
+        json={"subject_id": None, "boss_fight_id": None},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["subject_id"] is None
+    assert payload["boss_fight_id"] is None
+
+
 def test_complete_quest_rejects_notes_over_database_limit(client):
     token = _create_user(client, email="quest-long-notes@example.com")
     quest = client.post(

@@ -101,3 +101,31 @@ def test_user_cannot_access_other_users_subjects(client):
     )
 
     assert response.status_code == 403
+
+
+def test_update_subject_supports_partial_changes_and_field_clearing(client):
+    token = _create_user(client, email="subject-update@example.com", password="StrongPass123!")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    subject = client.post(
+        "/api/v1/subjects/",
+        json={
+            "name": "História",
+            "description": "Turma A",
+            "professor": "Prof. Souza",
+        },
+        headers=headers,
+    )
+    assert subject.status_code == 201
+    subject_id = subject.json()["id"]
+
+    response = client.put(
+        f"/api/v1/subjects/{subject_id}",
+        json={"description": None, "professor": None},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["description"] is None
+    assert payload["professor"] is None

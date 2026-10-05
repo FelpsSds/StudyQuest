@@ -95,6 +95,10 @@ async function authenticate(event) {
 function updateDashboard(payload) {
   const user = payload.user;
   const stats = payload.stats;
+  const profileName = document.querySelector('#profile-name');
+  const profileEmail = document.querySelector('#profile-email');
+  const profileStatus = document.querySelector('#profile-status');
+
   document.querySelector('#user-greeting').textContent = `Olá, ${user.name}`;
   document.querySelector('#dashboard-title').textContent = `Olá, ${user.name.split(' ')[0]}. Vamos avançar?`;
   document.querySelector('#level-value').textContent = user.level;
@@ -105,6 +109,10 @@ function updateDashboard(payload) {
   document.querySelector('#quests-total').textContent = stats.quests_total;
   document.querySelector('#streak-value').innerHTML = `${user.streak_current} <small>dias</small>`;
   document.querySelector('#best-streak').textContent = user.streak_best;
+
+  if (profileName) profileName.textContent = user.name;
+  if (profileEmail) profileEmail.textContent = user.email;
+  if (profileStatus) profileStatus.textContent = `${user.level}º nível • ${user.progress_percent}% até o próximo upgrade`;
 }
 
 async function loadQuests() {

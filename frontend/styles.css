@@ -41,3 +41,8 @@ button { cursor: pointer; }
 .focus-summary { display: grid; gap: 6px; }
 .focus-summary strong { font-size: 15px; line-height: 1.35; }
 .focus-summary span { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.profile-card { background: rgba(16, 24, 39, 0.03); }
+.profile-summary { display: grid; gap: 6px; }
+.profile-summary strong { display: block; font-size: 18px; letter-spacing: -0.6px; }
+.profile-summary small { color: var(--muted); font-size: 12px; }
+.profile-summary span { color: var(--ink); font-size: 12px; line-height: 1.5; }

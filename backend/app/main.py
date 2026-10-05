@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,10 +13,22 @@ from app.api.v1.routers.subjects import router as subjects_router
 from app.api.v1.routers.users import router as users_router
 from app.core.database import SessionLocal
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    db = SessionLocal()
+    try:
+        ensure_default_achievements(db)
+    finally:
+        db.close()
+    yield
+
+
 app = FastAPI(
     title="StudyQuest API",
     version="0.1.0",
     description="Backend inicial do StudyQuest com estrutura para autenticação, missões e evolução do aluno.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -33,15 +47,6 @@ app.include_router(quests_router, prefix="/api/v1")
 app.include_router(achievements_router, prefix="/api/v1")
 app.include_router(boss_fights_router, prefix="/api/v1")
 app.include_router(study_sessions_router, prefix="/api/v1")
-
-
-@app.on_event("startup")
-def seed_default_data() -> None:
-    db = SessionLocal()
-    try:
-        ensure_default_achievements(db)
-    finally:
-        db.close()
 
 
 @app.get("/")

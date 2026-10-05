@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -43,7 +43,7 @@ def get_current_user(
         email: str | None = payload.get("sub")
         if email is None:
             raise credentials_exception
-    except JWTError as exc:
+    except jwt.PyJWTError as exc:
         raise credentials_exception from exc
 
     user = db.query(User).filter(User.email == email).first()

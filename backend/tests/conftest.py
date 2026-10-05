@@ -6,13 +6,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import app.main as main_module
 from app.api.deps import get_db
 from app.main import app
 from app.models.base import Base
 
 
 @pytest.fixture()
-def client() -> Generator[TestClient, None, None]:
+def client(monkeypatch: pytest.MonkeyPatch) -> Generator[TestClient, None, None]:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -20,6 +21,7 @@ def client() -> Generator[TestClient, None, None]:
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
+    monkeypatch.setattr(main_module, "SessionLocal", TestingSessionLocal)
 
     def override_get_db():
         db = TestingSessionLocal()

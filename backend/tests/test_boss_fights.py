@@ -35,6 +35,7 @@ def test_create_boss_fight_for_current_user(client):
             "title": "Boss de Física",
             "hp_max": 100,
             "hp_current": 100,
+            "xp_reward": 350,
             "status": "active",
         },
         headers={"Authorization": f"Bearer {token}"},
@@ -45,6 +46,7 @@ def test_create_boss_fight_for_current_user(client):
     assert data["title"] == "Boss de Física"
     assert data["user_id"] == 1
     assert data["subject_id"] == subject["id"]
+    assert data["xp_reward"] == 350
 
 
 def test_list_boss_fights_for_current_user(client):
@@ -90,6 +92,29 @@ def test_user_cannot_access_other_users_boss_fights(client):
 
     response = client.get(f"/api/v1/boss-fights/{fight_id}", headers={"Authorization": f"Bearer {token_b}"})
     assert response.status_code == 403
+
+
+def test_delete_boss_fight_for_current_user(client):
+    token = _create_user(client, email="boss-delete@example.com")
+    subject = _create_subject(client, token, name="Literatura")
+
+    fight = client.post(
+        "/api/v1/boss-fights/",
+        json={
+            "subject_id": subject["id"],
+            "title": "Boss de Literatura",
+            "hp_max": 90,
+            "hp_current": 90,
+            "status": "active",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    fight_id = fight.json()["id"]
+
+    response = client.delete(f"/api/v1/boss-fights/{fight_id}", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 204
+    assert client.get(f"/api/v1/boss-fights/{fight_id}", headers={"Authorization": f"Bearer {token}"}).status_code == 404
 
 
 def test_complete_boss_fight_updates_status(client):

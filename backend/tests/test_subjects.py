@@ -129,3 +129,27 @@ def test_update_subject_supports_partial_changes_and_field_clearing(client):
     payload = response.json()
     assert payload["description"] is None
     assert payload["professor"] is None
+
+
+def test_update_subject_blank_optional_fields_are_normalized_to_none(client):
+    token = _create_user(client, email="subject-blank-optionals@example.com", password="StrongPass123!")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    subject = client.post(
+        "/api/v1/subjects/",
+        json={"name": "Biologia", "description": "Turma B", "professor": "Prof. Lira"},
+        headers=headers,
+    )
+    assert subject.status_code == 201
+    subject_id = subject.json()["id"]
+
+    response = client.put(
+        f"/api/v1/subjects/{subject_id}",
+        json={"description": "   ", "professor": "     "},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["description"] is None
+    assert payload["professor"] is None

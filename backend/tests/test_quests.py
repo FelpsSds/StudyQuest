@@ -176,6 +176,34 @@ def test_update_quest_can_clear_optional_subject_and_boss_links(client):
     assert payload["boss_fight_id"] is None
 
 
+def test_update_quest_blank_optional_fields_are_normalized_to_none(client):
+    token = _create_user(client, email="quest-blank-optionals@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    quest = client.post(
+        "/api/v1/quests/",
+        json={
+            "title": "Revisar zoologia",
+            "description": "Capítulo 3",
+            "due_date": "2026-11-01",
+        },
+        headers=headers,
+    )
+    assert quest.status_code == 201
+    quest_id = quest.json()["id"]
+
+    response = client.put(
+        f"/api/v1/quests/{quest_id}",
+        json={"description": "   ", "due_date": "   "},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["description"] is None
+    assert payload["due_date"] is None
+
+
 def test_complete_quest_rejects_notes_over_database_limit(client):
     token = _create_user(client, email="quest-long-notes@example.com")
     quest = client.post(

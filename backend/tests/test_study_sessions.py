@@ -133,3 +133,26 @@ def test_create_study_session_rejects_other_users_quest(client):
     )
 
     assert response.status_code == 403
+
+
+def test_delete_study_session_for_current_user(client):
+    token = _create_user(client, email="session-delete@example.com")
+    subject = _create_subject(client, token, name="Química")
+
+    session = client.post(
+        "/api/v1/study-sessions/",
+        json={
+            "subject_id": subject["id"],
+            "status": "in_progress",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    session_id = session.json()["id"]
+
+    response = client.delete(
+        f"/api/v1/study-sessions/{session_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 204
+    assert client.get(f"/api/v1/study-sessions/{session_id}", headers={"Authorization": f"Bearer {token}"}).status_code == 404

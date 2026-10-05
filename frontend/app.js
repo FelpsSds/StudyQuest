@@ -1,5 +1,15 @@
 const API_BASE = 'http://127.0.0.1:8000/api/v1';
 const state = { token: localStorage.getItem('studyquest_token'), registerMode: false };
+const QUEST_FILTER_KEY = 'studyquest_quest_filter';
+const QUEST_SORT_KEY = 'studyquest_quest_sort';
+
+function getSavedQuestFilter() {
+  return localStorage.getItem(QUEST_FILTER_KEY) || 'all';
+}
+
+function getSavedQuestSort() {
+  return localStorage.getItem(QUEST_SORT_KEY) || 'priority';
+}
 
 const authView = document.querySelector('#auth-view');
 const appView = document.querySelector('#app-view');
@@ -15,12 +25,31 @@ async function request(path, options = {}) {
     ...options,
     headers: { 'Content-Type': 'application/json', ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...(options.headers || {}) },
   });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.detail || 'Não foi possível concluir a solicitação.');
+
+  const hasBody = response.status !== 204 && response.headers.get('content-length') !== '0';
+  const payload = hasBody ? await response.json().catch(() => ({})) : null;
+
+  if (response.status === 401 && state.token) {
+    clearSession();
+    throw new Error('Sua sessão expirou. Faça login novamente.');
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.detail || 'Não foi possível concluir a solicitação.');
+  }
+
   return payload;
 }
 
 function showAuthError(message = '') { authError.textContent = message; }
+function showAppView() {
+  authView.classList.add('hidden');
+  appView.classList.remove('hidden');
+}
+function showAuthView() {
+  appView.classList.add('hidden');
+  authView.classList.remove('hidden');
+}
 function setRegisterMode(enabled) {
   state.registerMode = enabled;
   nameField.classList.toggle('hidden', !enabled);
@@ -32,7 +61,19 @@ function setRegisterMode(enabled) {
 }
 
 function saveSession(token) { state.token = token; localStorage.setItem('studyquest_token', token); }
-function clearSession() { state.token = null; localStorage.removeItem('studyquest_token'); authView.classList.remove('hidden'); appView.classList.add('hidden'); }
+function resetAuthForm() {
+  authForm.reset();
+  if (document.querySelector('#name')) document.querySelector('#name').value = '';
+  if (document.querySelector('#email')) document.querySelector('#email').value = '';
+  if (document.querySelector('#password')) document.querySelector('#password').value = '';
+}
+function clearSession() {
+  state.token = null;
+  localStorage.removeItem('studyquest_token');
+  resetAuthForm();
+  showAuthView();
+  showAuthError();
+}
 
 async function authenticate(event) {
   event.preventDefault();
@@ -44,8 +85,11 @@ async function authenticate(event) {
   try {
     const payload = await request(state.registerMode ? '/auth/register' : '/auth/login', { method: 'POST', body: JSON.stringify(body) });
     saveSession(payload.access_token);
+    resetAuthForm();
     await showDashboard();
-  } catch (error) { showAuthError(error.message); }
+  } catch (error) {
+    showAuthError(error.message);
+  }
 }
 
 function updateDashboard(payload) {
@@ -65,28 +109,163 @@ function updateDashboard(payload) {
 
 async function loadQuests() {
   const list = document.querySelector('#quests-list');
+  const filter = document.querySelector('#quest-filter');
+  const sort = document.querySelector('#quest-sort');
+  const activeFilter = filter ? (filter.value || getSavedQuestFilter()) : getSavedQuestFilter();
+  const activeSort = sort ? (sort.value || getSavedQuestSort()) : getSavedQuestSort();
+
+  if (filter) filter.value = activeFilter;
+  if (sort) sort.value = activeSort;
+
   list.innerHTML = '<p class="empty-state">Carregando suas missões...</p>';
   try {
     const quests = await request('/quests/');
-    if (!quests.length) { list.innerHTML = '<p class="empty-state">Nenhuma missão por aqui ainda. Crie sua primeira no backend.</p>'; return; }
-    list.innerHTML = quests.map((quest) => `<article class="quest-item ${quest.status === 'completed' ? 'completed' : ''}"><div><h3 class="quest-title">${escapeHtml(quest.title)}</h3><span class="quest-meta">${quest.xp_reward} XP &middot; ${quest.estimated_minutes} min &middot; ${quest.difficulty}</span></div><button class="complete-button" data-quest-id="${quest.id}" ${quest.status === 'completed' ? 'disabled' : ''}>${quest.status === 'completed' ? 'Concluída' : 'Concluir'}</button></article>`).join('');
+    let filteredQuests = quests;
+
+    if (activeFilter === 'pending') {
+      filteredQuests = quests.filter((quest) => quest.status !== 'completed');
+    } else if (activeFilter === 'completed') {
+      filteredQuests = quests.filter((quest) => quest.status === 'completed');
+    } else if (activeFilter.startsWith('subject:')) {
+      const subjectId = activeFilter.split(':')[1];
+      filteredQuests = quests.filter((quest) => String(quest.subject_id ?? '') === String(subjectId));
+    }
+
+    filteredQuests = [...filteredQuests].sort((a, b) => {
+      if (activeSort === 'xp') return (b.xp_reward ?? 0) - (a.xp_reward ?? 0);
+      if (activeSort === 'minutes') return (a.estimated_minutes ?? 0) - (b.estimated_minutes ?? 0);
+      if (activeSort === 'title') return String(a.title).localeCompare(String(b.title));
+      if (a.status === b.status) return (b.xp_reward ?? 0) - (a.xp_reward ?? 0);
+      return a.status === 'completed' ? 1 : -1;
+    });
+
+    if (!filteredQuests.length) {
+      list.innerHTML = '<p class="empty-state">Nenhuma missão para este filtro no momento.</p>';
+      return;
+    }
+
+    list.innerHTML = filteredQuests.map((quest) => `
+      <article class="quest-item ${quest.status === 'completed' ? 'completed' : ''}">
+        <div>
+          <h3 class="quest-title">${escapeHtml(quest.title)}</h3>
+          <span class="quest-meta">${quest.xp_reward} XP &middot; ${quest.estimated_minutes} min &middot; ${quest.difficulty}</span>
+        </div>
+        <div class="quest-actions">
+          <button class="mini-edit" data-edit-quest-id="${quest.id}" type="button">Editar</button>
+          <button class="complete-button" data-quest-id="${quest.id}" ${quest.status === 'completed' ? 'disabled' : ''}>${quest.status === 'completed' ? 'Concluída' : 'Concluir'}</button>
+          <button class="delete-button" data-delete-quest-id="${quest.id}" type="button">Excluir</button>
+        </div>
+      </article>
+    `).join('');
+
     list.querySelectorAll('[data-quest-id]').forEach((button) => button.addEventListener('click', () => completeQuest(button.dataset.questId)));
+    list.querySelectorAll('[data-delete-quest-id]').forEach((button) =>
+      button.addEventListener('click', () => deleteQuest(button.dataset.deleteQuestId))
+    );
+    list.querySelectorAll('[data-edit-quest-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const quest = filteredQuests.find((item) => item.id === Number(button.dataset.editQuestId));
+        if (quest) updateQuest(quest.id, quest.title, quest.xp_reward, quest.estimated_minutes);
+      });
+    });
   } catch (error) { list.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; }
 }
 
 async function loadSubjects() {
   const select = document.querySelector('#quest-subject');
+  const sessionSelect = document.querySelector('#session-subject');
+  const bossSelect = document.querySelector('#boss-subject');
+  const filterSelect = document.querySelector('#quest-filter');
   try {
     const subjects = await request('/subjects/');
-    select.innerHTML = '<option value="">Sem disciplina</option>';
-    subjects.forEach((subject) => {
+    [select, sessionSelect, bossSelect].forEach((element) => {
+      if (!element) return;
+      element.innerHTML = '<option value="">Sem disciplina</option>';
+      subjects.forEach((subject) => {
+        const option = document.createElement('option');
+        option.value = subject.id;
+        option.textContent = subject.name;
+        element.appendChild(option);
+      });
+    });
+
+    if (filterSelect) {
+      const activeValue = getSavedQuestFilter();
+      filterSelect.innerHTML = '<option value="all">Todas</option><option value="pending">Pendentes</option><option value="completed">Concluídas</option>';
+      subjects.forEach((subject) => {
+        const option = document.createElement('option');
+        option.value = `subject:${subject.id}`;
+        option.textContent = subject.name;
+        filterSelect.appendChild(option);
+      });
+
+      const nextValue = activeValue.startsWith('subject:') && subjects.some((subject) => `subject:${subject.id}` === activeValue)
+        ? activeValue
+        : ['all', 'pending', 'completed'].includes(activeValue)
+          ? activeValue
+          : 'all';
+      filterSelect.value = nextValue;
+      localStorage.setItem(QUEST_FILTER_KEY, nextValue);
+    }
+  } catch (error) {
+    [select, sessionSelect, bossSelect].forEach((element) => {
+      if (!element) return;
+      element.innerHTML = '<option value="">Não foi possível carregar</option>';
+    });
+    if (filterSelect) {
+      filterSelect.innerHTML = '<option value="all">Todas</option><option value="pending">Pendentes</option><option value="completed">Concluídas</option>';
+    }
+  }
+}
+
+async function loadSessionQuestOptions() {
+  const select = document.querySelector('#session-quest');
+  if (!select) return;
+
+  try {
+    const quests = await request('/quests/');
+    select.innerHTML = '<option value="">Sem missão</option>';
+    quests.forEach((quest) => {
       const option = document.createElement('option');
-      option.value = subject.id;
-      option.textContent = subject.name;
+      option.value = quest.id;
+      option.textContent = `${quest.title} (${quest.xp_reward} XP)`;
       select.appendChild(option);
     });
   } catch (error) {
     select.innerHTML = '<option value="">Não foi possível carregar</option>';
+  }
+}
+
+async function loadSubjectsList() {
+  const list = document.querySelector('#subjects-list');
+  try {
+    const subjects = await request('/subjects/');
+    if (!subjects.length) {
+      list.innerHTML = '<p class="small-empty">Nenhuma disciplina cadastrada.</p>';
+      return;
+    }
+
+    list.innerHTML = subjects.map((subject) => `
+      <div class="subject-row" style="border-left: 4px solid ${subject.color || '#c7f36b'};">
+        <span>${escapeHtml(subject.name)}</span>
+        <div class="row-actions">
+          <button class="mini-edit" data-edit-subject-id="${subject.id}" type="button">Editar</button>
+          <button class="mini-delete" data-subject-id="${subject.id}" type="button">Excluir</button>
+        </div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('[data-subject-id]').forEach((button) => {
+      button.addEventListener('click', () => deleteSubject(button.dataset.subjectId));
+    });
+    list.querySelectorAll('[data-edit-subject-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const subject = subjects.find((item) => item.id === Number(button.dataset.editSubjectId));
+        if (subject) updateSubject(subject.id, subject.name);
+      });
+    });
+  } catch (error) {
+    list.innerHTML = '<p class="small-empty">Não foi possível carregar as disciplinas.</p>';
   }
 }
 
@@ -103,8 +282,77 @@ async function createSubject(event) {
     });
     form.reset();
     document.querySelector('#subject-color').value = '#c7f36b';
-    await loadSubjects();
+    await showDashboard();
   } catch (error) { window.alert(error.message); }
+}
+
+async function updateSubject(id, currentName) {
+  const nextName = window.prompt('Editar disciplina:', currentName || '');
+  if (nextName === null) return;
+
+  const trimmedName = nextName.trim();
+  if (!trimmedName) {
+    window.alert('O nome da disciplina não pode ficar vazio.');
+    return;
+  }
+
+  try {
+    await request(`/subjects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name: trimmedName }),
+    });
+    await Promise.all([loadSubjects(), loadSubjectsList(), loadQuests(), loadSessionQuestOptions(), showDashboard()]);
+  } catch (error) {
+    window.alert(error.message);
+  }
+}
+
+async function deleteSubject(id) {
+  if (!window.confirm('Deseja excluir esta disciplina?')) return;
+
+  try {
+    await request(`/subjects/${id}`, { method: 'DELETE' });
+    await showDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
+}
+
+async function updateQuest(id, currentTitle, currentXp, currentMinutes) {
+  const nextTitle = window.prompt('Editar título da missão:', currentTitle || '');
+  if (nextTitle === null) return;
+
+  const title = nextTitle.trim();
+  if (!title) {
+    window.alert('O título da missão não pode ficar vazio.');
+    return;
+  }
+
+  const nextXp = Number(window.prompt('Novo valor de XP:', String(currentXp ?? 0)));
+  if (!Number.isFinite(nextXp) || nextXp < 0) {
+    window.alert('Informe um valor de XP válido.');
+    return;
+  }
+
+  const nextMinutes = Number(window.prompt('Novo tempo estimado em minutos:', String(currentMinutes ?? 30)));
+  if (!Number.isFinite(nextMinutes) || nextMinutes <= 0) {
+    window.alert('Informe uma duração válida em minutos.');
+    return;
+  }
+
+  try {
+    await request(`/quests/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title,
+        xp_reward: nextXp,
+        estimated_minutes: nextMinutes,
+      }),
+    });
+    await showDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
 }
 
 async function createQuest(event) {
@@ -127,16 +375,250 @@ async function createQuest(event) {
     form.reset();
     document.querySelector('#quest-xp').value = 40;
     document.querySelector('#quest-minutes').value = 30;
-    await loadQuests();
+    await showDashboard();
   } catch (error) { window.alert(error.message); }
+}
+
+async function createStudySession(event) {
+  event.preventDefault();
+  const subjectId = document.querySelector('#session-subject').value;
+  const questId = document.querySelector('#session-quest').value;
+
+  try {
+    await request('/study-sessions/', {
+      method: 'POST',
+      body: JSON.stringify({
+        subject_id: subjectId ? Number(subjectId) : null,
+        quest_id: questId ? Number(questId) : null,
+        status: 'in_progress',
+      }),
+    });
+    document.querySelector('#session-form').reset();
+    await showDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
 }
 
 async function completeQuest(id) {
   try { await request(`/quests/${id}/complete`, { method: 'POST', body: JSON.stringify({ notes: 'Concluída pelo painel' }) }); await showDashboard(); } catch (error) { window.alert(error.message); }
 }
 
+async function deleteQuest(id) {
+  if (!window.confirm('Deseja excluir esta missão?')) return;
+
+  try {
+    await request(`/quests/${id}`, { method: 'DELETE' });
+    await showDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
+}
+
+async function loadSessions() {
+  const list = document.querySelector('#sessions-list');
+  if (!list) return;
+
+  try {
+    const sessions = await request('/study-sessions/');
+    if (!sessions.length) {
+      list.innerHTML = '<p class="small-empty">Nenhuma sessão em andamento.</p>';
+      return;
+    }
+
+    list.innerHTML = sessions.map((session) => `
+      <div class="session-row">
+        <div>
+          <strong>${session.subject_id ? 'Disciplina vinculada' : 'Sessão livre'}</strong>
+          <small>${session.status === 'completed' ? 'Concluída' : 'Em andamento'}</small>
+        </div>
+        <div class="row-actions">
+          <button class="mini-delete" data-delete-session-id="${session.id}" type="button">Excluir</button>
+          <button class="mini-delete" data-session-id="${session.id}" type="button" ${session.status === 'completed' ? 'disabled' : ''}>${session.status === 'completed' ? 'Finalizada' : 'Finalizar'}</button>
+        </div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('[data-session-id]').forEach((button) => {
+      button.addEventListener('click', () => completeStudySession(button.dataset.sessionId));
+    });
+    list.querySelectorAll('[data-delete-session-id]').forEach((button) => {
+      button.addEventListener('click', () => deleteStudySession(button.dataset.deleteSessionId));
+    });
+  } catch (error) {
+    list.innerHTML = '<p class="small-empty">Não foi possível carregar as sessões.</p>';
+  }
+}
+
+async function deleteStudySession(id) {
+  if (!window.confirm('Deseja excluir esta sessão de estudo?')) return;
+
+  try {
+    await request(`/study-sessions/${id}`, { method: 'DELETE' });
+    await showDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
+}
+
+async function completeStudySession(id) {
+  try {
+    await request(`/study-sessions/${id}/complete`, { method: 'PATCH' });
+    await showDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
+}
+
+async function loadBosses() {
+  const list = document.querySelector('#bosses-list');
+  if (!list) return;
+
+  try {
+    const bosses = await request('/boss-fights/');
+    if (!bosses.length) {
+      list.innerHTML = '<p class="small-empty">Nenhum boss fight registrado.</p>';
+      return;
+    }
+
+    list.innerHTML = bosses.map((boss) => `
+      <div class="session-row">
+        <div>
+          <strong>${escapeHtml(boss.title)}</strong>
+          <small>${boss.hp_current}/${boss.hp_max} HP • ${boss.status === 'completed' ? 'Derrotado' : 'Ativo'} • ${boss.xp_reward ?? 0} XP</small>
+        </div>
+        <div class="row-actions">
+          <button class="mini-delete" data-delete-boss-id="${boss.id}" type="button">Excluir</button>
+          <button class="mini-delete" data-boss-id="${boss.id}" type="button" ${boss.status === 'completed' ? 'disabled' : ''}>${boss.status === 'completed' ? 'Vencido' : 'Derrotar'}</button>
+        </div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('[data-boss-id]').forEach((button) => {
+      button.addEventListener('click', () => completeBossFight(button.dataset.bossId));
+    });
+    list.querySelectorAll('[data-delete-boss-id]').forEach((button) => {
+      button.addEventListener('click', () => deleteBossFight(button.dataset.deleteBossId));
+    });
+  } catch (error) {
+    list.innerHTML = '<p class="small-empty">Não foi possível carregar os bosses.</p>';
+  }
+}
+
+async function deleteBossFight(id) {
+  if (!window.confirm('Deseja excluir este Boss Fight?')) return;
+
+  try {
+    await request(`/boss-fights/${id}`, { method: 'DELETE' });
+    await showDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
+}
+
+async function completeBossFight(id) {
+  try {
+    await request(`/boss-fights/${id}/complete`, { method: 'PATCH' });
+    await showDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
+}
+
+async function createBossFight(event) {
+  event.preventDefault();
+  const subjectId = document.querySelector('#boss-subject').value;
+  const title = document.querySelector('#boss-title').value.trim();
+  const hp = Number(document.querySelector('#boss-hp').value);
+  const xp = Number(document.querySelector('#boss-xp').value);
+
+  if (!subjectId) {
+    window.alert('Selecione uma disciplina antes de criar o Boss Fight.');
+    return;
+  }
+
+  if (!title) {
+    window.alert('Informe um título para o Boss Fight.');
+    return;
+  }
+
+  try {
+    await request('/boss-fights/', {
+      method: 'POST',
+      body: JSON.stringify({
+        subject_id: Number(subjectId),
+        title,
+        hp_max: hp,
+        hp_current: hp,
+        xp_reward: xp,
+        status: 'active',
+      }),
+    });
+    document.querySelector('#boss-form').reset();
+    document.querySelector('#boss-hp').value = 100;
+    document.querySelector('#boss-xp').value = 200;
+    await showDashboard();
+  } catch (error) {
+    window.alert(error.message);
+  }
+}
+
 async function loadRewards() {
-  try { const rewards = await request('/users/rewards'); const first = rewards.xp_history[0]; document.querySelector('#reward-summary').innerHTML = `<strong>${rewards.xp_balance} XP</strong><span>${first ? escapeHtml(first.reason) : 'Seu histórico aparece aqui.'}</span>`; } catch (error) { /* dashboard remains usable if rewards are unavailable */ }
+  try {
+    const rewards = await request('/users/rewards');
+    const history = Array.isArray(rewards?.xp_history) ? rewards.xp_history : [];
+    const first = history[0];
+    document.querySelector('#reward-summary').innerHTML = `<strong>${Number(rewards?.xp_balance ?? 0)} XP</strong><span>${first ? escapeHtml(first.reason) : 'Seu histórico aparece aqui.'}</span>`;
+  } catch (error) {
+    document.querySelector('#reward-summary').innerHTML = '<strong>0 XP</strong><span>Seu histórico aparece aqui.</span>';
+  }
+}
+
+async function loadLeaderboard() {
+  const list = document.querySelector('#leaderboard-list');
+  if (!list) return;
+
+  try {
+    const leaderboard = await request('/users/leaderboard');
+    const topUsers = Array.isArray(leaderboard) ? leaderboard.slice(0, 3) : [];
+
+    if (!topUsers.length) {
+      list.innerHTML = '<p class="mini-empty">Ranking vazio ainda.</p>';
+      return;
+    }
+
+    list.innerHTML = topUsers.map((user) => `
+      <div class="mini-row">
+        <span>#${user.rank}</span>
+        <strong>${escapeHtml(user.name.split(' ')[0])}</strong>
+        <em>${user.xp} XP</em>
+      </div>
+    `).join('');
+  } catch (error) {
+    list.innerHTML = `<p class="mini-empty">${escapeHtml(error.message)}</p>`;
+  }
+}
+
+async function loadAchievements() {
+  const list = document.querySelector('#achievement-list');
+  if (!list) return;
+
+  try {
+    const achievements = await request('/achievements/me');
+    if (!Array.isArray(achievements) || !achievements.length) {
+      list.innerHTML = '<p class="mini-empty">Nenhuma conquista desbloqueada.</p>';
+      return;
+    }
+
+    list.innerHTML = achievements.map((achievement) => `
+      <div class="mini-row">
+        <span>${achievement.icon || '🏅'}</span>
+        <strong>${escapeHtml(achievement.title)}</strong>
+      </div>
+    `).join('');
+  } catch (error) {
+    list.innerHTML = `<p class="mini-empty">${escapeHtml(error.message)}</p>`;
+  }
 }
 
 async function showDashboard() {
@@ -145,16 +627,29 @@ async function showDashboard() {
     updateDashboard(dashboard);
     const analytics = await request('/users/analytics');
     document.querySelector('#study-minutes').textContent = analytics.total_study_minutes;
-    authView.classList.add('hidden'); appView.classList.remove('hidden');
-    await Promise.all([loadQuests(), loadSubjects(), loadRewards()]);
+    showAppView();
+    await Promise.all([loadQuests(), loadSubjects(), loadSubjectsList(), loadSessionQuestOptions(), loadSessions(), loadBosses(), loadRewards(), loadLeaderboard(), loadAchievements()]);
   } catch (error) { clearSession(); showAuthError(error.message); }
 }
 
 function escapeHtml(value) { const element = document.createElement('div'); element.textContent = value; return element.innerHTML; }
 authForm.addEventListener('submit', authenticate);
 authToggle.addEventListener('click', () => setRegisterMode(!state.registerMode));
-document.querySelector('#logout-button').addEventListener('click', clearSession);
-document.querySelector('#refresh-button').addEventListener('click', loadQuests);
+document.querySelector('#logout-button').addEventListener('click', () => {
+  clearSession();
+  showAuthError('Sessão encerrada com sucesso.');
+});
+document.querySelector('#refresh-button').addEventListener('click', showDashboard);
+document.querySelector('#quest-filter').addEventListener('change', () => {
+  localStorage.setItem(QUEST_FILTER_KEY, document.querySelector('#quest-filter').value);
+  loadQuests();
+});
+document.querySelector('#quest-sort').addEventListener('change', () => {
+  localStorage.setItem(QUEST_SORT_KEY, document.querySelector('#quest-sort').value);
+  loadQuests();
+});
 document.querySelector('#subject-form').addEventListener('submit', createSubject);
 document.querySelector('#quest-form').addEventListener('submit', createQuest);
-if (state.token) showDashboard();
+document.querySelector('#session-form').addEventListener('submit', createStudySession);
+document.querySelector('#boss-form').addEventListener('submit', createBossFight);
+if (state.token) showDashboard(); else showAuthView();

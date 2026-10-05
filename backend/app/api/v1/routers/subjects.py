@@ -58,8 +58,9 @@ def update_subject(
     if subject.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this subject")
 
-    for field, value in payload.model_dump().items():
-        setattr(subject, field, value)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        if value is not None or field in {"description", "color", "icon", "professor", "semester"}:
+            setattr(subject, field, value)
 
     db.commit()
     db.refresh(subject)

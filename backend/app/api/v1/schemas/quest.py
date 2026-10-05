@@ -19,6 +19,18 @@ class QuestBase(BaseModel):
     subject_id: int | None = None
     boss_fight_id: int | None = None
 
+    @field_validator("description", "due_date", mode="before")
+    @classmethod
+    def normalize_optional_text(cls, value: str | date | None) -> str | date | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                return None
+            return normalized
+        return value
+
     @field_validator("title")
     @classmethod
     def validate_title(cls, value: str) -> str:
@@ -44,6 +56,18 @@ class QuestUpdate(BaseModel):
     due_date: date | None = None
     subject_id: int | None = None
     boss_fight_id: int | None = None
+
+    @field_validator("description", "due_date", mode="before")
+    @classmethod
+    def normalize_optional_text(cls, value: str | date | None) -> str | date | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                return None
+            return normalized
+        return value
 
     @field_validator("title")
     @classmethod

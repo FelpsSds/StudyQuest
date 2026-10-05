@@ -40,6 +40,17 @@ def get_study_session(
     return _get_owned_study_session(db, study_session_id, current_user)
 
 
+@router.delete("/{study_session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_study_session(
+    study_session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    study_session = _get_owned_study_session(db, study_session_id, current_user)
+    db.delete(study_session)
+    db.commit()
+
+
 @router.post("/", response_model=StudySessionRead, status_code=status.HTTP_201_CREATED)
 def create_study_session(
     payload: StudySessionCreate,

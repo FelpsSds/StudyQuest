@@ -56,6 +56,7 @@ def create_boss_fight(
         title=payload.title,
         hp_max=payload.hp_max,
         hp_current=payload.hp_current,
+        xp_reward=payload.xp_reward,
         status=payload.status,
     )
     db.add(boss_fight)
@@ -78,3 +79,14 @@ def complete_boss_fight(
     db.commit()
     db.refresh(boss_fight)
     return boss_fight
+
+
+@router.delete("/{boss_fight_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_boss_fight(
+    boss_fight_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    boss_fight = _get_owned_boss_fight(db, boss_fight_id, current_user)
+    db.delete(boss_fight)
+    db.commit()

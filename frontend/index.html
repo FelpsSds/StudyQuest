@@ -49,6 +49,7 @@
               <label class="compact-field">Nome<input id="subject-name" type="text" placeholder="Ex.: História" required /></label>
               <label class="compact-field">Cor<input id="subject-color" type="color" value="#c7f36b" /></label>
               <button class="secondary-button" type="submit">Adicionar disciplina <span aria-hidden="true">&#8594;</span></button>
+              <div id="subjects-list" class="subjects-list"></div>
             </form>
             <form id="quest-form" class="creation-card wide-creation-card">
               <div><span class="kicker">PRÓXIMO PASSO</span><h2>Criar missão</h2></div>
@@ -58,9 +59,25 @@
               <label class="compact-field">Minutos<input id="quest-minutes" type="number" min="1" value="30" /></label>
               <button class="secondary-button" type="submit">Adicionar missão <span aria-hidden="true">&#8594;</span></button>
             </form>
+            <form id="session-form" class="creation-card">
+              <div><span class="kicker">FOCO NO AGORA</span><h2>Iniciar sessão</h2></div>
+              <label class="compact-field">Disciplina<select id="session-subject"><option value="">Sem disciplina</option></select></label>
+              <label class="compact-field">Missão<select id="session-quest"><option value="">Sem missão</option></select></label>
+              <button class="secondary-button" type="submit">Começar estudo <span aria-hidden="true">&#8594;</span></button>
+              <div id="sessions-list" class="sessions-list"></div>
+            </form>
+            <form id="boss-form" class="creation-card">
+              <div><span class="kicker">DESAFIO FINAL</span><h2>Criar Boss Fight</h2></div>
+              <label class="compact-field">Disciplina<select id="boss-subject"><option value="">Sem disciplina</option></select></label>
+              <label class="compact-field">Título<input id="boss-title" type="text" placeholder="Ex.: Revisão de álgebra" required /></label>
+              <label class="compact-field">HP<input id="boss-hp" type="number" min="1" value="100" /></label>
+              <label class="compact-field">XP<input id="boss-xp" type="number" min="0" value="200" /></label>
+              <button class="secondary-button" type="submit">Criar desafio <span aria-hidden="true">&#8594;</span></button>
+              <div id="bosses-list" class="sessions-list"></div>
+            </form>
           </section>
-          <section class="quests-section"><div class="section-heading"><div><span class="kicker">SEU MAPA</span><h2>Missões atuais</h2></div><button id="refresh-button" class="icon-button" type="button" title="Atualizar missões">Atualizar <span aria-hidden="true">&#8635;</span></button></div><div id="quests-list" class="quests-list"></div></section>
-          <aside class="side-panel"><span class="kicker">ÚLTIMO MOVIMENTO</span><h2>Recompensas</h2><div id="reward-summary" class="reward-summary"><strong>0 XP</strong><span>Seu histórico aparece aqui.</span></div><div class="side-rule"></div><span class="kicker">LEMBRETE</span><p class="quote">A consistência vence a pressa.</p></aside>
+          <section class="quests-section"><div class="section-heading"><div><span class="kicker">SEU MAPA</span><h2>Missões atuais</h2></div><div class="row-actions"><label class="compact-field inline-filter"><span>Filtrar</span><select id="quest-filter"><option value="all">Todas</option></select></label><label class="compact-field inline-filter"><span>Ordenar</span><select id="quest-sort"><option value="priority">Prioridade</option><option value="xp">XP</option><option value="minutes">Tempo</option><option value="title">Título</option></select></label><button id="refresh-button" class="icon-button" type="button" title="Atualizar missões">Atualizar <span aria-hidden="true">&#8635;</span></button></div></div><div id="quests-list" class="quests-list"></div></section>
+          <aside class="side-panel"><span class="kicker">ÚLTIMO MOVIMENTO</span><h2>Recompensas</h2><div id="reward-summary" class="reward-summary"><strong>0 XP</strong><span>Seu histórico aparece aqui.</span></div><div class="side-rule"></div><div class="side-card"><span class="kicker">RANKING</span><div id="leaderboard-list" class="mini-list"></div></div><div class="side-card"><span class="kicker">CONQUISTAS</span><div id="achievement-list" class="mini-list"></div></div><div class="side-rule"></div><span class="kicker">LEMBRETE</span><p class="quote">A consistência vence a pressa.</p></aside>
         </div>
       </section>
     </main>

@@ -11,6 +11,7 @@ StudyQuest é uma plataforma de estudos gamificada. O usuário transforma ativid
 - Disciplinas, missões, XP, conquistas, Boss Fights e sessões de estudo
 - Frontend estático funcional consumindo a API
 - Testes automatizados para as principais regras de negócio
+- GitHub Actions executa os testes backend em cada push e pull request
 
 A migração do frontend para React + Vite está planejada para a próxima etapa.
 
@@ -93,5 +94,4 @@ frontend/      # interface atual
 1. Migrar a interface para React + Vite.
 2. Adicionar filtros, edição e detalhes de missões.
 3. Construir as telas de perfil, conquistas e Boss Fight.
-4. Adicionar CI para testes e lint.
-5. Preparar deploy.
+4. Preparar deploy.

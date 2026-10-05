@@ -83,6 +83,7 @@ def create_study_session(
         user_id=current_user.id,
         subject_id=session_subject_id,
         quest_id=payload.quest_id,
+        duration_minutes=payload.duration_minutes,
         status=payload.status,
     )
     db.add(study_session)

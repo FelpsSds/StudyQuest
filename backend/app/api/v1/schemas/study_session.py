@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 class StudySessionBase(BaseModel):
     subject_id: int | None = None
     quest_id: int | None = None
+    duration_minutes: int | None = None
     status: str = "in_progress"
 
 

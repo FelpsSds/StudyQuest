@@ -383,6 +383,7 @@ async function createStudySession(event) {
   event.preventDefault();
   const subjectId = document.querySelector('#session-subject').value;
   const questId = document.querySelector('#session-quest').value;
+  const durationMinutes = Number(document.querySelector('#session-duration').value || 30);
 
   try {
     await request('/study-sessions/', {
@@ -390,10 +391,12 @@ async function createStudySession(event) {
       body: JSON.stringify({
         subject_id: subjectId ? Number(subjectId) : null,
         quest_id: questId ? Number(questId) : null,
+        duration_minutes: Number.isFinite(durationMinutes) && durationMinutes > 0 ? durationMinutes : 30,
         status: 'in_progress',
       }),
     });
     document.querySelector('#session-form').reset();
+    document.querySelector('#session-duration').value = 30;
     await showDashboard();
   } catch (error) {
     window.alert(error.message);
@@ -430,7 +433,7 @@ async function loadSessions() {
       <div class="session-row">
         <div>
           <strong>${session.subject_id ? 'Disciplina vinculada' : 'Sessão livre'}</strong>
-          <small>${session.status === 'completed' ? 'Concluída' : 'Em andamento'}</small>
+          <small>${session.status === 'completed' ? 'Concluída' : 'Em andamento'}${session.duration_minutes ? ` • ${session.duration_minutes} min` : ''}</small>
         </div>
         <div class="row-actions">
           <button class="mini-delete" data-delete-session-id="${session.id}" type="button">Excluir</button>

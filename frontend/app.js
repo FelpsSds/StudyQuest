@@ -622,6 +622,32 @@ async function loadInsights() {
   }
 }
 
+async function loadMomentum() {
+  const summary = document.querySelector('#momentum-summary');
+  if (!summary) return;
+
+  try {
+    const [dashboard, quests] = await Promise.all([
+      request('/users/dashboard'),
+      request('/quests/'),
+    ]);
+    const user = dashboard?.user;
+    const pending = Array.isArray(quests)
+      ? quests.filter((quest) => quest.status !== 'completed').sort((a, b) => (b.xp_reward ?? 0) - (a.xp_reward ?? 0))
+      : [];
+    const progress = Math.max(0, Math.min(100, Number(user?.progress_percent ?? 0)));
+    const nextQuest = pending[0];
+
+    summary.innerHTML = `
+      <div class="momentum-meter"><span style="width: ${progress}%"></span></div>
+      <div class="momentum-head"><strong>${progress}%</strong><span>até o próximo nível</span></div>
+      <p>${pending.length ? `${pending.length} tarefa${pending.length > 1 ? 's' : ''} em aberto • ${escapeHtml(nextQuest.title)}` : 'Você está em dia. Escolha um novo alvo.'}</p>
+    `;
+  } catch (error) {
+    summary.innerHTML = '<p class="mini-empty">Não foi possível carregar o momentum.</p>';
+  }
+}
+
 async function loadNextFocus() {
   const focus = document.querySelector('#next-focus');
   if (!focus) return;
@@ -711,7 +737,7 @@ async function showDashboard() {
     const analytics = await request('/users/analytics');
     document.querySelector('#study-minutes').textContent = analytics.total_study_minutes;
     showAppView();
-    await Promise.all([loadQuests(), loadSubjects(), loadSubjectsList(), loadSessionQuestOptions(), loadSessions(), loadBosses(), loadRewards(), loadNextFocus(), loadLeaderboard(), loadAchievements(), loadInsights()]);
+    await Promise.all([loadQuests(), loadSubjects(), loadSubjectsList(), loadSessionQuestOptions(), loadSessions(), loadBosses(), loadRewards(), loadNextFocus(), loadLeaderboard(), loadAchievements(), loadInsights(), loadMomentum()]);
   } catch (error) { clearSession(); showAuthError(error.message); }
 }
 

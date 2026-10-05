@@ -60,3 +60,11 @@ button { cursor: pointer; }
 .insight-row:last-child { border-bottom: 0; }
 .insight-row span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
 .insight-row strong { font-size: 14px; }
+.momentum-card { background: linear-gradient(135deg, rgba(255, 115, 92, 0.08), rgba(199, 243, 107, 0.12)); }
+.momentum-summary { display: grid; gap: 12px; }
+.momentum-meter { height: 10px; border-radius: 999px; background: rgba(16, 24, 39, 0.08); overflow: hidden; }
+.momentum-meter span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--coral), var(--lime)); }
+.momentum-head { display: flex; justify-content: space-between; align-items: end; gap: 12px; }
+.momentum-head strong { font-size: 22px; letter-spacing: -1px; }
+.momentum-head span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.momentum-summary p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }

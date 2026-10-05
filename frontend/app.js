@@ -575,13 +575,30 @@ async function createBossFight(event) {
 }
 
 async function loadRewards() {
+  const activityList = document.querySelector('#activity-list');
   try {
     const rewards = await request('/users/rewards');
     const history = Array.isArray(rewards?.xp_history) ? rewards.xp_history : [];
     const first = history[0];
     document.querySelector('#reward-summary').innerHTML = `<strong>${Number(rewards?.xp_balance ?? 0)} XP</strong><span>${first ? escapeHtml(first.reason) : 'Seu histórico aparece aqui.'}</span>`;
+
+    if (activityList) {
+      const recent = history.slice(0, 4);
+      activityList.innerHTML = !recent.length
+        ? '<p class="mini-empty">Seu histórico de XP ainda vai aparecer aqui.</p>'
+        : recent.map((item) => `
+            <div class="activity-row">
+              <span class="activity-badge">+${Number(item.amount ?? 0)}</span>
+              <div>
+                <strong>${escapeHtml(item.reason || 'Recompensa')}</strong>
+                <small>${new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</small>
+              </div>
+            </div>
+          `).join('');
+    }
   } catch (error) {
     document.querySelector('#reward-summary').innerHTML = '<strong>0 XP</strong><span>Seu histórico aparece aqui.</span>';
+    if (activityList) activityList.innerHTML = '<p class="mini-empty">Não foi possível carregar o histórico.</p>';
   }
 }
 

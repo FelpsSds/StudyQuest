@@ -574,6 +574,35 @@ async function loadRewards() {
   }
 }
 
+async function loadNextFocus() {
+  const focus = document.querySelector('#next-focus');
+  if (!focus) return;
+
+  try {
+    const quests = await request('/quests/');
+    const pending = Array.isArray(quests)
+      ? quests.filter((quest) => quest.status !== 'completed').sort((a, b) => {
+          const scoreA = (a.xp_reward ?? 0) / Math.max(1, a.estimated_minutes ?? 1);
+          const scoreB = (b.xp_reward ?? 0) / Math.max(1, b.estimated_minutes ?? 1);
+          return scoreB - scoreA;
+        })
+      : [];
+
+    if (!pending.length) {
+      focus.innerHTML = '<strong>Sem missão pendente.</strong><span>Escolha a próxima tarefa para manter o ritmo.</span>';
+      return;
+    }
+
+    const nextQuest = pending[0];
+    focus.innerHTML = `
+      <strong>${escapeHtml(nextQuest.title)}</strong>
+      <span>${Number(nextQuest.xp_reward ?? 0)} XP • ${Number(nextQuest.estimated_minutes ?? 0)} min</span>
+    `;
+  } catch (error) {
+    focus.innerHTML = '<strong>Não foi possível calcular.</strong><span>Confira sua conexão ou tente novamente.</span>';
+  }
+}
+
 async function loadLeaderboard() {
   const list = document.querySelector('#leaderboard-list');
   if (!list) return;
@@ -628,7 +657,7 @@ async function showDashboard() {
     const analytics = await request('/users/analytics');
     document.querySelector('#study-minutes').textContent = analytics.total_study_minutes;
     showAppView();
-    await Promise.all([loadQuests(), loadSubjects(), loadSubjectsList(), loadSessionQuestOptions(), loadSessions(), loadBosses(), loadRewards(), loadLeaderboard(), loadAchievements()]);
+    await Promise.all([loadQuests(), loadSubjects(), loadSubjectsList(), loadSessionQuestOptions(), loadSessions(), loadBosses(), loadRewards(), loadNextFocus(), loadLeaderboard(), loadAchievements()]);
   } catch (error) { clearSession(); showAuthError(error.message); }
 }
 

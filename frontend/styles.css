@@ -37,3 +37,7 @@ button { cursor: pointer; }
 .mini-row strong { font-size: 13px; }
 .mini-row em { color: var(--muted); font-style: normal; font-size: 11px; }
 .mini-empty { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.focus-card { background: linear-gradient(135deg, rgba(199, 243, 107, 0.14), rgba(255, 115, 92, 0.08)); }
+.focus-summary { display: grid; gap: 6px; }
+.focus-summary strong { font-size: 15px; line-height: 1.35; }
+.focus-summary span { color: var(--muted); font-size: 12px; line-height: 1.5; }

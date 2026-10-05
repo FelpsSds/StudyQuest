@@ -602,6 +602,26 @@ async function loadRewards() {
   }
 }
 
+async function loadInsights() {
+  const list = document.querySelector('#insights-list');
+  if (!list) return;
+
+  try {
+    const analytics = await request('/users/analytics');
+    const minutes = Number(analytics?.total_study_minutes ?? 0);
+    const average = Number(analytics?.average_session_minutes ?? 0);
+    const completed = Number(analytics?.quests_completed ?? 0);
+
+    list.innerHTML = `
+      <div class="insight-row"><span>Tempo</span><strong>${minutes} min</strong></div>
+      <div class="insight-row"><span>Média</span><strong>${average.toFixed(0)} min</strong></div>
+      <div class="insight-row"><span>Missões</span><strong>${completed}</strong></div>
+    `;
+  } catch (error) {
+    list.innerHTML = '<p class="mini-empty">Não foi possível carregar os insights.</p>';
+  }
+}
+
 async function loadNextFocus() {
   const focus = document.querySelector('#next-focus');
   if (!focus) return;
@@ -685,7 +705,7 @@ async function showDashboard() {
     const analytics = await request('/users/analytics');
     document.querySelector('#study-minutes').textContent = analytics.total_study_minutes;
     showAppView();
-    await Promise.all([loadQuests(), loadSubjects(), loadSubjectsList(), loadSessionQuestOptions(), loadSessions(), loadBosses(), loadRewards(), loadNextFocus(), loadLeaderboard(), loadAchievements()]);
+    await Promise.all([loadQuests(), loadSubjects(), loadSubjectsList(), loadSessionQuestOptions(), loadSessions(), loadBosses(), loadRewards(), loadNextFocus(), loadLeaderboard(), loadAchievements(), loadInsights()]);
   } catch (error) { clearSession(); showAuthError(error.message); }
 }
 

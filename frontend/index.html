@@ -64,6 +64,12 @@
               <label class="compact-field">Disciplina<select id="session-subject"><option value="">Sem disciplina</option></select></label>
               <label class="compact-field">Missão<select id="session-quest"><option value="">Sem missão</option></select></label>
               <label class="compact-field">Duração (min)<input id="session-duration" type="number" min="15" value="30" /></label>
+              <div class="duration-presets" aria-label="Atalhos de duração">
+                <button class="preset-button" type="button" data-duration="15">15m</button>
+                <button class="preset-button active" type="button" data-duration="25">25m</button>
+                <button class="preset-button" type="button" data-duration="45">45m</button>
+                <button class="preset-button" type="button" data-duration="60">60m</button>
+              </div>
               <button class="secondary-button" type="submit">Começar estudo <span aria-hidden="true">&#8594;</span></button>
               <div id="sessions-list" class="sessions-list"></div>
             </form>

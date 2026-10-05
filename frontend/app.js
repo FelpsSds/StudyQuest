@@ -723,6 +723,15 @@ document.querySelector('#logout-button').addEventListener('click', () => {
   showAuthError('Sessão encerrada com sucesso.');
 });
 document.querySelector('#refresh-button').addEventListener('click', showDashboard);
+document.querySelectorAll('.preset-button').forEach((button) => {
+  button.addEventListener('click', () => {
+    const duration = document.querySelector('#session-duration');
+    if (!duration) return;
+    duration.value = button.dataset.duration;
+    document.querySelectorAll('.preset-button').forEach((item) => item.classList.toggle('active', item === button));
+    duration.focus();
+  });
+});
 document.querySelector('#quest-filter').addEventListener('change', () => {
   localStorage.setItem(QUEST_FILTER_KEY, document.querySelector('#quest-filter').value);
   loadQuests();

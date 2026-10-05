@@ -645,7 +645,13 @@ async function loadNextFocus() {
     focus.innerHTML = `
       <strong>${escapeHtml(nextQuest.title)}</strong>
       <span>${Number(nextQuest.xp_reward ?? 0)} XP • ${Number(nextQuest.estimated_minutes ?? 0)} min</span>
+      <button class="focus-action" data-quest-id="${nextQuest.id}" type="button">Marcar como concluída</button>
     `;
+
+    const button = focus.querySelector('[data-quest-id]');
+    if (button) {
+      button.addEventListener('click', () => completeQuest(button.dataset.questId));
+    }
   } catch (error) {
     focus.innerHTML = '<strong>Não foi possível calcular.</strong><span>Confira sua conexão ou tente novamente.</span>';
   }

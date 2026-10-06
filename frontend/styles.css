@@ -142,6 +142,7 @@ textarea { resize: vertical; }
 .session-row { align-items: center; }
 .session-history-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 8px 16px; margin-top: 14px; }
 .session-history-controls .compact-field { min-width: 0; margin: 0; }
+.session-search-field { grid-column: 1 / -1; }
 .session-history-controls > button { min-height: 38px; }
 .session-info { display: grid; gap: 3px; min-width: 0; }
 .session-info strong, .session-info > span { overflow-wrap: anywhere; }

@@ -24,6 +24,8 @@ Na lista de missões, abra **Ver detalhes** para consultar descrição, tipo, di
 
 Os Boss Fights exibem uma barra de vida e as missões vinculadas; concluir uma missão vinculada causa o dano indicado e atualiza a vida do desafio.
 
+O nome de exibição pode ser alterado no cartão **Perfil**. O e-mail de login permanece somente para consulta.
+
 ## Executar com Docker
 
 Na raiz do projeto, execute:

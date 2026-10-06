@@ -531,6 +531,46 @@ async function saveQuestEdit(event) {
   }
 }
 
+function toggleProfileEdit(show) {
+  const form = document.querySelector('#profile-edit-form');
+  const toggle = document.querySelector('#profile-edit-toggle');
+  if (!form || !toggle) return;
+  form.classList.toggle('hidden', !show);
+  toggle.classList.toggle('hidden', show);
+  if (show) {
+    document.querySelector('#profile-name-input').value = document.querySelector('#profile-name').textContent;
+    document.querySelector('#profile-edit-error').textContent = '';
+    document.querySelector('#profile-name-input').focus();
+  }
+}
+
+async function saveProfile(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const name = form.elements.name.value.trim();
+  const error = document.querySelector('#profile-edit-error');
+  const submit = form.querySelector('[type="submit"]');
+  if (!name) {
+    error.textContent = 'Informe um nome para salvar o perfil.';
+    return;
+  }
+
+  submit.disabled = true;
+  error.textContent = '';
+  try {
+    await request('/users/me', {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    });
+    toggleProfileEdit(false);
+    await showDashboard();
+  } catch (requestError) {
+    error.textContent = requestError.message;
+  } finally {
+    submit.disabled = false;
+  }
+}
+
 async function createQuest(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -1224,5 +1264,8 @@ document.querySelector('#quest-form').addEventListener('submit', createQuest);
 document.querySelector('#generate-plan-form').addEventListener('submit', generateStudyPlan);
 document.querySelector('#session-form').addEventListener('submit', createStudySession);
 document.querySelector('#boss-form').addEventListener('submit', createBossFight);
+document.querySelector('#profile-edit-toggle').addEventListener('click', () => toggleProfileEdit(true));
+document.querySelector('#profile-edit-cancel').addEventListener('click', () => toggleProfileEdit(false));
+document.querySelector('#profile-edit-form').addEventListener('submit', saveProfile);
 restorePlanProviderSettings();
 if (state.token) showDashboard(); else showAuthView();

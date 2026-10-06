@@ -1,10 +1,10 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.api.v1.schemas.user import UserRead
+from app.api.v1.schemas.user import UserRead, UserUpdate
 from app.core.progression import progress_for_xp
 from app.core.security import get_current_user
 from app.core.streaks import calculate_streak
@@ -25,6 +25,22 @@ def read_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     return db.query(User).filter(User.id == current_user.id).first()
+
+
+@router.put("/me", response_model=UserRead)
+def update_current_user(
+    payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    user.name = payload.name
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.get("/dashboard")

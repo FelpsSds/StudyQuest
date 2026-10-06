@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class UserBase(BaseModel):
@@ -23,3 +23,15 @@ class UserRead(UserBase):
     xp: int = 0
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Name cannot be blank")
+        return normalized

@@ -34,6 +34,8 @@ Ao criar uma missão, também é possível informar descrição, tipo, dificulda
 
 Use os filtros **Atrasadas**, **Vencendo hoje** e **Próximos 7 dias**, ou ordene a lista pelo prazo. Missões concluídas e arquivadas não aparecem nos filtros de vencimento.
 
+O histórico de sessões mostra disciplina, missão, horário de início e duração. Sessões em andamento aparecem primeiro com a duração planejada; sessões finalizadas mostram o tempo registrado.
+
 ## Executar com Docker
 
 Na raiz do projeto, execute:

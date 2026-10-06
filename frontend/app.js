@@ -42,6 +42,17 @@ function formatLocalDate(date) {
   return `${year}-${month}-${day}`;
 }
 
+function formatSessionDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Data indisponível';
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function getOpenQuestDueLabel(quest, today, weekEnd) {
   if (!quest.due_date || quest.status === 'completed' || quest.status === 'archived') return '';
   if (quest.due_date < today) return 'Atrasada';
@@ -920,24 +931,41 @@ async function loadSessions() {
   if (!list) return;
 
   try {
-    const sessions = await request('/study-sessions/');
+    const [sessions, subjects, quests] = await Promise.all([
+      request('/study-sessions/'),
+      request('/subjects/'),
+      request('/quests/'),
+    ]);
     if (!sessions.length) {
-      list.innerHTML = '<p class="small-empty">Nenhuma sessão em andamento.</p>';
+      list.innerHTML = '<p class="small-empty">Nenhuma sessão registrada ainda.</p>';
       return;
     }
 
-    list.innerHTML = sessions.map((session) => `
-      <div class="session-row">
-        <div>
-          <strong>${session.subject_id ? 'Disciplina vinculada' : 'Sessão livre'}</strong>
-          <small>${session.status === 'completed' ? 'Concluída' : 'Em andamento'}${session.duration_minutes ? ` • ${session.duration_minutes} min` : ''}</small>
-        </div>
-        <div class="row-actions">
-          <button class="mini-delete" data-delete-session-id="${session.id}" type="button">Excluir</button>
-          <button class="mini-delete" data-session-id="${session.id}" type="button" ${session.status === 'completed' ? 'disabled' : ''}>${session.status === 'completed' ? 'Finalizada' : 'Finalizar'}</button>
-        </div>
-      </div>
-    `).join('');
+    const orderedSessions = [...sessions].sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'in_progress' ? -1 : 1;
+      return new Date(b.started_at).getTime() - new Date(a.started_at).getTime();
+    });
+    list.innerHTML = orderedSessions.map((session) => {
+      const subject = subjects.find((item) => item.id === session.subject_id);
+      const quest = quests.find((item) => item.id === session.quest_id);
+      const duration = Number(session.duration_minutes);
+      const durationLabel = Number.isFinite(duration) && duration > 0
+        ? `${duration} min${session.status === 'in_progress' ? ' planejados' : ''}`
+        : session.status === 'in_progress' ? 'Duração não definida' : 'Duração indisponível';
+      return `
+        <article class="session-row ${session.status === 'completed' ? 'session-completed' : 'session-active'}">
+          <div class="session-info">
+            <strong>${escapeHtml(subject?.name || (session.subject_id ? 'Disciplina removida' : 'Sessão livre'))}</strong>
+            ${quest ? `<span>${escapeHtml(quest.title)}</span>` : session.quest_id ? '<span>Missão removida</span>' : ''}
+            <small>${session.status === 'completed' ? 'Concluída' : 'Em andamento'} · ${formatSessionDate(session.started_at)} · ${durationLabel}</small>
+          </div>
+          <div class="row-actions">
+            <button class="mini-delete" data-delete-session-id="${session.id}" type="button">Excluir</button>
+            ${session.status === 'in_progress' ? `<button class="mini-edit" data-session-id="${session.id}" type="button">Finalizar</button>` : ''}
+          </div>
+        </article>
+      `;
+    }).join('');
 
     list.querySelectorAll('[data-session-id]').forEach((button) => {
       button.addEventListener('click', () => completeStudySession(button.dataset.sessionId));
@@ -946,7 +974,7 @@ async function loadSessions() {
       button.addEventListener('click', () => deleteStudySession(button.dataset.deleteSessionId));
     });
   } catch (error) {
-    list.innerHTML = '<p class="small-empty">Não foi possível carregar as sessões.</p>';
+    list.innerHTML = `<p class="small-empty">${escapeHtml(error.message || 'Não foi possível carregar as sessões.')}</p>`;
   }
 }
 

@@ -131,6 +131,13 @@ textarea { resize: vertical; }
 .achievement-progress { grid-column: 2; height: 5px; overflow: hidden; border-radius: 999px; background: rgba(16, 24, 39, .1); }
 .achievement-progress span { display: block; height: 100%; border-radius: inherit; background: var(--coral); transition: width .25s ease; }
 .achievement-row.unlocked .achievement-progress span { background: #82b62c; }
+.session-row { align-items: center; }
+.session-info { display: grid; gap: 3px; min-width: 0; }
+.session-info strong, .session-info > span { overflow-wrap: anywhere; }
+.session-info > span { color: var(--ink); font-size: 11px; }
+.session-info small { line-height: 1.5; }
+.session-active { border-left: 3px solid var(--coral); }
+.session-completed { border-left: 3px solid #82b62c; }
 .quest-title-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .quest-title-line .quest-title { margin-bottom: 0; }
 .quest-due-badge { padding: 3px 7px; border-radius: 999px; background: rgba(199, 243, 107, .38); color: #425c17; font-size: 10px; font-weight: 800; }

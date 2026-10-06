@@ -56,3 +56,9 @@ def test_streak_endpoint_returns_current_and_best_streak(client):
     assert payload["current_streak"] >= 1
     assert payload["best_streak"] >= 1
     assert payload["last_session_date"] is not None
+
+    dashboard = client.get("/api/v1/users/dashboard", headers={"Authorization": f"Bearer {token}"})
+
+    assert dashboard.status_code == 200
+    assert dashboard.json()["user"]["streak_current"] == payload["current_streak"]
+    assert dashboard.json()["user"]["streak_best"] == payload["best_streak"]

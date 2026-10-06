@@ -142,7 +142,7 @@ async function authenticate(event) {
   }
 }
 
-function updateDashboard(payload) {
+function updateDashboard(payload, streak) {
   const user = payload.user;
   const stats = payload.stats;
   const profileName = document.querySelector('#profile-name');
@@ -157,8 +157,8 @@ function updateDashboard(payload) {
   document.querySelector('#xp-caption').textContent = `${user.next_level_xp - user.xp} XP para o próximo nível`;
   document.querySelector('#quests-completed').textContent = stats.quests_completed;
   document.querySelector('#quests-total').textContent = stats.quests_total;
-  document.querySelector('#streak-value').innerHTML = `${user.streak_current} <small>dias</small>`;
-  document.querySelector('#best-streak').textContent = user.streak_best;
+  document.querySelector('#streak-value').innerHTML = `${streak.current_streak} <small>dias</small>`;
+  document.querySelector('#best-streak').textContent = streak.best_streak;
 
   if (profileName) profileName.textContent = user.name;
   if (profileEmail) profileEmail.textContent = user.email;
@@ -1291,8 +1291,11 @@ async function loadAchievements() {
 
 async function showDashboard() {
   try {
-    const dashboard = await request('/users/dashboard');
-    updateDashboard(dashboard);
+    const [dashboard, streak] = await Promise.all([
+      request('/users/dashboard'),
+      request('/users/streak'),
+    ]);
+    updateDashboard(dashboard, streak);
     const analytics = await request('/users/analytics');
     document.querySelector('#study-minutes').textContent = analytics.total_study_minutes;
     showAppView();

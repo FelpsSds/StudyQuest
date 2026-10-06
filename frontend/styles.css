@@ -140,8 +140,9 @@ textarea { resize: vertical; }
 .achievement-progress span { display: block; height: 100%; border-radius: inherit; background: var(--coral); transition: width .25s ease; }
 .achievement-row.unlocked .achievement-progress span { background: #82b62c; }
 .session-row { align-items: center; }
-.session-history-controls { display: flex; align-items: end; gap: 16px; margin-top: 14px; }
-.session-history-controls .compact-field { flex: 1; margin: 0; }
+.session-history-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 8px 16px; margin-top: 14px; }
+.session-history-controls .compact-field { min-width: 0; margin: 0; }
+.session-history-controls > button { min-height: 38px; }
 .session-info { display: grid; gap: 3px; min-width: 0; }
 .session-info strong, .session-info > span { overflow-wrap: anywhere; }
 .session-info > span { color: var(--ink); font-size: 11px; }
@@ -163,4 +164,4 @@ textarea { resize: vertical; }
 .subject-edit-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
 .subject-edit-error { min-height: 0; margin: 0; color: var(--coral); font-size: 12px; }
 @media (max-width: 500px) { .subject-edit-fields { grid-template-columns: 1fr; }.subject-row { grid-template-columns: 1fr; }.subject-row > .row-actions { justify-content: flex-start; } }
-@media (max-width: 500px) { .session-history-controls { align-items: flex-end; gap: 10px; }.session-history-controls > button { flex: 0 0 auto; } }
+@media (max-width: 500px) { .session-history-controls { gap: 8px 10px; } }

@@ -4,6 +4,7 @@ const QUEST_FILTER_KEY = 'studyquest_quest_filter';
 const QUEST_SORT_KEY = 'studyquest_quest_sort';
 const SESSION_FILTER_KEY = 'studyquest_session_filter';
 const SESSION_SUBJECT_FILTER_KEY = 'studyquest_session_subject_filter';
+const SESSION_PERIOD_FILTER_KEY = 'studyquest_session_period_filter';
 const SESSION_SUBJECT_KEY = 'studyquest_session_subject';
 const SESSION_QUEST_KEY = 'studyquest_session_quest';
 const SESSION_DURATION_KEY = 'studyquest_session_duration';
@@ -42,16 +43,31 @@ function getSavedSessionFilter() {
   return ['all', 'in_progress', 'completed'].includes(filter) ? filter : 'all';
 }
 
+function getSavedSessionPeriodFilter() {
+  const filter = localStorage.getItem(SESSION_PERIOD_FILTER_KEY);
+  return ['all', 'today', '7days', '30days'].includes(filter) ? filter : 'all';
+}
+
 function getFilteredSessions(
   sessions,
   filter = getSavedSessionFilter(),
   subjectFilter = localStorage.getItem(SESSION_SUBJECT_FILTER_KEY) || 'all',
+  periodFilter = getSavedSessionPeriodFilter(),
 ) {
+  const now = new Date();
+  const earliestDate = new Date(now);
+  earliestDate.setHours(0, 0, 0, 0);
+  if (periodFilter === '7days') earliestDate.setDate(earliestDate.getDate() - 6);
+  if (periodFilter === '30days') earliestDate.setDate(earliestDate.getDate() - 29);
+
   const filtered = sessions.filter((session) => {
     const matchesStatus = filter === 'all' || session.status === filter;
     const matchesSubject = subjectFilter === 'all'
       || (subjectFilter === 'none' ? session.subject_id == null : String(session.subject_id) === subjectFilter);
-    return matchesStatus && matchesSubject;
+    const startedAt = new Date(session.started_at);
+    const matchesPeriod = periodFilter === 'all'
+      || (!Number.isNaN(startedAt.getTime()) && startedAt >= earliestDate && startedAt <= now);
+    return matchesStatus && matchesSubject && matchesPeriod;
   });
   return [...filtered].sort((a, b) => {
     if (a.status !== b.status) return a.status === 'in_progress' ? -1 : 1;
@@ -966,11 +982,14 @@ async function loadSessions() {
   const list = document.querySelector('#sessions-list');
   const filter = document.querySelector('#session-filter');
   const subjectFilter = document.querySelector('#session-subject-filter');
+  const periodFilter = document.querySelector('#session-period-filter');
   if (!list) return;
 
   const activeFilter = getSavedSessionFilter();
   let activeSubjectFilter = localStorage.getItem(SESSION_SUBJECT_FILTER_KEY) || 'all';
+  const activePeriodFilter = getSavedSessionPeriodFilter();
   if (filter) filter.value = activeFilter;
+  if (periodFilter) periodFilter.value = activePeriodFilter;
 
   try {
     const [sessions, subjects, quests] = await Promise.all([
@@ -999,7 +1018,7 @@ async function loadSessions() {
       subjectFilter.value = activeSubjectFilter;
     }
 
-    const orderedSessions = getFilteredSessions(sessions, activeFilter, activeSubjectFilter);
+    const orderedSessions = getFilteredSessions(sessions, activeFilter, activeSubjectFilter, activePeriodFilter);
     if (!orderedSessions.length) {
       list.innerHTML = '<p class="small-empty">Nenhuma sessão encontrada com este filtro.</p>';
       return;
@@ -1512,6 +1531,10 @@ document.querySelector('#session-filter').addEventListener('change', () => {
 });
 document.querySelector('#session-subject-filter').addEventListener('change', () => {
   localStorage.setItem(SESSION_SUBJECT_FILTER_KEY, document.querySelector('#session-subject-filter').value);
+  loadSessions();
+});
+document.querySelector('#session-period-filter').addEventListener('change', () => {
+  localStorage.setItem(SESSION_PERIOD_FILTER_KEY, document.querySelector('#session-period-filter').value);
   loadSessions();
 });
 document.querySelector('#export-session-history').addEventListener('click', exportStudySessions);

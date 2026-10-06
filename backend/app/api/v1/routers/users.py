@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -151,6 +151,20 @@ def read_analytics(
         total_study_minutes / len(completed_sessions) if completed_sessions else 0
     )
     quests_completed = db.query(QuestCompletion).filter(QuestCompletion.user_id == current_user.id).count()
+    today = datetime.now(timezone.utc).date()
+    first_day = today - timedelta(days=6)
+    daily_activity = {
+        first_day + timedelta(days=offset): {"minutes": 0, "sessions": 0}
+        for offset in range(7)
+    }
+    for session in completed_sessions:
+        started_at = session.started_at
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+        activity = daily_activity.get(started_at.astimezone(timezone.utc).date())
+        if activity is not None:
+            activity["minutes"] += session.duration_minutes or 0
+            activity["sessions"] += 1
 
     return {
         "sessions_count": len(sessions),
@@ -158,6 +172,10 @@ def read_analytics(
         "total_study_minutes": total_study_minutes,
         "average_session_minutes": average_session_minutes,
         "quests_completed": quests_completed,
+        "weekly_activity": [
+            {"date": day.isoformat(), **activity}
+            for day, activity in daily_activity.items()
+        ],
     }
 
 

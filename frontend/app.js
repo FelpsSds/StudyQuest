@@ -1150,14 +1150,28 @@ async function loadInsights() {
     const minutes = Number(analytics?.total_study_minutes ?? 0);
     const average = Number(analytics?.average_session_minutes ?? 0);
     const completed = Number(analytics?.quests_completed ?? 0);
+    const weeklyActivity = Array.isArray(analytics?.weekly_activity) ? analytics.weekly_activity : [];
+    const maxDailyMinutes = Math.max(1, ...weeklyActivity.map((day) => Number(day.minutes) || 0));
 
     list.innerHTML = `
       <div class="insight-row"><span>Tempo</span><strong>${minutes} min</strong></div>
       <div class="insight-row"><span>Média</span><strong>${average.toFixed(0)} min</strong></div>
       <div class="insight-row"><span>Missões</span><strong>${completed}</strong></div>
+      <div class="weekly-activity">
+        <div class="weekly-activity-heading"><strong>Últimos 7 dias</strong><span>${weeklyActivity.reduce((total, day) => total + (Number(day.minutes) || 0), 0)} min</span></div>
+        ${weeklyActivity.length
+          ? `<div class="weekly-activity-chart" role="group" aria-label="Minutos de estudo concluído por dia nos últimos sete dias">${weeklyActivity.map((day) => {
+              const date = new Date(`${day.date}T00:00:00Z`);
+              const label = Number.isNaN(date.getTime()) ? day.date : date.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: 'UTC' }).replace('.', '');
+              const dayMinutes = Number(day.minutes) || 0;
+              const height = dayMinutes > 0 ? Math.max(8, dayMinutes / maxDailyMinutes * 100) : 0;
+              return `<div class="weekly-activity-day" role="img" aria-label="${escapeAttribute(label)}: ${dayMinutes} minutos, ${Number(day.sessions) || 0} sessões"><span class="weekly-activity-bar"><span style="height: ${height}%"></span></span><small>${escapeHtml(label)}</small></div>`;
+            }).join('')}</div>`
+          : '<p class="mini-empty">Sem atividade recente.</p>'}
+      </div>
     `;
   } catch (error) {
-    list.innerHTML = '<p class="mini-empty">Não foi possível carregar os insights.</p>';
+    list.innerHTML = `<p class="mini-empty">${escapeHtml(error.message || 'Não foi possível carregar os insights.')}</p>`;
   }
 }
 

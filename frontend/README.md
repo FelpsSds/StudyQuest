@@ -36,6 +36,8 @@ Use os filtros **Atrasadas**, **Vencendo hoje** e **Próximos 7 dias**, ou orden
 
 O histórico de sessões mostra disciplina, missão, horário de início e duração. Sessões em andamento aparecem primeiro com a duração planejada; sessões finalizadas mostram o tempo registrado.
 
+O cartão **Insights** inclui um gráfico diário dos minutos de sessões concluídas nos últimos sete dias, junto com os totais gerais.
+
 ## Executar com Docker
 
 Na raiz do projeto, execute:

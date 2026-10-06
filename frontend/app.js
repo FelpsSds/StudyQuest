@@ -840,24 +840,46 @@ async function loadBosses() {
   if (!list) return;
 
   try {
-    const bosses = await request('/boss-fights/');
+    const [bosses, quests, subjects] = await Promise.all([
+      request('/boss-fights/'),
+      request('/quests/'),
+      request('/subjects/'),
+    ]);
     if (!bosses.length) {
       list.innerHTML = '<p class="small-empty">Nenhum boss fight registrado.</p>';
       return;
     }
 
-    list.innerHTML = bosses.map((boss) => `
-      <div class="session-row">
-        <div>
-          <strong>${escapeHtml(boss.title)}</strong>
-          <small>${boss.hp_current}/${boss.hp_max} HP • ${boss.status === 'completed' ? 'Derrotado' : 'Ativo'} • ${boss.xp_reward ?? 0} XP</small>
-        </div>
-        <div class="row-actions">
-          <button class="mini-delete" data-delete-boss-id="${boss.id}" type="button">Excluir</button>
-          <button class="mini-delete" data-boss-id="${boss.id}" type="button" ${boss.status === 'completed' ? 'disabled' : ''}>${boss.status === 'completed' ? 'Vencido' : 'Derrotar'}</button>
-        </div>
-      </div>
-    `).join('');
+    list.innerHTML = bosses.map((boss) => {
+      const linkedQuests = quests.filter((quest) => quest.boss_fight_id === boss.id);
+      const hpPercent = Math.max(0, Math.min(100, Number(boss.hp_current) / Math.max(1, Number(boss.hp_max)) * 100));
+      const subjectName = subjects.find((subject) => subject.id === boss.subject_id)?.name || 'Disciplina removida';
+      return `
+        <article class="boss-card ${boss.status === 'completed' ? 'completed' : ''}">
+          <div class="boss-card-heading">
+            <div>
+              <strong>${escapeHtml(boss.title)}</strong>
+              <small>${escapeHtml(subjectName)} · ${boss.status === 'completed' ? 'Derrotado' : 'Ativo'}</small>
+            </div>
+            <span class="boss-hp-label">${Number(boss.hp_current)} / ${Number(boss.hp_max)} HP</span>
+          </div>
+          <div class="boss-health" role="progressbar" aria-label="Vida de ${escapeAttribute(boss.title)}" aria-valuemin="0" aria-valuemax="${Number(boss.hp_max)}" aria-valuenow="${Number(boss.hp_current)}">
+            <span style="width: ${hpPercent}%"></span>
+          </div>
+          <div class="boss-card-meta"><span>Recompensa: ${Number(boss.xp_reward ?? 0)} XP</span></div>
+          <details class="boss-quests">
+            <summary>Missões vinculadas (${linkedQuests.length})</summary>
+            ${linkedQuests.length
+              ? `<ul>${linkedQuests.map((quest) => `<li class="${quest.status === 'completed' ? 'completed' : ''}"><span>${escapeHtml(quest.title)}</span><small>${quest.status === 'completed' ? 'Concluída' : `${Number(quest.boss_damage)} dano`}</small></li>`).join('')}</ul>`
+              : '<p>Nenhuma missão está vinculada a este Boss Fight.</p>'}
+          </details>
+          <div class="row-actions boss-card-actions">
+            <button class="mini-delete" data-delete-boss-id="${boss.id}" type="button">Excluir</button>
+            <button class="mini-delete" data-boss-id="${boss.id}" type="button" ${boss.status === 'completed' ? 'disabled' : ''}>${boss.status === 'completed' ? 'Vencido' : 'Derrotar'}</button>
+          </div>
+        </article>
+      `;
+    }).join('');
 
     list.querySelectorAll('[data-boss-id]').forEach((button) => {
       button.addEventListener('click', () => completeBossFight(button.dataset.bossId));
@@ -866,7 +888,7 @@ async function loadBosses() {
       button.addEventListener('click', () => deleteBossFight(button.dataset.deleteBossId));
     });
   } catch (error) {
-    list.innerHTML = '<p class="small-empty">Não foi possível carregar os bosses.</p>';
+    list.innerHTML = `<p class="small-empty">${escapeHtml(error.message || 'Não foi possível carregar os Boss Fights.')}</p>`;
   }
 }
 

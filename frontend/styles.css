@@ -97,3 +97,21 @@ textarea { resize: vertical; }
 .quest-edit-actions .text-button { margin: 0; }
 .quest-actions button:disabled, .quest-edit-form button:disabled { cursor: wait; opacity: .6; }
 @media (max-width: 500px) { .quest-edit-fields { grid-template-columns: 1fr; }.quest-actions { flex-wrap: wrap; } }
+.boss-card { display: grid; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.boss-card.completed { opacity: .65; }
+.boss-card-heading { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.boss-card-heading strong, .boss-card-heading small { display: block; }
+.boss-card-heading strong { font-size: 13px; }
+.boss-card-heading small, .boss-card-meta { margin-top: 4px; color: var(--muted); font-size: 11px; }
+.boss-hp-label { flex: 0 0 auto; color: var(--ink); font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 700; }
+.boss-health { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(16, 24, 39, .1); }
+.boss-health span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--coral), #ee4f4f); transition: width .3s ease; }
+.boss-card.completed .boss-health span { background: #7d8897; }
+.boss-quests { color: var(--muted); font-size: 11px; }
+.boss-quests summary { width: fit-content; cursor: pointer; color: var(--ink); font-weight: 700; }
+.boss-quests ul { display: grid; gap: 6px; margin: 10px 0; padding: 0; list-style: none; }
+.boss-quests li { display: flex; justify-content: space-between; gap: 10px; }
+.boss-quests li.completed span { text-decoration: line-through; }
+.boss-quests li small { flex: 0 0 auto; }
+.boss-quests p { margin: 8px 0; }
+.boss-card-actions { justify-content: flex-end; }

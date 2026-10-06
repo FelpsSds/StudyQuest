@@ -3,6 +3,7 @@ const state = { token: localStorage.getItem('studyquest_token'), registerMode: f
 const QUEST_FILTER_KEY = 'studyquest_quest_filter';
 const QUEST_SORT_KEY = 'studyquest_quest_sort';
 const SESSION_FILTER_KEY = 'studyquest_session_filter';
+const SESSION_SUBJECT_FILTER_KEY = 'studyquest_session_subject_filter';
 const SESSION_SUBJECT_KEY = 'studyquest_session_subject';
 const SESSION_QUEST_KEY = 'studyquest_session_quest';
 const SESSION_DURATION_KEY = 'studyquest_session_duration';
@@ -41,8 +42,17 @@ function getSavedSessionFilter() {
   return ['all', 'in_progress', 'completed'].includes(filter) ? filter : 'all';
 }
 
-function getFilteredSessions(sessions, filter = getSavedSessionFilter()) {
-  const filtered = filter === 'all' ? sessions : sessions.filter((session) => session.status === filter);
+function getFilteredSessions(
+  sessions,
+  filter = getSavedSessionFilter(),
+  subjectFilter = localStorage.getItem(SESSION_SUBJECT_FILTER_KEY) || 'all',
+) {
+  const filtered = sessions.filter((session) => {
+    const matchesStatus = filter === 'all' || session.status === filter;
+    const matchesSubject = subjectFilter === 'all'
+      || (subjectFilter === 'none' ? session.subject_id == null : String(session.subject_id) === subjectFilter);
+    return matchesStatus && matchesSubject;
+  });
   return [...filtered].sort((a, b) => {
     if (a.status !== b.status) return a.status === 'in_progress' ? -1 : 1;
     return new Date(b.started_at).getTime() - new Date(a.started_at).getTime();
@@ -955,9 +965,11 @@ async function deleteQuest(id) {
 async function loadSessions() {
   const list = document.querySelector('#sessions-list');
   const filter = document.querySelector('#session-filter');
+  const subjectFilter = document.querySelector('#session-subject-filter');
   if (!list) return;
 
   const activeFilter = getSavedSessionFilter();
+  let activeSubjectFilter = localStorage.getItem(SESSION_SUBJECT_FILTER_KEY) || 'all';
   if (filter) filter.value = activeFilter;
 
   try {
@@ -971,7 +983,23 @@ async function loadSessions() {
       return;
     }
 
-    const orderedSessions = getFilteredSessions(sessions, activeFilter);
+    if (subjectFilter) {
+      const validSubjectFilters = new Set(['all', 'none', ...subjects.map((subject) => String(subject.id))]);
+      if (!validSubjectFilters.has(activeSubjectFilter)) {
+        activeSubjectFilter = 'all';
+        localStorage.setItem(SESSION_SUBJECT_FILTER_KEY, activeSubjectFilter);
+      }
+      subjectFilter.innerHTML = '<option value="all">Todas as disciplinas</option><option value="none">Sem disciplina</option>';
+      subjects.forEach((subject) => {
+        const option = document.createElement('option');
+        option.value = String(subject.id);
+        option.textContent = subject.name;
+        subjectFilter.appendChild(option);
+      });
+      subjectFilter.value = activeSubjectFilter;
+    }
+
+    const orderedSessions = getFilteredSessions(sessions, activeFilter, activeSubjectFilter);
     if (!orderedSessions.length) {
       list.innerHTML = '<p class="small-empty">Nenhuma sessão encontrada com este filtro.</p>';
       return;
@@ -1480,6 +1508,10 @@ document.querySelector('#quest-sort').addEventListener('change', () => {
 });
 document.querySelector('#session-filter').addEventListener('change', () => {
   localStorage.setItem(SESSION_FILTER_KEY, document.querySelector('#session-filter').value);
+  loadSessions();
+});
+document.querySelector('#session-subject-filter').addEventListener('change', () => {
+  localStorage.setItem(SESSION_SUBJECT_FILTER_KEY, document.querySelector('#session-subject-filter').value);
   loadSessions();
 });
 document.querySelector('#export-session-history').addEventListener('click', exportStudySessions);

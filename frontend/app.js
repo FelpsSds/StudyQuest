@@ -35,6 +35,21 @@ function getSavedQuestSort() {
   return localStorage.getItem(QUEST_SORT_KEY) || 'priority';
 }
 
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getOpenQuestDueLabel(quest, today, weekEnd) {
+  if (!quest.due_date || quest.status === 'completed' || quest.status === 'archived') return '';
+  if (quest.due_date < today) return 'Atrasada';
+  if (quest.due_date === today) return 'Vence hoje';
+  if (quest.due_date <= weekEnd) return 'Vence em breve';
+  return '';
+}
+
 const authView = document.querySelector('#auth-view');
 const appView = document.querySelector('#app-view');
 const authForm = document.querySelector('#auth-form');
@@ -143,8 +158,8 @@ async function loadQuests() {
   const list = document.querySelector('#quests-list');
   const filter = document.querySelector('#quest-filter');
   const sort = document.querySelector('#quest-sort');
-  const activeFilter = filter ? (filter.value || getSavedQuestFilter()) : getSavedQuestFilter();
-  const activeSort = sort ? (sort.value || getSavedQuestSort()) : getSavedQuestSort();
+  const activeFilter = filter && filter.value !== 'all' ? filter.value : getSavedQuestFilter();
+  const activeSort = sort && sort.value !== 'priority' ? sort.value : getSavedQuestSort();
 
   if (filter) filter.value = activeFilter;
   if (sort) sort.value = activeSort;
@@ -152,12 +167,30 @@ async function loadQuests() {
   list.innerHTML = '<p class="empty-state">Carregando suas missões...</p>';
   try {
     const quests = await request('/quests/');
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const today = formatLocalDate(now);
+    const weekEndDate = new Date(now);
+    weekEndDate.setDate(weekEndDate.getDate() + 7);
+    const weekEnd = formatLocalDate(weekEndDate);
     let filteredQuests = quests;
 
     if (activeFilter === 'pending') {
       filteredQuests = quests.filter((quest) => quest.status !== 'completed');
     } else if (activeFilter === 'completed') {
       filteredQuests = quests.filter((quest) => quest.status === 'completed');
+    } else if (activeFilter === 'due:overdue') {
+      filteredQuests = quests.filter((quest) =>
+        quest.due_date && quest.due_date < today && quest.status !== 'completed' && quest.status !== 'archived'
+      );
+    } else if (activeFilter === 'due:today') {
+      filteredQuests = quests.filter((quest) =>
+        quest.due_date === today && quest.status !== 'completed' && quest.status !== 'archived'
+      );
+    } else if (activeFilter === 'due:week') {
+      filteredQuests = quests.filter((quest) =>
+        quest.due_date > today && quest.due_date <= weekEnd && quest.status !== 'completed' && quest.status !== 'archived'
+      );
     } else if (activeFilter.startsWith('subject:')) {
       const subjectId = activeFilter.split(':')[1];
       filteredQuests = quests.filter((quest) => String(quest.subject_id ?? '') === String(subjectId));
@@ -167,6 +200,12 @@ async function loadQuests() {
       if (activeSort === 'xp') return (b.xp_reward ?? 0) - (a.xp_reward ?? 0);
       if (activeSort === 'minutes') return (a.estimated_minutes ?? 0) - (b.estimated_minutes ?? 0);
       if (activeSort === 'title') return String(a.title).localeCompare(String(b.title));
+      if (activeSort === 'due_date') {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      }
       if (a.status === b.status) return (b.xp_reward ?? 0) - (a.xp_reward ?? 0);
       return a.status === 'completed' ? 1 : -1;
     });
@@ -179,7 +218,7 @@ async function loadQuests() {
     list.innerHTML = filteredQuests.map((quest) => `
       <article class="quest-item ${quest.status === 'completed' ? 'completed' : ''}">
         <div class="quest-main">
-          <h3 class="quest-title">${escapeHtml(quest.title)}</h3>
+          <div class="quest-title-line"><h3 class="quest-title">${escapeHtml(quest.title)}</h3>${getOpenQuestDueLabel(quest, today, weekEnd) ? `<span class="quest-due-badge ${quest.due_date < today ? 'overdue' : ''}">${getOpenQuestDueLabel(quest, today, weekEnd)}</span>` : ''}</div>
           <span class="quest-meta">${quest.xp_reward} XP &middot; ${quest.estimated_minutes} min &middot; ${quest.difficulty}</span>
           <details class="quest-details">
             <summary>Ver detalhes</summary>
@@ -268,7 +307,7 @@ async function loadSubjects() {
 
     if (filterSelect) {
       const activeValue = getSavedQuestFilter();
-      filterSelect.innerHTML = '<option value="all">Todas</option><option value="pending">Pendentes</option><option value="completed">Concluídas</option>';
+      filterSelect.innerHTML = '<option value="all">Todas</option><option value="pending">Pendentes</option><option value="completed">Concluídas</option><option value="due:overdue">Atrasadas</option><option value="due:today">Vencendo hoje</option><option value="due:week">Próximos 7 dias</option>';
       subjects.forEach((subject) => {
         const option = document.createElement('option');
         option.value = `subject:${subject.id}`;
@@ -278,7 +317,7 @@ async function loadSubjects() {
 
       const nextValue = activeValue.startsWith('subject:') && subjects.some((subject) => `subject:${subject.id}` === activeValue)
         ? activeValue
-        : ['all', 'pending', 'completed'].includes(activeValue)
+        : ['all', 'pending', 'completed', 'due:overdue', 'due:today', 'due:week'].includes(activeValue)
           ? activeValue
           : 'all';
       filterSelect.value = nextValue;

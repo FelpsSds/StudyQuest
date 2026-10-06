@@ -32,6 +32,8 @@ Na lista de disciplinas, **Editar** permite atualizar nome, descrição, cor, í
 
 Ao criar uma missão, também é possível informar descrição, tipo, dificuldade e prazo; XP, duração e disciplina continuam disponíveis no mesmo formulário.
 
+Use os filtros **Atrasadas**, **Vencendo hoje** e **Próximos 7 dias**, ou ordene a lista pelo prazo. Missões concluídas e arquivadas não aparecem nos filtros de vencimento.
+
 ## Executar com Docker
 
 Na raiz do projeto, execute:

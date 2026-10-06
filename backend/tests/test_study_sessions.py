@@ -82,6 +82,25 @@ def test_complete_study_session_sets_end_time(client):
     assert data["ended_at"] is not None
 
 
+def test_create_study_session_accepts_custom_duration(client):
+    token = _create_user(client, email="session-duration@example.com")
+    subject = _create_subject(client, token, name="Biologia")
+
+    response = client.post(
+        "/api/v1/study-sessions/",
+        json={
+            "subject_id": subject["id"],
+            "status": "in_progress",
+            "duration_minutes": 45,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["duration_minutes"] == 45
+
+
 def test_study_session_inherits_subject_from_quest(client):
     token = _create_user(client, email="session-quest-subject@example.com")
     headers = {"Authorization": f"Bearer {token}"}

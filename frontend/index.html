@@ -59,6 +59,25 @@
               <label class="compact-field">Minutos<input id="quest-minutes" type="number" min="1" value="30" /></label>
               <button class="secondary-button" type="submit">Adicionar missão <span aria-hidden="true">&#8594;</span></button>
             </form>
+            <form id="generate-plan-form" class="creation-card wide-creation-card">
+              <div><span class="kicker">INTELIGÊNCIA SIMPLES</span><h2>Gerar plano de estudo</h2></div>
+              <label class="compact-field">Tema<input id="plan-title" type="text" placeholder="Ex.: Álgebra linear" required /></label>
+              <label class="compact-field">Conteúdo<textarea id="plan-content" rows="3" placeholder="Cole tópicos, capítulos ou um resumo do material para gerar as missões."></textarea></label>
+              <label class="compact-field">Material em arquivo<input id="plan-material-file" type="file" accept=".txt,.md,.markdown,text/plain" /></label>
+              <label class="compact-field">Objetivo<input id="plan-goal" type="text" placeholder="Ex.: dominar operações com matrizes" /></label>
+              <label class="compact-field">Público<input id="plan-audience" type="text" placeholder="Ex.: alunos do ensino médio" /></label>
+              <label class="compact-field">Estilo<select id="plan-style"><option value="objetivo">Objetivo</option><option value="prática">Prática</option><option value="intensivo">Intensivo</option></select></label>
+              <label class="compact-field">Provedor IA<select id="plan-provider-type">
+                <option value="openai">OpenAI</option>
+                <option value="ollama">Ollama local</option>
+                <option value="custom">Personalizado</option>
+              </select></label>
+              <label class="compact-field">Endpoint IA (opcional)<input id="plan-provider-base-url" type="text" placeholder="Ex.: http://localhost:11434/v1" /></label>
+              <label class="compact-field">Modelo IA (opcional)<input id="plan-provider-model" type="text" placeholder="Ex.: llama3.1" /></label>
+              <label class="compact-field">Disciplina<select id="plan-subject"><option value="">Criar nova disciplina</option></select></label>
+              <button class="secondary-button" type="submit">Gerar plano <span aria-hidden="true">&#8594;</span></button>
+              <div id="plan-preview" class="small-empty">Ainda não há plano gerado.</div>
+            </form>
             <form id="session-form" class="creation-card">
               <div><span class="kicker">FOCO NO AGORA</span><h2>Iniciar sessão</h2></div>
               <label class="compact-field">Disciplina<select id="session-subject"><option value="">Sem disciplina</option></select></label>

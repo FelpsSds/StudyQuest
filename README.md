@@ -26,6 +26,8 @@ Copy-Item backend\.env.example backend\.env
 
 Os valores padrão já servem para desenvolvimento local; ajuste `JWT_SECRET_KEY` em produção.
 
+A geração de planos funciona sem provedor de IA, usando um gerador local. Para ativar a integração compatível com a API da OpenAI, configure `AI_GENERATION_ENABLED=true` e `OPENAI_API_KEY` em `backend\.env`. Provedores locais compatíveis, como Ollama, podem ser selecionados na interface sem chave da OpenAI.
+
 ## Executar com Docker
 
 Pré-requisito: Docker Desktop instalado e iniciado.

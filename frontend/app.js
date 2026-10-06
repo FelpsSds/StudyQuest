@@ -1,10 +1,16 @@
 const API_BASE = 'http://127.0.0.1:8000/api/v1';
-const state = { token: localStorage.getItem('studyquest_token'), registerMode: false };
+const state = { token: localStorage.getItem('studyquest_token'), registerMode: false, generatedPlan: null };
 const QUEST_FILTER_KEY = 'studyquest_quest_filter';
 const QUEST_SORT_KEY = 'studyquest_quest_sort';
 const SESSION_SUBJECT_KEY = 'studyquest_session_subject';
 const SESSION_QUEST_KEY = 'studyquest_session_quest';
 const SESSION_DURATION_KEY = 'studyquest_session_duration';
+const PLAN_PROVIDER_KEY = 'studyquest_plan_provider';
+const PLAN_PROVIDER_PRESETS = {
+  openai: { base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+  ollama: { base_url: 'http://localhost:11434/v1', model: 'llama3.1' },
+  custom: { base_url: '', model: '' },
+};
 
 function getSavedQuestFilter() {
   return localStorage.getItem(QUEST_FILTER_KEY) || 'all';
@@ -186,13 +192,11 @@ async function loadSubjects() {
   const select = document.querySelector('#quest-subject');
   const sessionSelect = document.querySelector('#session-subject');
   const bossSelect = document.querySelector('#boss-subject');
-  const filterSelect = document.querySelector('#quest-filter');
-  try {
-    const subjects = await request('/subjects/');
-    [select, sessionSelect, bossSelect].forEach((element) => {
-      if (!element) return;
-      element.innerHTML = '<option value="">Sem disciplina</option>';
-      subjects.forEach((subject) => {
+    const planSelect = document.querySelector('#plan-subject');
+    const filterSelect = document.querySelector('#quest-filter');
+    try {
+      const subjects = await request('/subjects/');
+      [select, sessionSelect, bossSelect, planSelect].forEach((element) => {
         const option = document.createElement('option');
         option.value = subject.id;
         option.textContent = subject.name;
@@ -464,6 +468,191 @@ async function createQuest(event) {
     document.querySelector('#quest-minutes').value = 30;
     await showDashboard();
   } catch (error) { window.alert(error.message); }
+}
+
+function renderPlanReview(response, saved = false) {
+  const preview = document.querySelector('#plan-preview');
+  if (!preview || !response) return;
+
+  const tasks = Array.isArray(response.tasks) ? response.tasks : Array.isArray(response.quests) ? response.quests : [];
+  const objectives = Array.isArray(response.learning_objectives) ? response.learning_objectives : [];
+  state.generatedPlan = saved ? null : {
+    title: response.generated_from || '',
+    content: document.querySelector('#plan-content').value.trim(),
+    goal: document.querySelector('#plan-goal').value.trim(),
+    audience: document.querySelector('#plan-audience').value.trim(),
+    learning_style: document.querySelector('#plan-style').value,
+    subject_id: response.subject?.id ?? (document.querySelector('#plan-subject').value ? Number(document.querySelector('#plan-subject').value) : null),
+    tasks,
+    objectives,
+  };
+
+  preview.innerHTML = `
+    <div class="plan-review-header">
+      <strong>${escapeHtml(response.subject?.name || 'Plano gerado')}</strong>
+      <small>${objectives.length ? objectives.map((item) => escapeHtml(item)).join(' • ') : 'Plano pronto para revisão.'}</small>
+    </div>
+    <div class="plan-review-list">
+      ${tasks.map((task, index) => `
+        <div class="plan-review-task">
+          <label class="plan-review-field">Título
+            <input data-plan-task-field="title" data-plan-task-index="${index}" value="${escapeAttribute(task.title || '')}" />
+          </label>
+          <div class="plan-review-row">
+            <label class="plan-review-field">Tipo
+              <select data-plan-task-field="type" data-plan-task-index="${index}">
+                <option value="review" ${task.type === 'review' ? 'selected' : ''}>Revisão</option>
+                <option value="exercises" ${task.type === 'exercises' ? 'selected' : ''}>Exercícios</option>
+                <option value="practice" ${task.type === 'practice' ? 'selected' : ''}>Prática</option>
+                <option value="project" ${task.type === 'project' ? 'selected' : ''}>Projeto</option>
+              </select>
+            </label>
+            <label class="plan-review-field">Dificuldade
+              <select data-plan-task-field="difficulty" data-plan-task-index="${index}">
+                <option value="easy" ${task.difficulty === 'easy' ? 'selected' : ''}>Fácil</option>
+                <option value="medium" ${task.difficulty === 'medium' ? 'selected' : ''}>Média</option>
+                <option value="hard" ${task.difficulty === 'hard' ? 'selected' : ''}>Difícil</option>
+              </select>
+            </label>
+          </div>
+          <div class="plan-review-row">
+            <label class="plan-review-field">XP
+              <input type="number" min="0" data-plan-task-field="xp" data-plan-task-index="${index}" value="${Number(task.xp_reward ?? 0)}" />
+            </label>
+            <label class="plan-review-field">Minutos
+              <input type="number" min="1" data-plan-task-field="minutes" data-plan-task-index="${index}" value="${Number(task.estimated_minutes ?? 30)}" />
+            </label>
+          </div>
+          <label class="plan-review-field">Descrição
+            <textarea data-plan-task-field="description" data-plan-task-index="${index}" rows="2">${escapeHtml(task.description || '')}</textarea>
+          </label>
+        </div>
+      `).join('')}
+    </div>
+    ${saved
+      ? '<p role="status">Plano salvo com sucesso.</p>'
+      : '<button class="secondary-button review-submit" type="button">Salvar plano revisado</button>'}
+  `;
+
+  const saveButton = preview.querySelector('.review-submit');
+  if (saveButton) {
+    saveButton.addEventListener('click', saveReviewedPlan);
+  }
+}
+
+async function saveReviewedPlan() {
+  if (!state.generatedPlan) {
+    window.alert('Primeiro gere um plano para revisá-lo.');
+    return;
+  }
+
+  const preview = document.querySelector('#plan-preview');
+  const rows = preview ? Array.from(preview.querySelectorAll('.plan-review-task')) : [];
+  if (!rows.length) {
+    window.alert('Não há tarefas para salvar no plano atual.');
+    return;
+  }
+  if (rows.some((row) => !row.querySelector('[data-plan-task-field="title"]').value.trim())) {
+    window.alert('Cada missão revisada precisa ter um título válido.');
+    return;
+  }
+
+  const tasks = rows.map((row) => {
+    const title = row.querySelector('[data-plan-task-field="title"]').value.trim();
+    const description = row.querySelector('[data-plan-task-field="description"]').value.trim();
+    const type = row.querySelector('[data-plan-task-field="type"]').value;
+    const difficulty = row.querySelector('[data-plan-task-field="difficulty"]').value;
+    const xp_reward = Number(row.querySelector('[data-plan-task-field="xp"]').value || 0);
+    const estimated_minutes = Number(row.querySelector('[data-plan-task-field="minutes"]').value || 30);
+
+    return {
+      title,
+      description: description || undefined,
+      type,
+      difficulty,
+      xp_reward,
+      estimated_minutes,
+    };
+  });
+
+  const saveButton = preview.querySelector('.review-submit');
+  if (saveButton) saveButton.disabled = true;
+  try {
+    const payload = {
+      title: state.generatedPlan.title || document.querySelector('#plan-title').value.trim(),
+      content: state.generatedPlan.content || document.querySelector('#plan-content').value.trim(),
+      goal: state.generatedPlan.goal || document.querySelector('#plan-goal').value.trim(),
+      audience: state.generatedPlan.audience || document.querySelector('#plan-audience').value.trim(),
+      learning_style: state.generatedPlan.learning_style || document.querySelector('#plan-style').value,
+      provider_base_url: document.querySelector('#plan-provider-base-url')?.value?.trim() || null,
+      provider_model: document.querySelector('#plan-provider-model')?.value?.trim() || null,
+      subject_id: state.generatedPlan.subject_id ?? (document.querySelector('#plan-subject').value ? Number(document.querySelector('#plan-subject').value) : null),
+      learning_objectives: state.generatedPlan.objectives || [],
+      tasks,
+    };
+    const response = await request('/quests/generate-plan', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    renderPlanReview(response, true);
+    document.querySelector('#plan-title').value = '';
+    document.querySelector('#plan-content').value = '';
+    document.querySelector('#plan-goal').value = '';
+    document.querySelector('#plan-audience').value = '';
+    document.querySelector('#plan-style').value = 'objetivo';
+    await showDashboard();
+  } catch (error) {
+    if (saveButton) saveButton.disabled = false;
+    window.alert(error.message);
+  }
+}
+
+async function generateStudyPlan(event) {
+  event.preventDefault();
+  const title = document.querySelector('#plan-title').value.trim();
+  const content = document.querySelector('#plan-content').value.trim();
+  const goal = document.querySelector('#plan-goal').value.trim();
+  const audience = document.querySelector('#plan-audience').value.trim();
+  const style = document.querySelector('#plan-style').value;
+  const providerBaseUrl = document.querySelector('#plan-provider-base-url').value.trim();
+  const providerModel = document.querySelector('#plan-provider-model').value.trim();
+  const subjectId = document.querySelector('#plan-subject').value;
+  const preview = document.querySelector('#plan-preview');
+
+  if (!title) {
+    window.alert('Informe um tema para gerar o plano de estudo.');
+    return;
+  }
+
+  preview.textContent = 'Gerando plano...';
+
+  try {
+    const response = await request('/quests/generate-plan', {
+      method: 'POST',
+      body: JSON.stringify({
+        title,
+        content,
+        preview_only: true,
+        goal,
+        audience,
+        learning_style: style,
+        provider_base_url: providerBaseUrl || null,
+        provider_model: providerModel || null,
+        subject_id: subjectId ? Number(subjectId) : null,
+      }),
+    });
+
+    renderPlanReview(response);
+    document.querySelector('#plan-title').value = '';
+    document.querySelector('#plan-content').value = '';
+    document.querySelector('#plan-goal').value = '';
+    document.querySelector('#plan-audience').value = '';
+    document.querySelector('#plan-style').value = 'objetivo';
+    await showDashboard();
+  } catch (error) {
+    preview.textContent = error.message;
+    window.alert(error.message);
+  }
 }
 
 async function createStudySession(event) {
@@ -821,7 +1010,51 @@ async function showDashboard() {
   } catch (error) { clearSession(); showAuthError(error.message); }
 }
 
-function escapeHtml(value) { const element = document.createElement('div'); element.textContent = value; return element.innerHTML; }
+function applyAiProviderPreset(type = 'openai') {
+  const providerType = document.querySelector('#plan-provider-type');
+  const baseUrl = document.querySelector('#plan-provider-base-url');
+  const model = document.querySelector('#plan-provider-model');
+  if (!providerType || !baseUrl || !model) return;
+
+  const preset = PLAN_PROVIDER_PRESETS[type] || PLAN_PROVIDER_PRESETS.custom;
+  providerType.value = type;
+  baseUrl.value = preset.base_url;
+  model.value = preset.model;
+}
+
+function restorePlanProviderSettings() {
+  const providerType = document.querySelector('#plan-provider-type');
+  if (!providerType) return;
+
+  const savedType = localStorage.getItem(PLAN_PROVIDER_KEY) || 'openai';
+  const selected = Object.prototype.hasOwnProperty.call(PLAN_PROVIDER_PRESETS, savedType) ? savedType : 'openai';
+  applyAiProviderPreset(selected);
+}
+
+async function handlePlanMaterialFileUpload(event) {
+  const file = event.target.files?.[0];
+  const contentField = document.querySelector('#plan-content');
+  if (!file || !contentField) return;
+
+  if (!file.name.match(/\.(txt|md|markdown)$/i)) {
+    window.alert('Use um arquivo em texto ou Markdown (.txt, .md).');
+    event.target.value = '';
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    contentField.value = (text || '').trim();
+    contentField.focus();
+  } catch (error) {
+    window.alert('Não foi possível ler o arquivo. Tente outro arquivo de texto.');
+  } finally {
+    event.target.value = '';
+  }
+}
+
+function escapeHtml(value) { const element = document.createElement('div'); element.textContent = value ?? ''; return element.innerHTML; }
+function escapeAttribute(value) { return escapeHtml(value).replace(/"/g, '&quot;'); }
 authForm.addEventListener('submit', authenticate);
 authToggle.addEventListener('click', () => setRegisterMode(!state.registerMode));
 document.querySelector('#logout-button').addEventListener('click', () => {
@@ -829,6 +1062,27 @@ document.querySelector('#logout-button').addEventListener('click', () => {
   showAuthError('Sessão encerrada com sucesso.');
 });
 document.querySelector('#refresh-button').addEventListener('click', showDashboard);
+document.querySelector('#plan-provider-type').addEventListener('change', () => {
+  const providerType = document.querySelector('#plan-provider-type');
+  if (!providerType) return;
+  localStorage.setItem(PLAN_PROVIDER_KEY, providerType.value);
+  applyAiProviderPreset(providerType.value);
+});
+document.querySelector('#plan-material-file').addEventListener('change', handlePlanMaterialFileUpload);
+document.querySelector('#plan-provider-base-url').addEventListener('input', () => {
+  const providerType = document.querySelector('#plan-provider-type');
+  if (providerType && providerType.value !== 'custom') {
+    providerType.value = 'custom';
+    localStorage.setItem(PLAN_PROVIDER_KEY, 'custom');
+  }
+});
+document.querySelector('#plan-provider-model').addEventListener('input', () => {
+  const providerType = document.querySelector('#plan-provider-type');
+  if (providerType && providerType.value !== 'custom') {
+    providerType.value = 'custom';
+    localStorage.setItem(PLAN_PROVIDER_KEY, 'custom');
+  }
+});
 document.querySelectorAll('.preset-button').forEach((button) => {
   button.addEventListener('click', () => {
     const duration = document.querySelector('#session-duration');
@@ -860,6 +1114,8 @@ document.querySelector('#quest-sort').addEventListener('change', () => {
 });
 document.querySelector('#subject-form').addEventListener('submit', createSubject);
 document.querySelector('#quest-form').addEventListener('submit', createQuest);
+document.querySelector('#generate-plan-form').addEventListener('submit', generateStudyPlan);
 document.querySelector('#session-form').addEventListener('submit', createStudySession);
 document.querySelector('#boss-form').addEventListener('submit', createBossFight);
+restorePlanProviderSettings();
 if (state.token) showDashboard(); else showAuthView();

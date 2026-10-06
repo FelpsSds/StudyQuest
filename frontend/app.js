@@ -41,6 +41,20 @@ function getSavedSessionFilter() {
   return ['all', 'in_progress', 'completed'].includes(filter) ? filter : 'all';
 }
 
+function getFilteredSessions(sessions, filter = getSavedSessionFilter()) {
+  const filtered = filter === 'all' ? sessions : sessions.filter((session) => session.status === filter);
+  return [...filtered].sort((a, b) => {
+    if (a.status !== b.status) return a.status === 'in_progress' ? -1 : 1;
+    return new Date(b.started_at).getTime() - new Date(a.started_at).getTime();
+  });
+}
+
+function csvCell(value) {
+  const text = String(value ?? '');
+  const safeText = /^[\t\r=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safeText.replace(/"/g, '""')}"`;
+}
+
 function formatLocalDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -957,18 +971,12 @@ async function loadSessions() {
       return;
     }
 
-    const filteredSessions = activeFilter === 'all'
-      ? sessions
-      : sessions.filter((session) => session.status === activeFilter);
-    if (!filteredSessions.length) {
+    const orderedSessions = getFilteredSessions(sessions, activeFilter);
+    if (!orderedSessions.length) {
       list.innerHTML = '<p class="small-empty">Nenhuma sessão encontrada com este filtro.</p>';
       return;
     }
 
-    const orderedSessions = [...filteredSessions].sort((a, b) => {
-      if (a.status !== b.status) return a.status === 'in_progress' ? -1 : 1;
-      return new Date(b.started_at).getTime() - new Date(a.started_at).getTime();
-    });
     list.innerHTML = orderedSessions.map((session) => {
       const subject = subjects.find((item) => item.id === session.subject_id);
       const quest = quests.find((item) => item.id === session.quest_id);
@@ -999,6 +1007,47 @@ async function loadSessions() {
     });
   } catch (error) {
     list.innerHTML = `<p class="small-empty">${escapeHtml(error.message || 'Não foi possível carregar as sessões.')}</p>`;
+  }
+}
+
+async function exportStudySessions() {
+  try {
+    const [sessions, subjects, quests] = await Promise.all([
+      request('/study-sessions/'),
+      request('/subjects/'),
+      request('/quests/'),
+    ]);
+    const visibleSessions = getFilteredSessions(sessions);
+    if (!visibleSessions.length) {
+      window.alert('Não há sessões para exportar com o filtro selecionado.');
+      return;
+    }
+
+    const rows = [
+      ['Data de início', 'Situação', 'Disciplina', 'Missão', 'Duração (min)'],
+      ...visibleSessions.map((session) => {
+        const subject = subjects.find((item) => item.id === session.subject_id);
+        const quest = quests.find((item) => item.id === session.quest_id);
+        return [
+          formatSessionDate(session.started_at),
+          session.status === 'completed' ? 'Concluída' : 'Em andamento',
+          subject?.name || (session.subject_id ? 'Disciplina removida' : 'Sessão livre'),
+          quest?.title || (session.quest_id ? 'Missão removida' : ''),
+          session.duration_minutes ?? '',
+        ];
+      }),
+    ];
+    const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(';')).join('\r\n')}`;
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `studyquest-sessoes-${formatLocalDate(new Date())}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  } catch (error) {
+    window.alert(error.message || 'Não foi possível exportar as sessões.');
   }
 }
 
@@ -1433,6 +1482,7 @@ document.querySelector('#session-filter').addEventListener('change', () => {
   localStorage.setItem(SESSION_FILTER_KEY, document.querySelector('#session-filter').value);
   loadSessions();
 });
+document.querySelector('#export-session-history').addEventListener('click', exportStudySessions);
 document.querySelector('#subject-form').addEventListener('submit', createSubject);
 document.querySelector('#quest-form').addEventListener('submit', createQuest);
 document.querySelector('#generate-plan-form').addEventListener('submit', generateStudyPlan);

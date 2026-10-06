@@ -34,7 +34,7 @@ Ao criar uma missão, também é possível informar descrição, tipo, dificulda
 
 Use os filtros **Atrasadas**, **Vencendo hoje** e **Próximos 7 dias**, ou ordene a lista pelo prazo. Missões concluídas e arquivadas não aparecem nos filtros de vencimento.
 
-O histórico de sessões mostra disciplina, missão, horário de início e duração. Sessões em andamento aparecem primeiro com a duração planejada; sessões finalizadas mostram o tempo registrado. O filtro por situação permite exibir todas as sessões, apenas as que estão em andamento ou apenas as concluídas, e mantém a escolha no navegador.
+O histórico de sessões mostra disciplina, missão, horário de início e duração. Sessões em andamento aparecem primeiro com a duração planejada; sessões finalizadas mostram o tempo registrado. O filtro por situação permite exibir todas as sessões, apenas as que estão em andamento ou apenas as concluídas, e mantém a escolha no navegador. **Exportar CSV** baixa as sessões visíveis no filtro atual, em formato compatível com planilhas.
 
 O painel recalcula a sequência atual e a melhor sequência de dias com sessões sempre que é carregado, inclusive depois de iniciar, concluir ou excluir uma sessão.
 

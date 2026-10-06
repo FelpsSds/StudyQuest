@@ -94,7 +94,10 @@
                 <button class="preset-button" type="button" data-duration="60">60m</button>
               </div>
               <button class="secondary-button" type="submit">Começar estudo <span aria-hidden="true">&#8594;</span></button>
-              <label class="compact-field">Filtrar sessões<select id="session-filter"><option value="all">Todas</option><option value="in_progress">Em andamento</option><option value="completed">Concluídas</option></select></label>
+              <div class="session-history-controls">
+                <label class="compact-field">Filtrar sessões<select id="session-filter"><option value="all">Todas</option><option value="in_progress">Em andamento</option><option value="completed">Concluídas</option></select></label>
+                <button id="export-session-history" class="mini-edit" type="button">Exportar CSV</button>
+              </div>
               <div id="sessions-list" class="sessions-list"></div>
             </form>
             <form id="boss-form" class="creation-card">

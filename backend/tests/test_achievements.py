@@ -33,6 +33,40 @@ def test_user_can_list_achievements(client):
     assert any(item["code"] == "first_quest" for item in payload)
 
 
+def test_achievement_progress_lists_locked_milestones(client):
+    token = _create_user(client, email="achievement-progress@example.com")
+    response = client.get("/api/v1/achievements/progress", headers={"Authorization": "Bearer " + token})
+
+    assert response.status_code == 200
+    payload = {item["code"]: item for item in response.json()}
+    assert payload["first_quest"]["current_value"] == 0
+    assert payload["first_quest"]["criteria_value"] == 1
+    assert payload["first_quest"]["unlocked"] is False
+    assert payload["quest_streak_5"]["current_value"] == 0
+    assert payload["quest_streak_5"]["criteria_value"] == 5
+
+
+def test_quest_completion_unlocks_matching_achievement_milestones(client):
+    token = _create_user(client, email="achievement-milestones@example.com")
+    headers = {"Authorization": "Bearer " + token}
+
+    for index in range(5):
+        quest = _create_quest(client, token, title=f"Missão {index + 1}")
+        response = client.post(f"/api/v1/quests/{quest['id']}/complete", json={}, headers=headers)
+        assert response.status_code == 200
+
+    response = client.get("/api/v1/achievements/progress", headers=headers)
+
+    assert response.status_code == 200
+    payload = {item["code"]: item for item in response.json()}
+    assert payload["first_quest"]["unlocked"] is True
+    assert payload["first_quest"]["current_value"] == 1
+    assert payload["quest_streak_5"]["unlocked"] is True
+    assert payload["quest_streak_5"]["current_value"] == 5
+    assert payload["quest_master_10"]["unlocked"] is False
+    assert payload["quest_master_10"]["current_value"] == 5
+
+
 def test_first_quest_unlocks_first_quest_achievement(client):
     token = _create_user(client, email="maria@example.com")
     quest = _create_quest(client, token, title="Primeira missão")

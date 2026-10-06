@@ -117,3 +117,17 @@ textarea { resize: vertical; }
 .boss-quests li small { flex: 0 0 auto; }
 .boss-quests p { margin: 8px 0; }
 .boss-card-actions { justify-content: flex-end; }
+.achievement-row { display: grid; gap: 7px; padding: 8px 0; border-bottom: 1px solid rgba(16, 24, 39, .08); }
+.achievement-row:last-child { border-bottom: 0; }
+.achievement-row.locked { opacity: .72; }
+.achievement-row-heading { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 8px; }
+.achievement-row-heading > span { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 115, 92, .12); font-size: 14px; }
+.achievement-row-heading > div { min-width: 0; }
+.achievement-row-heading strong, .achievement-row-heading small { display: block; }
+.achievement-row-heading strong { font-size: 12px; }
+.achievement-row-heading small { margin-top: 2px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.achievement-row-heading em { grid-column: 2; color: var(--muted); font-size: 10px; font-style: normal; }
+.achievement-row.unlocked .achievement-row-heading em { color: #42621a; font-weight: 800; }
+.achievement-progress { grid-column: 2; height: 5px; overflow: hidden; border-radius: 999px; background: rgba(16, 24, 39, .1); }
+.achievement-progress span { display: block; height: 100%; border-radius: inherit; background: var(--coral); transition: width .25s ease; }
+.achievement-row.unlocked .achievement-progress span { background: #82b62c; }

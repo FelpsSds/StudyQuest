@@ -1129,17 +1129,23 @@ async function loadAchievements() {
   if (!list) return;
 
   try {
-    const achievements = await request('/achievements/me');
+    const achievements = await request('/achievements/progress');
     if (!Array.isArray(achievements) || !achievements.length) {
-      list.innerHTML = '<p class="mini-empty">Nenhuma conquista desbloqueada.</p>';
+      list.innerHTML = '<p class="mini-empty">Nenhuma conquista disponível.</p>';
       return;
     }
 
     list.innerHTML = achievements.map((achievement) => `
-      <div class="mini-row">
-        <span>${achievement.icon || '🏅'}</span>
-        <strong>${escapeHtml(achievement.title)}</strong>
-      </div>
+      <article class="achievement-row ${achievement.unlocked ? 'unlocked' : 'locked'}">
+        <div class="achievement-row-heading">
+          <span aria-hidden="true">${escapeHtml(achievement.icon || '🏅')}</span>
+          <div><strong>${escapeHtml(achievement.title)}</strong><small>${escapeHtml(achievement.description)}</small></div>
+          <em>${achievement.unlocked ? 'Desbloqueada' : `${Number(achievement.current_value)} / ${Number(achievement.criteria_value)}`}</em>
+        </div>
+        <div class="achievement-progress" role="progressbar" aria-label="Progresso: ${escapeAttribute(achievement.title)}" aria-valuemin="0" aria-valuemax="${Number(achievement.criteria_value)}" aria-valuenow="${Number(achievement.current_value)}">
+          <span style="width: ${Math.max(0, Math.min(100, Number(achievement.current_value) / Math.max(1, Number(achievement.criteria_value)) * 100))}%"></span>
+        </div>
+      </article>
     `).join('');
   } catch (error) {
     list.innerHTML = `<p class="mini-empty">${escapeHtml(error.message)}</p>`;

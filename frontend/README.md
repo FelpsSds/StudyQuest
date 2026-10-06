@@ -26,6 +26,8 @@ Os Boss Fights exibem uma barra de vida e as missões vinculadas; concluir uma m
 
 O nome de exibição pode ser alterado no cartão **Perfil**. O e-mail de login permanece somente para consulta.
 
+O cartão **Conquistas** mostra marcos desbloqueados e bloqueados, com a descrição e o progresso até cada objetivo.
+
 ## Executar com Docker
 
 Na raiz do projeto, execute:

@@ -633,12 +633,14 @@ async function createQuest(event) {
     await request('/quests/', {
       method: 'POST',
       body: JSON.stringify({
-        title: document.querySelector('#quest-title').value,
-        type: 'study',
-        difficulty: 'medium',
+        title: document.querySelector('#quest-title').value.trim(),
+        description: document.querySelector('#quest-description').value.trim() || null,
+        type: document.querySelector('#quest-type').value,
+        difficulty: document.querySelector('#quest-difficulty').value,
         xp_reward: Number(document.querySelector('#quest-xp').value),
         estimated_minutes: Number(document.querySelector('#quest-minutes').value),
         status: 'pending',
+        due_date: document.querySelector('#quest-due-date').value || null,
         subject_id: subjectId ? Number(subjectId) : null,
       }),
     });

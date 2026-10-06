@@ -30,6 +30,8 @@ O cartão **Conquistas** mostra marcos desbloqueados e bloqueados, com a descri�
 
 Na lista de disciplinas, **Editar** permite atualizar nome, descrição, cor, ícone, professor e período. Essas informações são usadas para identificar a disciplina sem alterar as missões vinculadas.
 
+Ao criar uma missão, também é possível informar descrição, tipo, dificuldade e prazo; XP, duração e disciplina continuam disponíveis no mesmo formulário.
+
 ## Executar com Docker
 
 Na raiz do projeto, execute:

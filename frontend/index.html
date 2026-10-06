@@ -54,9 +54,13 @@
             <form id="quest-form" class="creation-card wide-creation-card">
               <div><span class="kicker">PRÓXIMO PASSO</span><h2>Criar missão</h2></div>
               <label class="compact-field">Título<input id="quest-title" type="text" placeholder="Ex.: Revisar capítulo 3" required /></label>
+              <label class="compact-field">Descrição<textarea id="quest-description" rows="2" placeholder="Anote o que precisa ser feito nesta missão."></textarea></label>
               <label class="compact-field">Disciplina<select id="quest-subject"><option value="">Sem disciplina</option></select></label>
+              <label class="compact-field">Tipo<select id="quest-type"><option value="study">Estudo</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="review">Revisão</option><option value="project">Projeto</option></select></label>
+              <label class="compact-field">Dificuldade<select id="quest-difficulty"><option value="easy">Fácil</option><option value="medium" selected>Média</option><option value="hard">Difícil</option></select></label>
               <label class="compact-field">XP<input id="quest-xp" type="number" min="0" value="40" /></label>
               <label class="compact-field">Minutos<input id="quest-minutes" type="number" min="1" value="30" /></label>
+              <label class="compact-field">Prazo<input id="quest-due-date" type="date" /></label>
               <button class="secondary-button" type="submit">Adicionar missão <span aria-hidden="true">&#8594;</span></button>
             </form>
             <form id="generate-plan-form" class="creation-card wide-creation-card">

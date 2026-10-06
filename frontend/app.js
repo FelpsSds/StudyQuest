@@ -11,6 +11,21 @@ const PLAN_PROVIDER_PRESETS = {
   ollama: { base_url: 'http://localhost:11434/v1', model: 'llama3.1' },
   custom: { base_url: '', model: '' },
 };
+const QUEST_TYPE_LABELS = {
+  study: 'Estudo',
+  exercises: 'Exercícios',
+  practice: 'Prática',
+  review: 'Revisão',
+  project: 'Projeto',
+  boss_fight: 'Boss Fight',
+};
+const QUEST_DIFFICULTY_LABELS = { easy: 'Fácil', medium: 'Média', hard: 'Difícil', boss: 'Boss' };
+const QUEST_STATUS_LABELS = {
+  pending: 'Pendente',
+  in_progress: 'Em andamento',
+  completed: 'Concluída',
+  archived: 'Arquivada',
+};
 
 function getSavedQuestFilter() {
   return localStorage.getItem(QUEST_FILTER_KEY) || 'all';
@@ -163,9 +178,41 @@ async function loadQuests() {
 
     list.innerHTML = filteredQuests.map((quest) => `
       <article class="quest-item ${quest.status === 'completed' ? 'completed' : ''}">
-        <div>
+        <div class="quest-main">
           <h3 class="quest-title">${escapeHtml(quest.title)}</h3>
           <span class="quest-meta">${quest.xp_reward} XP &middot; ${quest.estimated_minutes} min &middot; ${quest.difficulty}</span>
+          <details class="quest-details">
+            <summary>Ver detalhes</summary>
+            <p>${escapeHtml(quest.description || 'Esta missão não tem descrição.')}</p>
+            <dl>
+              <div><dt>Tipo</dt><dd>${QUEST_TYPE_LABELS[quest.type] || escapeHtml(quest.type)}</dd></div>
+              <div><dt>Dificuldade</dt><dd>${QUEST_DIFFICULTY_LABELS[quest.difficulty] || escapeHtml(quest.difficulty)}</dd></div>
+              <div><dt>Status</dt><dd>${QUEST_STATUS_LABELS[quest.status] || escapeHtml(quest.status)}</dd></div>
+              <div><dt>Prazo</dt><dd>${quest.due_date ? new Date(`${quest.due_date}T00:00:00`).toLocaleDateString('pt-BR') : 'Sem prazo'}</dd></div>
+            </dl>
+          </details>
+          <form class="quest-edit-form hidden" data-quest-edit-form>
+            <label class="compact-field">Título<input name="title" maxlength="200" required /></label>
+            <label class="compact-field">Descrição<textarea name="description" rows="2"></textarea></label>
+            <label class="compact-field">Disciplina<select name="subject_id"><option value="">Sem disciplina</option></select></label>
+            <div class="quest-edit-fields">
+              <label class="compact-field">Tipo<select name="type">
+                <option value="study">Estudo</option><option value="exercises">Exercícios</option><option value="practice">Prática</option>
+                <option value="review">Revisão</option><option value="project">Projeto</option><option value="boss_fight">Boss Fight</option>
+              </select></label>
+              <label class="compact-field">Dificuldade<select name="difficulty">
+                <option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option><option value="boss">Boss</option>
+              </select></label>
+              <label class="compact-field">XP<input name="xp_reward" type="number" min="0" required /></label>
+              <label class="compact-field">Minutos<input name="estimated_minutes" type="number" min="1" required /></label>
+              <label class="compact-field">Prazo<input name="due_date" type="date" /></label>
+            </div>
+            <p class="quest-edit-error" role="alert"></p>
+            <div class="quest-edit-actions">
+              <button class="secondary-button" type="submit">Salvar alterações</button>
+              <button class="text-button" data-cancel-quest-edit type="button">Cancelar</button>
+            </div>
+          </form>
         </div>
         <div class="quest-actions">
           <button class="mini-edit" data-edit-quest-id="${quest.id}" type="button">Editar</button>
@@ -182,9 +229,16 @@ async function loadQuests() {
     list.querySelectorAll('[data-edit-quest-id]').forEach((button) => {
       button.addEventListener('click', () => {
         const quest = filteredQuests.find((item) => item.id === Number(button.dataset.editQuestId));
-        if (quest) updateQuest(quest.id, quest.title, quest.xp_reward, quest.estimated_minutes);
+        const article = button.closest('.quest-item');
+        if (quest && article) startQuestEdit(quest, article);
       });
     });
+    list.querySelectorAll('[data-quest-edit-form]').forEach((form) =>
+      form.addEventListener('submit', saveQuestEdit)
+    );
+    list.querySelectorAll('[data-cancel-quest-edit]').forEach((button) =>
+      button.addEventListener('click', () => button.closest('[data-quest-edit-form]').classList.add('hidden'))
+    );
   } catch (error) { list.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; }
 }
 
@@ -409,40 +463,71 @@ async function deleteSubject(id) {
   }
 }
 
-async function updateQuest(id, currentTitle, currentXp, currentMinutes) {
-  const nextTitle = window.prompt('Editar título da missão:', currentTitle || '');
-  if (nextTitle === null) return;
-
-  const title = nextTitle.trim();
-  if (!title) {
-    window.alert('O título da missão não pode ficar vazio.');
-    return;
-  }
-
-  const nextXp = Number(window.prompt('Novo valor de XP:', String(currentXp ?? 0)));
-  if (!Number.isFinite(nextXp) || nextXp < 0) {
-    window.alert('Informe um valor de XP válido.');
-    return;
-  }
-
-  const nextMinutes = Number(window.prompt('Novo tempo estimado em minutos:', String(currentMinutes ?? 30)));
-  if (!Number.isFinite(nextMinutes) || nextMinutes <= 0) {
-    window.alert('Informe uma duração válida em minutos.');
-    return;
-  }
+async function startQuestEdit(quest, article) {
+  const form = article.querySelector('[data-quest-edit-form]');
+  if (!form) return;
+  const subjectSelect = form.elements.subject_id;
+  const editButton = article.querySelector('[data-edit-quest-id]');
+  editButton.disabled = true;
 
   try {
-    await request(`/quests/${id}`, {
+    const subjects = await request('/subjects/');
+    subjectSelect.replaceChildren(new Option('Sem disciplina', ''));
+    subjects.forEach((subject) => subjectSelect.add(new Option(subject.name, String(subject.id))));
+    form.elements.title.value = quest.title || '';
+    form.elements.description.value = quest.description || '';
+    form.elements.subject_id.value = quest.subject_id == null ? '' : String(quest.subject_id);
+    form.elements.type.value = quest.type;
+    form.elements.difficulty.value = quest.difficulty;
+    form.elements.xp_reward.value = String(quest.xp_reward ?? 0);
+    form.elements.estimated_minutes.value = String(quest.estimated_minutes ?? 30);
+    form.elements.due_date.value = quest.due_date || '';
+    form.querySelector('.quest-edit-error').textContent = '';
+    form.classList.remove('hidden');
+    form.elements.title.focus();
+  } catch (error) {
+    window.alert(error.message);
+  } finally {
+    editButton.disabled = false;
+  }
+}
+
+async function saveQuestEdit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const article = form.closest('.quest-item');
+  const questId = article?.querySelector('[data-edit-quest-id]')?.dataset.editQuestId;
+  const errorMessage = form.querySelector('.quest-edit-error');
+  const submitButton = form.querySelector('[type="submit"]');
+  if (!questId) return;
+
+  const payload = {
+    title: form.elements.title.value.trim(),
+    description: form.elements.description.value.trim() || null,
+    subject_id: form.elements.subject_id.value ? Number(form.elements.subject_id.value) : null,
+    type: form.elements.type.value,
+    difficulty: form.elements.difficulty.value,
+    xp_reward: Number(form.elements.xp_reward.value),
+    estimated_minutes: Number(form.elements.estimated_minutes.value),
+    due_date: form.elements.due_date.value || null,
+  };
+  if (!payload.title || !Number.isInteger(payload.xp_reward) || payload.xp_reward < 0
+    || !Number.isInteger(payload.estimated_minutes) || payload.estimated_minutes <= 0) {
+    errorMessage.textContent = 'Confira o título, o XP e a duração antes de salvar.';
+    return;
+  }
+
+  submitButton.disabled = true;
+  errorMessage.textContent = '';
+  try {
+    await request(`/quests/${questId}`, {
       method: 'PUT',
-      body: JSON.stringify({
-        title,
-        xp_reward: nextXp,
-        estimated_minutes: nextMinutes,
-      }),
+      body: JSON.stringify(payload),
     });
     await showDashboard();
   } catch (error) {
-    window.alert(error.message);
+    errorMessage.textContent = error.message;
+    submitButton.disabled = false;
   }
 }
 

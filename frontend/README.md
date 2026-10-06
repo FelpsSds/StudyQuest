@@ -20,6 +20,8 @@ python -m http.server 5173 --directory frontend
 
 A interface usa a API em `http://127.0.0.1:8000/api/v1` e persiste o token JWT no armazenamento local do navegador.
 
+Na lista de missões, abra **Ver detalhes** para consultar descrição, tipo, dificuldade, status e prazo. **Editar** permite atualizar esses campos e vincular a missão a uma disciplina.
+
 ## Executar com Docker
 
 Na raiz do projeto, execute:

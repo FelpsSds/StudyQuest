@@ -391,13 +391,31 @@ async function loadSubjectsList() {
     }
 
     list.innerHTML = subjects.map((subject) => `
-      <div class="subject-row" style="border-left: 4px solid ${subject.color || '#c7f36b'};">
-        <span>${escapeHtml(subject.name)}</span>
+      <article class="subject-row" style="--subject-color: ${/^#[0-9a-f]{6}$/i.test(subject.color || '') ? subject.color : '#c7f36b'};">
+        <div class="subject-row-heading">
+          <span class="subject-color-dot" aria-hidden="true"></span>
+          <div><strong>${escapeHtml(subject.name)}</strong><small>${escapeHtml([subject.professor, subject.semester].filter(Boolean).join(' · ') || 'Disciplina')}</small></div>
+        </div>
         <div class="row-actions">
           <button class="mini-edit" data-edit-subject-id="${subject.id}" type="button">Editar</button>
           <button class="mini-delete" data-subject-id="${subject.id}" type="button">Excluir</button>
         </div>
-      </div>
+        <form class="subject-edit-form hidden" data-subject-edit-form>
+          <label class="compact-field">Nome<input name="name" maxlength="120" required /></label>
+          <label class="compact-field">Descrição<textarea name="description" maxlength="500" rows="2"></textarea></label>
+          <div class="subject-edit-fields">
+            <label class="compact-field">Professor<input name="professor" maxlength="120" /></label>
+            <label class="compact-field">Período<input name="semester" maxlength="50" placeholder="Ex.: 2º semestre" /></label>
+            <label class="compact-field">Ícone<input name="icon" maxlength="64" /></label>
+            <label class="compact-field">Cor<input name="color" type="color" /></label>
+          </div>
+          <p class="subject-edit-error" role="alert"></p>
+          <div class="quest-edit-actions">
+            <button class="secondary-button" type="submit">Salvar alterações</button>
+            <button class="text-button" data-cancel-subject-edit type="button">Cancelar</button>
+          </div>
+        </form>
+      </article>
     `).join('');
 
     list.querySelectorAll('[data-subject-id]').forEach((button) => {
@@ -406,9 +424,16 @@ async function loadSubjectsList() {
     list.querySelectorAll('[data-edit-subject-id]').forEach((button) => {
       button.addEventListener('click', () => {
         const subject = subjects.find((item) => item.id === Number(button.dataset.editSubjectId));
-        if (subject) updateSubject(subject.id, subject.name);
+        const row = button.closest('.subject-row');
+        if (subject && row) startSubjectEdit(subject, row);
       });
     });
+    list.querySelectorAll('[data-subject-edit-form]').forEach((form) =>
+      form.addEventListener('submit', saveSubjectEdit)
+    );
+    list.querySelectorAll('[data-cancel-subject-edit]').forEach((button) =>
+      button.addEventListener('click', () => button.closest('[data-subject-edit-form]').classList.add('hidden'))
+    );
   } catch (error) {
     list.innerHTML = '<p class="small-empty">Não foi possível carregar as disciplinas.</p>';
   }
@@ -431,24 +456,53 @@ async function createSubject(event) {
   } catch (error) { window.alert(error.message); }
 }
 
-async function updateSubject(id, currentName) {
-  const nextName = window.prompt('Editar disciplina:', currentName || '');
-  if (nextName === null) return;
+function startSubjectEdit(subject, row) {
+  const form = row.querySelector('[data-subject-edit-form]');
+  if (!form) return;
+  form.elements.name.value = subject.name || '';
+  form.elements.description.value = subject.description || '';
+  form.elements.professor.value = subject.professor || '';
+  form.elements.semester.value = subject.semester || '';
+  form.elements.icon.value = subject.icon || '';
+  form.elements.color.value = /^#[0-9a-f]{6}$/i.test(subject.color || '') ? subject.color : '#c7f36b';
+  form.querySelector('.subject-edit-error').textContent = '';
+  form.classList.remove('hidden');
+  form.elements.name.focus();
+}
 
-  const trimmedName = nextName.trim();
-  if (!trimmedName) {
-    window.alert('O nome da disciplina não pode ficar vazio.');
+async function saveSubjectEdit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const row = form.closest('.subject-row');
+  const subjectId = row?.querySelector('[data-edit-subject-id]')?.dataset.editSubjectId;
+  const errorMessage = form.querySelector('.subject-edit-error');
+  const submitButton = form.querySelector('[type="submit"]');
+  if (!subjectId) return;
+
+  const payload = {
+    name: form.elements.name.value.trim(),
+    description: form.elements.description.value.trim() || null,
+    professor: form.elements.professor.value.trim() || null,
+    semester: form.elements.semester.value.trim() || null,
+    icon: form.elements.icon.value.trim() || null,
+    color: form.elements.color.value,
+  };
+  if (!payload.name) {
+    errorMessage.textContent = 'O nome da disciplina não pode ficar vazio.';
     return;
   }
 
+  submitButton.disabled = true;
+  errorMessage.textContent = '';
   try {
-    await request(`/subjects/${id}`, {
+    await request(`/subjects/${subjectId}`, {
       method: 'PUT',
-      body: JSON.stringify({ name: trimmedName }),
+      body: JSON.stringify(payload),
     });
-    await Promise.all([loadSubjects(), loadSubjectsList(), loadQuests(), loadSessionQuestOptions(), showDashboard()]);
+    await showDashboard();
   } catch (error) {
-    window.alert(error.message);
+    errorMessage.textContent = error.message;
+    submitButton.disabled = false;
   }
 }
 

@@ -131,3 +131,14 @@ textarea { resize: vertical; }
 .achievement-progress { grid-column: 2; height: 5px; overflow: hidden; border-radius: 999px; background: rgba(16, 24, 39, .1); }
 .achievement-progress span { display: block; height: 100%; border-radius: inherit; background: var(--coral); transition: width .25s ease; }
 .achievement-row.unlocked .achievement-progress span { background: #82b62c; }
+.subject-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.subject-row-heading { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.subject-color-dot { flex: 0 0 auto; width: 12px; height: 28px; border-radius: 6px; background: var(--subject-color, var(--lime)); }
+.subject-row-heading > div { min-width: 0; }
+.subject-row-heading strong, .subject-row-heading small { display: block; }
+.subject-row-heading strong { overflow-wrap: anywhere; }
+.subject-row-heading small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.subject-edit-form { display: grid; grid-column: 1 / -1; gap: 10px; margin-top: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+.subject-edit-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
+.subject-edit-error { min-height: 0; margin: 0; color: var(--coral); font-size: 12px; }
+@media (max-width: 500px) { .subject-edit-fields { grid-template-columns: 1fr; }.subject-row { grid-template-columns: 1fr; }.subject-row > .row-actions { justify-content: flex-start; } }

@@ -28,6 +28,8 @@ O nome de exibição pode ser alterado no cartão **Perfil**. O e-mail de login 
 
 O cartão **Conquistas** mostra marcos desbloqueados e bloqueados, com a descrição e o progresso até cada objetivo.
 
+Na lista de disciplinas, **Editar** permite atualizar nome, descrição, cor, ícone, professor e período. Essas informações são usadas para identificar a disciplina sem alterar as missões vinculadas.
+
 ## Executar com Docker
 
 Na raiz do projeto, execute:

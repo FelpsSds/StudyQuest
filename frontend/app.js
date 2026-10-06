@@ -2,6 +2,7 @@ const API_BASE = 'http://127.0.0.1:8000/api/v1';
 const state = { token: localStorage.getItem('studyquest_token'), registerMode: false, generatedPlan: null };
 const QUEST_FILTER_KEY = 'studyquest_quest_filter';
 const QUEST_SORT_KEY = 'studyquest_quest_sort';
+const SESSION_FILTER_KEY = 'studyquest_session_filter';
 const SESSION_SUBJECT_KEY = 'studyquest_session_subject';
 const SESSION_QUEST_KEY = 'studyquest_session_quest';
 const SESSION_DURATION_KEY = 'studyquest_session_duration';
@@ -33,6 +34,11 @@ function getSavedQuestFilter() {
 
 function getSavedQuestSort() {
   return localStorage.getItem(QUEST_SORT_KEY) || 'priority';
+}
+
+function getSavedSessionFilter() {
+  const filter = localStorage.getItem(SESSION_FILTER_KEY);
+  return ['all', 'in_progress', 'completed'].includes(filter) ? filter : 'all';
 }
 
 function formatLocalDate(date) {
@@ -296,11 +302,18 @@ async function loadSubjects() {
   const select = document.querySelector('#quest-subject');
   const sessionSelect = document.querySelector('#session-subject');
   const bossSelect = document.querySelector('#boss-subject');
-    const planSelect = document.querySelector('#plan-subject');
-    const filterSelect = document.querySelector('#quest-filter');
-    try {
-      const subjects = await request('/subjects/');
-      [select, sessionSelect, bossSelect, planSelect].forEach((element) => {
+  const planSelect = document.querySelector('#plan-subject');
+  const filterSelect = document.querySelector('#quest-filter');
+  const subjectSelects = [select, sessionSelect, bossSelect, planSelect];
+
+  try {
+    const subjects = await request('/subjects/');
+    subjectSelects.forEach((element) => {
+      if (!element) return;
+      const placeholder = element.options[0]?.cloneNode(true);
+      element.replaceChildren();
+      if (placeholder) element.appendChild(placeholder);
+      subjects.forEach((subject) => {
         const option = document.createElement('option');
         option.value = subject.id;
         option.textContent = subject.name;
@@ -308,11 +321,10 @@ async function loadSubjects() {
       });
     });
 
-    const sessionSubject = document.querySelector('#session-subject');
-    if (sessionSubject) {
+    if (sessionSelect) {
       const saved = localStorage.getItem(SESSION_SUBJECT_KEY);
-      if (saved && Array.from(sessionSubject.options).some((option) => option.value === saved)) {
-        sessionSubject.value = saved;
+      if (saved && Array.from(sessionSelect.options).some((option) => option.value === saved)) {
+        sessionSelect.value = saved;
       }
     }
 
@@ -335,7 +347,7 @@ async function loadSubjects() {
       localStorage.setItem(QUEST_FILTER_KEY, nextValue);
     }
   } catch (error) {
-    [select, sessionSelect, bossSelect].forEach((element) => {
+    subjectSelects.forEach((element) => {
       if (!element) return;
       element.innerHTML = '<option value="">Não foi possível carregar</option>';
     });
@@ -928,7 +940,11 @@ async function deleteQuest(id) {
 
 async function loadSessions() {
   const list = document.querySelector('#sessions-list');
+  const filter = document.querySelector('#session-filter');
   if (!list) return;
+
+  const activeFilter = getSavedSessionFilter();
+  if (filter) filter.value = activeFilter;
 
   try {
     const [sessions, subjects, quests] = await Promise.all([
@@ -941,7 +957,15 @@ async function loadSessions() {
       return;
     }
 
-    const orderedSessions = [...sessions].sort((a, b) => {
+    const filteredSessions = activeFilter === 'all'
+      ? sessions
+      : sessions.filter((session) => session.status === activeFilter);
+    if (!filteredSessions.length) {
+      list.innerHTML = '<p class="small-empty">Nenhuma sessão encontrada com este filtro.</p>';
+      return;
+    }
+
+    const orderedSessions = [...filteredSessions].sort((a, b) => {
       if (a.status !== b.status) return a.status === 'in_progress' ? -1 : 1;
       return new Date(b.started_at).getTime() - new Date(a.started_at).getTime();
     });
@@ -1404,6 +1428,10 @@ document.querySelector('#quest-filter').addEventListener('change', () => {
 document.querySelector('#quest-sort').addEventListener('change', () => {
   localStorage.setItem(QUEST_SORT_KEY, document.querySelector('#quest-sort').value);
   loadQuests();
+});
+document.querySelector('#session-filter').addEventListener('change', () => {
+  localStorage.setItem(SESSION_FILTER_KEY, document.querySelector('#session-filter').value);
+  loadSessions();
 });
 document.querySelector('#subject-form').addEventListener('submit', createSubject);
 document.querySelector('#quest-form').addEventListener('submit', createQuest);

@@ -2,6 +2,9 @@ const API_BASE = 'http://127.0.0.1:8000/api/v1';
 const state = { token: localStorage.getItem('studyquest_token'), registerMode: false };
 const QUEST_FILTER_KEY = 'studyquest_quest_filter';
 const QUEST_SORT_KEY = 'studyquest_quest_sort';
+const SESSION_SUBJECT_KEY = 'studyquest_session_subject';
+const SESSION_QUEST_KEY = 'studyquest_session_quest';
+const SESSION_DURATION_KEY = 'studyquest_session_duration';
 
 function getSavedQuestFilter() {
   return localStorage.getItem(QUEST_FILTER_KEY) || 'all';
@@ -197,6 +200,14 @@ async function loadSubjects() {
       });
     });
 
+    const sessionSubject = document.querySelector('#session-subject');
+    if (sessionSubject) {
+      const saved = localStorage.getItem(SESSION_SUBJECT_KEY);
+      if (saved && Array.from(sessionSubject.options).some((option) => option.value === saved)) {
+        sessionSubject.value = saved;
+      }
+    }
+
     if (filterSelect) {
       const activeValue = getSavedQuestFilter();
       filterSelect.innerHTML = '<option value="all">Todas</option><option value="pending">Pendentes</option><option value="completed">Concluídas</option>';
@@ -226,19 +237,87 @@ async function loadSubjects() {
   }
 }
 
+function persistSessionPreferences() {
+  const sessionSubject = document.querySelector('#session-subject');
+  const sessionQuest = document.querySelector('#session-quest');
+  const sessionDuration = document.querySelector('#session-duration');
+
+  if (sessionSubject) {
+    if (sessionSubject.value) localStorage.setItem(SESSION_SUBJECT_KEY, sessionSubject.value);
+    else localStorage.removeItem(SESSION_SUBJECT_KEY);
+  }
+
+  if (sessionQuest) {
+    if (sessionQuest.value) localStorage.setItem(SESSION_QUEST_KEY, sessionQuest.value);
+    else localStorage.removeItem(SESSION_QUEST_KEY);
+  }
+
+  if (sessionDuration) {
+    const duration = Number(sessionDuration.value || 30);
+    if (Number.isFinite(duration) && duration > 0) {
+      localStorage.setItem(SESSION_DURATION_KEY, String(duration));
+    }
+  }
+}
+
+function restoreSessionPreferences() {
+  const sessionSubject = document.querySelector('#session-subject');
+  const sessionQuest = document.querySelector('#session-quest');
+  const sessionDuration = document.querySelector('#session-duration');
+
+  if (sessionSubject) {
+    const savedSubject = localStorage.getItem(SESSION_SUBJECT_KEY);
+    if (savedSubject && Array.from(sessionSubject.options).some((option) => option.value === savedSubject)) {
+      sessionSubject.value = savedSubject;
+    }
+  }
+
+  if (sessionQuest) {
+    const savedQuest = localStorage.getItem(SESSION_QUEST_KEY);
+    if (savedQuest && Array.from(sessionQuest.options).some((option) => option.value === savedQuest)) {
+      sessionQuest.value = savedQuest;
+    }
+  }
+
+  if (sessionDuration) {
+    const savedDuration = Number(localStorage.getItem(SESSION_DURATION_KEY) || 30);
+    sessionDuration.value = Number.isFinite(savedDuration) && savedDuration > 0 ? String(savedDuration) : '30';
+  }
+}
+
 async function loadSessionQuestOptions() {
   const select = document.querySelector('#session-quest');
+  const subjectSelect = document.querySelector('#session-subject');
   if (!select) return;
 
   try {
     const quests = await request('/quests/');
+    const activeSubject = subjectSelect ? subjectSelect.value : '';
+    const filteredQuests = activeSubject
+      ? quests.filter((quest) => String(quest.subject_id ?? '') === String(activeSubject))
+      : quests;
+
     select.innerHTML = '<option value="">Sem missão</option>';
-    quests.forEach((quest) => {
+    filteredQuests.forEach((quest) => {
       const option = document.createElement('option');
       option.value = quest.id;
       option.textContent = `${quest.title} (${quest.xp_reward} XP)`;
       select.appendChild(option);
     });
+
+    const savedQuest = localStorage.getItem(SESSION_QUEST_KEY);
+    const matchesSavedQuest = Array.from(select.options).some((option) => option.value === savedQuest);
+    if (matchesSavedQuest) {
+      select.value = savedQuest;
+    } else if (filteredQuests.length && activeSubject) {
+      select.value = String(filteredQuests[0].id);
+      localStorage.setItem(SESSION_QUEST_KEY, String(filteredQuests[0].id));
+    } else {
+      select.value = '';
+      localStorage.removeItem(SESSION_QUEST_KEY);
+    }
+
+    restoreSessionPreferences();
   } catch (error) {
     select.innerHTML = '<option value="">Não foi possível carregar</option>';
   }
@@ -394,6 +473,7 @@ async function createStudySession(event) {
   const durationMinutes = Number(document.querySelector('#session-duration').value || 30);
 
   try {
+    persistSessionPreferences();
     await request('/study-sessions/', {
       method: 'POST',
       body: JSON.stringify({
@@ -404,7 +484,7 @@ async function createStudySession(event) {
       }),
     });
     document.querySelector('#session-form').reset();
-    document.querySelector('#session-duration').value = 30;
+    restoreSessionPreferences();
     await showDashboard();
   } catch (error) {
     window.alert(error.message);
@@ -755,7 +835,19 @@ document.querySelectorAll('.preset-button').forEach((button) => {
     if (!duration) return;
     duration.value = button.dataset.duration;
     document.querySelectorAll('.preset-button').forEach((item) => item.classList.toggle('active', item === button));
+    persistSessionPreferences();
     duration.focus();
+  });
+});
+document.querySelector('#session-subject').addEventListener('change', () => {
+  persistSessionPreferences();
+  loadSessionQuestOptions();
+});
+document.querySelector('#session-quest').addEventListener('change', persistSessionPreferences);
+document.querySelector('#session-duration').addEventListener('input', () => {
+  persistSessionPreferences();
+  document.querySelectorAll('.preset-button').forEach((button) => {
+    button.classList.toggle('active', Number(button.dataset.duration) === Number(document.querySelector('#session-duration').value));
   });
 });
 document.querySelector('#quest-filter').addEventListener('change', () => {

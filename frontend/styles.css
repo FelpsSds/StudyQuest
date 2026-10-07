@@ -174,3 +174,12 @@ textarea { resize: vertical; }
 .subject-edit-error { min-height: 0; margin: 0; color: var(--coral); font-size: 12px; }
 @media (max-width: 500px) { .subject-edit-fields { grid-template-columns: 1fr; }.subject-row { grid-template-columns: 1fr; }.subject-row > .row-actions { justify-content: flex-start; } }
 @media (max-width: 500px) { .session-history-controls { gap: 8px 10px; } }
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}

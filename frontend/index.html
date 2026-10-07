@@ -99,7 +99,7 @@
                 <label class="compact-field">Disciplina<select id="session-subject-filter"><option value="all">Todas as disciplinas</option><option value="none">Sem disciplina</option></select></label>
                 <label class="compact-field">Período<select id="session-period-filter"><option value="all">Todo o histórico</option><option value="today">Hoje</option><option value="7days">Últimos 7 dias</option><option value="30days">Últimos 30 dias</option></select></label>
                 <label class="compact-field session-search-field">Buscar disciplina ou missão<input id="session-search" type="search" placeholder="Digite para filtrar..." autocomplete="off" /></label>
-                <button id="export-session-history" class="mini-edit" type="button">Exportar CSV</button>
+                <div class="session-history-actions"><button id="clear-session-filters" class="mini-edit" type="button">Limpar filtros</button><button id="export-session-history" class="mini-edit" type="button">Exportar CSV</button></div>
               </div>
               <div id="sessions-list" class="sessions-list"></div>
             </form>

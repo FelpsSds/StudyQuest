@@ -1174,6 +1174,19 @@ async function exportStudySessions() {
   }
 }
 
+function clearSessionHistoryFilters() {
+  window.clearTimeout(sessionSearchTimeout);
+  localStorage.removeItem(SESSION_FILTER_KEY);
+  localStorage.removeItem(SESSION_SUBJECT_FILTER_KEY);
+  localStorage.removeItem(SESSION_PERIOD_FILTER_KEY);
+  localStorage.removeItem(SESSION_SEARCH_KEY);
+  document.querySelector('#session-filter').value = 'all';
+  document.querySelector('#session-subject-filter').value = 'all';
+  document.querySelector('#session-period-filter').value = 'all';
+  document.querySelector('#session-search').value = '';
+  loadSessions();
+}
+
 async function deleteStudySession(id) {
   if (!window.confirm('Deseja excluir esta sessão de estudo?')) return;
 
@@ -1619,6 +1632,7 @@ document.querySelector('#session-search').addEventListener('input', (event) => {
   window.clearTimeout(sessionSearchTimeout);
   sessionSearchTimeout = window.setTimeout(loadSessions, 250);
 });
+document.querySelector('#clear-session-filters').addEventListener('click', clearSessionHistoryFilters);
 document.querySelector('#export-session-history').addEventListener('click', exportStudySessions);
 document.querySelector('#subject-form').addEventListener('submit', createSubject);
 document.querySelector('#quest-form').addEventListener('submit', createQuest);

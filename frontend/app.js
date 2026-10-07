@@ -122,6 +122,23 @@ function updateActiveSessionTimers() {
       `Tempo decorrido: ${formatDuration(elapsedMinutes)}${hasPlannedDuration ? `; ${isOverPlan ? 'meta ultrapassada' : `meta de ${formatDuration(plannedMinutes)}`}` : ''}`,
     );
   });
+
+  document.querySelectorAll('[data-session-goal-progress]').forEach((progress) => {
+    const startedAt = new Date(progress.dataset.startedAt);
+    const plannedMinutes = Number(progress.dataset.plannedMinutes);
+    if (Number.isNaN(startedAt.getTime()) || !Number.isFinite(plannedMinutes) || plannedMinutes <= 0) return;
+
+    const elapsedMinutes = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 60000));
+    const progressMinutes = Math.min(elapsedMinutes, plannedMinutes);
+    const percentage = (progressMinutes / plannedMinutes) * 100;
+    progress.setAttribute('aria-valuenow', String(progressMinutes));
+    progress.setAttribute(
+      'aria-valuetext',
+      `${formatDuration(progressMinutes)} de ${formatDuration(plannedMinutes)}${elapsedMinutes > plannedMinutes ? '; meta ultrapassada' : ''}`,
+    );
+    progress.classList.toggle('session-goal-progress-overrun', elapsedMinutes > plannedMinutes);
+    progress.querySelector('[data-session-goal-progress-fill]').style.width = `${percentage}%`;
+  });
 }
 
 function formatLocalDate(date) {
@@ -1102,6 +1119,9 @@ async function loadSessions() {
       const activeTimer = session.status === 'in_progress'
         ? `<span class="session-timer" data-session-timer data-started-at="${escapeAttribute(session.started_at)}" data-planned-minutes="${Number.isFinite(duration) && duration > 0 ? duration : ''}" role="timer" aria-live="off"></span>`
         : '';
+      const activeProgress = session.status === 'in_progress' && Number.isFinite(duration) && duration > 0
+        ? `<div class="session-goal-progress" data-session-goal-progress data-started-at="${escapeAttribute(session.started_at)}" data-planned-minutes="${duration}" role="progressbar" aria-label="${escapeAttribute(`Progresso da meta de ${formatDuration(duration)}`)}" aria-valuemin="0" aria-valuemax="${duration}" aria-valuenow="0"><span data-session-goal-progress-fill></span></div>`
+        : '';
       return `
         <article class="session-row ${session.status === 'completed' ? 'session-completed' : 'session-active'}">
           <div class="session-info">
@@ -1109,6 +1129,7 @@ async function loadSessions() {
             ${quest ? `<span>${escapeHtml(quest.title)}</span>` : session.quest_id ? '<span>Missão removida</span>' : ''}
             <small>${session.status === 'completed' ? 'Concluída' : 'Em andamento'} · ${formatSessionDate(session.started_at)}${session.status === 'in_progress' ? '' : ` · ${durationLabel}`}</small>
             ${activeTimer}
+            ${activeProgress}
             ${session.status === 'in_progress' && durationLabel !== 'Duração não definida' ? `<small class="session-planned-duration">Meta: ${durationLabel}</small>` : ''}
           </div>
           <div class="row-actions">

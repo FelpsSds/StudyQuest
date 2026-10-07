@@ -40,6 +40,8 @@ O painel recalcula a sequência atual e a melhor sequência de dias com sessões
 
 O cartão **Insights** inclui um gráfico diário dos minutos de sessões concluídas nos últimos sete dias, junto com os totais gerais.
 
+Controles interativos exibem um contorno de foco visível durante a navegação por teclado.
+
 ## Executar com Docker
 
 Na raiz do projeto, execute:

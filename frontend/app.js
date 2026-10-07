@@ -91,7 +91,7 @@ function csvCell(value) {
   return `"${safeText.replace(/"/g, '""')}"`;
 }
 
-function formatTimerDuration(minutes) {
+function formatDuration(minutes) {
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
   if (!hours) return `${remainingMinutes} min`;
@@ -113,13 +113,13 @@ function updateActiveSessionTimers() {
     timer.classList.toggle('session-timer-overrun', isOverPlan);
     const plannedLabel = hasPlannedDuration
       ? isOverPlan
-        ? ` · meta de ${formatTimerDuration(plannedMinutes)} ultrapassada`
-        : ` / ${formatTimerDuration(plannedMinutes)} planejados`
+        ? ` · meta de ${formatDuration(plannedMinutes)} ultrapassada`
+        : ` / ${formatDuration(plannedMinutes)} planejados`
       : '';
-    timer.textContent = `Tempo: ${formatTimerDuration(elapsedMinutes)}${plannedLabel}`;
+    timer.textContent = `Tempo: ${formatDuration(elapsedMinutes)}${plannedLabel}`;
     timer.setAttribute(
       'aria-label',
-      `Tempo decorrido: ${formatTimerDuration(elapsedMinutes)}${hasPlannedDuration ? `; ${isOverPlan ? 'meta ultrapassada' : `meta de ${formatTimerDuration(plannedMinutes)}`}` : ''}`,
+      `Tempo decorrido: ${formatDuration(elapsedMinutes)}${hasPlannedDuration ? `; ${isOverPlan ? 'meta ultrapassada' : `meta de ${formatDuration(plannedMinutes)}`}` : ''}`,
     );
   });
 }
@@ -1087,7 +1087,7 @@ async function loadSessions() {
       const quest = quests.find((item) => item.id === session.quest_id);
       const duration = Number(session.duration_minutes);
       const durationLabel = Number.isFinite(duration) && duration > 0
-        ? `${duration} min`
+        ? formatDuration(duration)
         : session.status === 'in_progress' ? 'Duração não definida' : 'Duração indisponível';
       const activeTimer = session.status === 'in_progress'
         ? `<span class="session-timer" data-session-timer data-started-at="${escapeAttribute(session.started_at)}" data-planned-minutes="${Number.isFinite(duration) && duration > 0 ? duration : ''}" role="timer" aria-live="off"></span>`

@@ -1124,14 +1124,19 @@ async function loadSessions() {
       quests,
     );
     const activeCount = orderedSessions.filter((session) => session.status === 'in_progress').length;
-    const completedMinutes = orderedSessions.reduce((total, session) => {
-      if (session.status !== 'completed') return total;
+    const completedDurations = orderedSessions.reduce((durations, session) => {
+      if (session.status !== 'completed') return durations;
       const duration = Number(session.duration_minutes);
-      return Number.isFinite(duration) ? total + Math.max(0, duration) : total;
-    }, 0);
+      if (Number.isFinite(duration) && duration >= 0) durations.push(duration);
+      return durations;
+    }, []);
+    const completedMinutes = completedDurations.reduce((total, duration) => total + duration, 0);
+    const averageDuration = completedDurations.length
+      ? formatDuration(Math.round(completedMinutes / completedDurations.length))
+      : '—';
     if (summary) {
       const totalLabel = sessions.length === 1 ? 'sessão' : 'sessões';
-      summary.textContent = `${orderedSessions.length} de ${sessions.length} ${totalLabel} · ${activeCount} em andamento · ${formatDuration(completedMinutes)} estudados`;
+      summary.textContent = `${orderedSessions.length} de ${sessions.length} ${totalLabel} · ${activeCount} em andamento · ${formatDuration(completedMinutes)} estudados · média ${averageDuration}`;
     }
     if (!orderedSessions.length) {
       list.innerHTML = '<p class="small-empty">Nenhuma sessão encontrada com este filtro.</p>';

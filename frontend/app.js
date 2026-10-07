@@ -109,7 +109,9 @@ function updateActiveSessionTimers() {
     const elapsedMinutes = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 60000));
     const plannedMinutes = Number(timer.dataset.plannedMinutes);
     const hasPlannedDuration = Number.isFinite(plannedMinutes) && plannedMinutes > 0;
+    const isGoalReached = hasPlannedDuration && elapsedMinutes === plannedMinutes;
     const isOverPlan = hasPlannedDuration && elapsedMinutes > plannedMinutes;
+    timer.classList.toggle('session-timer-goal-reached', isGoalReached);
     timer.classList.toggle('session-timer-overrun', isOverPlan);
     const plannedLabel = hasPlannedDuration
       ? isOverPlan
@@ -130,19 +132,24 @@ function updateActiveSessionTimers() {
 
     const elapsedMinutes = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 60000));
     const progressMinutes = Math.min(elapsedMinutes, plannedMinutes);
+    const isGoalReached = elapsedMinutes === plannedMinutes;
+    const isOverPlan = elapsedMinutes > plannedMinutes;
     const percentage = (progressMinutes / plannedMinutes) * 100;
     progress.setAttribute('aria-valuenow', String(progressMinutes));
     progress.setAttribute(
       'aria-valuetext',
-      `${formatDuration(progressMinutes)} de ${formatDuration(plannedMinutes)}${elapsedMinutes > plannedMinutes ? '; meta ultrapassada' : ''}`,
+      `${formatDuration(progressMinutes)} de ${formatDuration(plannedMinutes)}${isOverPlan ? '; meta ultrapassada' : ''}`,
     );
-    progress.classList.toggle('session-goal-progress-overrun', elapsedMinutes > plannedMinutes);
+    progress.classList.toggle('session-goal-progress-reached', isGoalReached);
+    progress.classList.toggle('session-goal-progress-overrun', isOverPlan);
     progress.querySelector('[data-session-goal-progress-fill]').style.width = `${percentage}%`;
     const goalStatus = progress.parentElement.querySelector('[data-session-goal-status]');
     if (goalStatus) {
-      goalStatus.textContent = elapsedMinutes > plannedMinutes
+      goalStatus.classList.toggle('session-goal-status-reached', isGoalReached);
+      goalStatus.classList.toggle('session-goal-status-overrun', isOverPlan);
+      goalStatus.textContent = isOverPlan
         ? `Meta excedida há ${formatDuration(elapsedMinutes - plannedMinutes)}`
-        : elapsedMinutes === plannedMinutes
+        : isGoalReached
           ? 'Meta atingida'
           : `Restam ${formatDuration(plannedMinutes - elapsedMinutes)}`;
     }

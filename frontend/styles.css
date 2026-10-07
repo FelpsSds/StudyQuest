@@ -150,11 +150,15 @@ textarea { resize: vertical; }
 .session-info > span { color: var(--ink); font-size: 11px; }
 .session-info small { line-height: 1.5; }
 .session-timer { color: var(--coral); font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 700; }
+.session-timer-goal-reached { color: #42621a; }
 .session-timer-overrun { color: #a33b2b; }
 .session-goal-progress { height: 5px; overflow: hidden; border-radius: 999px; background: rgba(16, 24, 39, .12); }
 .session-goal-progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--coral); transition: width .25s ease; }
+.session-goal-progress-reached span { background: #82b62c; }
 .session-goal-progress-overrun span { background: #a33b2b; }
 .session-goal-status { color: var(--muted); font-size: 10px; }
+.session-goal-status-reached { color: #42621a !important; font-weight: 700; }
+.session-goal-status-overrun { color: #a33b2b !important; font-weight: 700; }
 .session-planned-duration { margin-top: 0 !important; }
 .session-active { border-left: 3px solid var(--coral); }
 .session-completed { border-left: 3px solid #82b62c; }

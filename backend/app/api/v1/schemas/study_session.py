@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StudySessionBase(BaseModel):
@@ -12,6 +12,7 @@ class StudySessionBase(BaseModel):
 
 
 class StudySessionCreate(StudySessionBase):
+    duration_minutes: int | None = Field(default=None, ge=1)
     status: Literal["in_progress"] = "in_progress"
 
 

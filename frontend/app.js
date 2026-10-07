@@ -1,5 +1,5 @@
 const API_BASE = 'http://127.0.0.1:8000/api/v1';
-const state = { token: localStorage.getItem('studyquest_token'), registerMode: false, generatedPlan: null };
+const state = { token: localStorage.getItem('studyquest_token'), registerMode: false, generatedPlan: null, sessionTimerInterval: null };
 const QUEST_FILTER_KEY = 'studyquest_quest_filter';
 const QUEST_SORT_KEY = 'studyquest_quest_sort';
 const SESSION_FILTER_KEY = 'studyquest_session_filter';
@@ -89,6 +89,27 @@ function csvCell(value) {
   const text = String(value ?? '');
   const safeText = /^[\t\r=+\-@]/.test(text) ? `'${text}` : text;
   return `"${safeText.replace(/"/g, '""')}"`;
+}
+
+function updateActiveSessionTimers() {
+  document.querySelectorAll('[data-session-timer]').forEach((timer) => {
+    const startedAt = new Date(timer.dataset.startedAt);
+    if (Number.isNaN(startedAt.getTime())) {
+      timer.textContent = 'Tempo indisponível';
+      return;
+    }
+
+    const elapsedMinutes = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 60000));
+    const plannedMinutes = Number(timer.dataset.plannedMinutes);
+    const plannedLabel = Number.isFinite(plannedMinutes) && plannedMinutes > 0
+      ? ` / ${plannedMinutes} min planejados`
+      : '';
+    timer.textContent = `${elapsedMinutes} min decorridos${plannedLabel}`;
+    timer.setAttribute(
+      'aria-label',
+      `Tempo decorrido: ${elapsedMinutes} minutos${plannedLabel ? `; meta de ${plannedMinutes} minutos` : ''}`,
+    );
+  });
 }
 
 function formatLocalDate(date) {
@@ -1002,6 +1023,10 @@ async function loadSessions() {
   const activeSearch = localStorage.getItem(SESSION_SEARCH_KEY) || '';
   if (filter) filter.value = activeFilter;
   if (periodFilter) periodFilter.value = activePeriodFilter;
+  if (state.sessionTimerInterval) {
+    window.clearInterval(state.sessionTimerInterval);
+    state.sessionTimerInterval = null;
+  }
   if (searchInput) searchInput.value = activeSearch;
 
   try {
@@ -1050,14 +1075,19 @@ async function loadSessions() {
       const quest = quests.find((item) => item.id === session.quest_id);
       const duration = Number(session.duration_minutes);
       const durationLabel = Number.isFinite(duration) && duration > 0
-        ? `${duration} min${session.status === 'in_progress' ? ' planejados' : ''}`
+        ? `${duration} min`
         : session.status === 'in_progress' ? 'Duração não definida' : 'Duração indisponível';
+      const activeTimer = session.status === 'in_progress'
+        ? `<span class="session-timer" data-session-timer data-started-at="${escapeAttribute(session.started_at)}" data-planned-minutes="${Number.isFinite(duration) && duration > 0 ? duration : ''}" role="timer" aria-live="off"></span>`
+        : '';
       return `
         <article class="session-row ${session.status === 'completed' ? 'session-completed' : 'session-active'}">
           <div class="session-info">
             <strong>${escapeHtml(subject?.name || (session.subject_id ? 'Disciplina removida' : 'Sessão livre'))}</strong>
             ${quest ? `<span>${escapeHtml(quest.title)}</span>` : session.quest_id ? '<span>Missão removida</span>' : ''}
-            <small>${session.status === 'completed' ? 'Concluída' : 'Em andamento'} · ${formatSessionDate(session.started_at)} · ${durationLabel}</small>
+            <small>${session.status === 'completed' ? 'Concluída' : 'Em andamento'} · ${formatSessionDate(session.started_at)}${session.status === 'in_progress' ? '' : ` · ${durationLabel}`}</small>
+            ${activeTimer}
+            ${session.status === 'in_progress' && durationLabel !== 'Duração não definida' ? `<small class="session-planned-duration">Meta: ${durationLabel}</small>` : ''}
           </div>
           <div class="row-actions">
             <button class="mini-delete" data-delete-session-id="${session.id}" type="button">Excluir</button>
@@ -1066,6 +1096,11 @@ async function loadSessions() {
         </article>
       `;
     }).join('');
+
+    updateActiveSessionTimers();
+    if (orderedSessions.some((session) => session.status === 'in_progress')) {
+      state.sessionTimerInterval = window.setInterval(updateActiveSessionTimers, 15000);
+    }
 
     list.querySelectorAll('[data-session-id]').forEach((button) => {
       button.addEventListener('click', () => completeStudySession(button.dataset.sessionId));

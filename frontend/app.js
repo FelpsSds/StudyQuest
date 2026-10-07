@@ -463,6 +463,15 @@ function persistSessionPreferences() {
   }
 }
 
+function syncSessionDurationPresets() {
+  const duration = Number(document.querySelector('#session-duration')?.value);
+  document.querySelectorAll('.preset-button').forEach((button) => {
+    const isSelected = Number(button.dataset.duration) === duration;
+    button.classList.toggle('active', isSelected);
+    button.setAttribute('aria-pressed', String(isSelected));
+  });
+}
+
 function restoreSessionPreferences() {
   const sessionSubject = document.querySelector('#session-subject');
   const sessionQuest = document.querySelector('#session-quest');
@@ -486,6 +495,7 @@ function restoreSessionPreferences() {
     const savedDuration = Number(localStorage.getItem(SESSION_DURATION_KEY) || 30);
     sessionDuration.value = Number.isFinite(savedDuration) && savedDuration > 0 ? String(savedDuration) : '30';
   }
+  syncSessionDurationPresets();
 }
 
 async function loadSessionQuestOptions() {
@@ -1590,7 +1600,7 @@ document.querySelectorAll('.preset-button').forEach((button) => {
     const duration = document.querySelector('#session-duration');
     if (!duration) return;
     duration.value = button.dataset.duration;
-    document.querySelectorAll('.preset-button').forEach((item) => item.classList.toggle('active', item === button));
+    syncSessionDurationPresets();
     persistSessionPreferences();
     duration.focus();
   });
@@ -1602,9 +1612,7 @@ document.querySelector('#session-subject').addEventListener('change', () => {
 document.querySelector('#session-quest').addEventListener('change', persistSessionPreferences);
 document.querySelector('#session-duration').addEventListener('input', () => {
   persistSessionPreferences();
-  document.querySelectorAll('.preset-button').forEach((button) => {
-    button.classList.toggle('active', Number(button.dataset.duration) === Number(document.querySelector('#session-duration').value));
-  });
+  syncSessionDurationPresets();
 });
 document.querySelector('#quest-filter').addEventListener('change', () => {
   localStorage.setItem(QUEST_FILTER_KEY, document.querySelector('#quest-filter').value);

@@ -1093,7 +1093,7 @@ async function loadSessions() {
       request('/quests/'),
     ]);
     if (!sessions.length) {
-      if (summary) summary.textContent = '0 sessões no histórico · 0 em andamento';
+      if (summary) summary.textContent = '0 sessões no histórico · 0 em andamento · 0 min estudados';
       list.innerHTML = '<p class="small-empty">Nenhuma sessão registrada ainda.</p>';
       return;
     }
@@ -1124,9 +1124,14 @@ async function loadSessions() {
       quests,
     );
     const activeCount = orderedSessions.filter((session) => session.status === 'in_progress').length;
+    const completedMinutes = orderedSessions.reduce((total, session) => {
+      if (session.status !== 'completed') return total;
+      const duration = Number(session.duration_minutes);
+      return Number.isFinite(duration) ? total + Math.max(0, duration) : total;
+    }, 0);
     if (summary) {
       const totalLabel = sessions.length === 1 ? 'sessão' : 'sessões';
-      summary.textContent = `${orderedSessions.length} de ${sessions.length} ${totalLabel} · ${activeCount} em andamento`;
+      summary.textContent = `${orderedSessions.length} de ${sessions.length} ${totalLabel} · ${activeCount} em andamento · ${formatDuration(completedMinutes)} estudados`;
     }
     if (!orderedSessions.length) {
       list.innerHTML = '<p class="small-empty">Nenhuma sessão encontrada com este filtro.</p>';

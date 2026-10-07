@@ -154,6 +154,7 @@ textarea { resize: vertical; }
 .session-goal-progress { height: 5px; overflow: hidden; border-radius: 999px; background: rgba(16, 24, 39, .12); }
 .session-goal-progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--coral); transition: width .25s ease; }
 .session-goal-progress-overrun span { background: #a33b2b; }
+.session-goal-status { color: var(--muted); font-size: 10px; }
 .session-planned-duration { margin-top: 0 !important; }
 .session-active { border-left: 3px solid var(--coral); }
 .session-completed { border-left: 3px solid #82b62c; }

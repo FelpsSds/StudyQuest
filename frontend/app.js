@@ -138,6 +138,14 @@ function updateActiveSessionTimers() {
     );
     progress.classList.toggle('session-goal-progress-overrun', elapsedMinutes > plannedMinutes);
     progress.querySelector('[data-session-goal-progress-fill]').style.width = `${percentage}%`;
+    const goalStatus = progress.parentElement.querySelector('[data-session-goal-status]');
+    if (goalStatus) {
+      goalStatus.textContent = elapsedMinutes > plannedMinutes
+        ? `Meta excedida há ${formatDuration(elapsedMinutes - plannedMinutes)}`
+        : elapsedMinutes === plannedMinutes
+          ? 'Meta atingida'
+          : `Restam ${formatDuration(plannedMinutes - elapsedMinutes)}`;
+    }
   });
 }
 
@@ -1120,7 +1128,7 @@ async function loadSessions() {
         ? `<span class="session-timer" data-session-timer data-started-at="${escapeAttribute(session.started_at)}" data-planned-minutes="${Number.isFinite(duration) && duration > 0 ? duration : ''}" role="timer" aria-live="off"></span>`
         : '';
       const activeProgress = session.status === 'in_progress' && Number.isFinite(duration) && duration > 0
-        ? `<div class="session-goal-progress" data-session-goal-progress data-started-at="${escapeAttribute(session.started_at)}" data-planned-minutes="${duration}" role="progressbar" aria-label="${escapeAttribute(`Progresso da meta de ${formatDuration(duration)}`)}" aria-valuemin="0" aria-valuemax="${duration}" aria-valuenow="0"><span data-session-goal-progress-fill></span></div>`
+        ? `<div class="session-goal-progress" data-session-goal-progress data-started-at="${escapeAttribute(session.started_at)}" data-planned-minutes="${duration}" role="progressbar" aria-label="${escapeAttribute(`Progresso da meta de ${formatDuration(duration)}`)}" aria-valuemin="0" aria-valuemax="${duration}" aria-valuenow="0"><span data-session-goal-progress-fill></span></div><small class="session-goal-status" data-session-goal-status aria-live="off"></small>`
         : '';
       return `
         <article class="session-row ${session.status === 'completed' ? 'session-completed' : 'session-active'}">

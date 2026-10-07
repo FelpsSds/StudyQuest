@@ -101,11 +101,11 @@ def test_create_study_session_accepts_custom_duration(client):
     assert data["duration_minutes"] == 45
 
 
-def test_create_study_session_rejects_non_positive_duration(client):
+def test_create_study_session_rejects_duration_below_minimum(client):
     token = _create_user(client, email="session-invalid-duration@example.com")
     headers = {"Authorization": f"Bearer {token}"}
 
-    for duration in (0, -1):
+    for duration in (-1, 0, 1, 14):
         response = client.post(
             "/api/v1/study-sessions/",
             json={"duration_minutes": duration},
@@ -113,6 +113,18 @@ def test_create_study_session_rejects_non_positive_duration(client):
         )
 
         assert response.status_code == 422
+
+
+def test_create_study_session_accepts_minimum_duration(client):
+    token = _create_user(client, email="session-minimum-duration@example.com")
+    response = client.post(
+        "/api/v1/study-sessions/",
+        json={"duration_minutes": 15},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["duration_minutes"] == 15
 
 
 def test_study_session_inherits_subject_from_quest(client):

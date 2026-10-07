@@ -12,7 +12,7 @@ class StudySessionBase(BaseModel):
 
 
 class StudySessionCreate(StudySessionBase):
-    duration_minutes: int | None = Field(default=None, ge=1)
+    duration_minutes: int | None = Field(default=None, ge=15)
     status: Literal["in_progress"] = "in_progress"
 
 

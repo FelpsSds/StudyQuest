@@ -91,6 +91,13 @@ function csvCell(value) {
   return `"${safeText.replace(/"/g, '""')}"`;
 }
 
+function formatTimerDuration(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (!hours) return `${remainingMinutes} min`;
+  return `${hours} h${remainingMinutes ? ` ${remainingMinutes} min` : ''}`;
+}
+
 function updateActiveSessionTimers() {
   document.querySelectorAll('[data-session-timer]').forEach((timer) => {
     const startedAt = new Date(timer.dataset.startedAt);
@@ -105,12 +112,14 @@ function updateActiveSessionTimers() {
     const isOverPlan = hasPlannedDuration && elapsedMinutes > plannedMinutes;
     timer.classList.toggle('session-timer-overrun', isOverPlan);
     const plannedLabel = hasPlannedDuration
-      ? isOverPlan ? ` · meta de ${plannedMinutes} min ultrapassada` : ` / ${plannedMinutes} min planejados`
+      ? isOverPlan
+        ? ` · meta de ${formatTimerDuration(plannedMinutes)} ultrapassada`
+        : ` / ${formatTimerDuration(plannedMinutes)} planejados`
       : '';
-    timer.textContent = `${elapsedMinutes} min decorridos${plannedLabel}`;
+    timer.textContent = `Tempo: ${formatTimerDuration(elapsedMinutes)}${plannedLabel}`;
     timer.setAttribute(
       'aria-label',
-      `Tempo decorrido: ${elapsedMinutes} minutos${hasPlannedDuration ? `; ${isOverPlan ? 'meta ultrapassada' : `meta de ${plannedMinutes} minutos`}` : ''}`,
+      `Tempo decorrido: ${formatTimerDuration(elapsedMinutes)}${hasPlannedDuration ? `; ${isOverPlan ? 'meta ultrapassada' : `meta de ${formatTimerDuration(plannedMinutes)}`}` : ''}`,
     );
   });
 }

@@ -101,13 +101,16 @@ function updateActiveSessionTimers() {
 
     const elapsedMinutes = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 60000));
     const plannedMinutes = Number(timer.dataset.plannedMinutes);
-    const plannedLabel = Number.isFinite(plannedMinutes) && plannedMinutes > 0
-      ? ` / ${plannedMinutes} min planejados`
+    const hasPlannedDuration = Number.isFinite(plannedMinutes) && plannedMinutes > 0;
+    const isOverPlan = hasPlannedDuration && elapsedMinutes > plannedMinutes;
+    timer.classList.toggle('session-timer-overrun', isOverPlan);
+    const plannedLabel = hasPlannedDuration
+      ? isOverPlan ? ` · meta de ${plannedMinutes} min ultrapassada` : ` / ${plannedMinutes} min planejados`
       : '';
     timer.textContent = `${elapsedMinutes} min decorridos${plannedLabel}`;
     timer.setAttribute(
       'aria-label',
-      `Tempo decorrido: ${elapsedMinutes} minutos${plannedLabel ? `; meta de ${plannedMinutes} minutos` : ''}`,
+      `Tempo decorrido: ${elapsedMinutes} minutos${hasPlannedDuration ? `; ${isOverPlan ? 'meta ultrapassada' : `meta de ${plannedMinutes} minutos`}` : ''}`,
     );
   });
 }

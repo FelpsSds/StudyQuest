@@ -180,6 +180,32 @@ def test_create_study_session_rejects_other_users_quest(client):
     assert response.status_code == 403
 
 
+def test_study_session_actions_are_restricted_to_owner(client):
+    owner_token = _create_user(client, email="session-owner@example.com")
+    other_token = _create_user(client, email="session-other-user@example.com")
+    owner_headers = {"Authorization": f"Bearer {owner_token}"}
+    other_headers = {"Authorization": f"Bearer {other_token}"}
+    created = client.post(
+        "/api/v1/study-sessions/",
+        json={"duration_minutes": 30},
+        headers=owner_headers,
+    )
+    assert created.status_code == 201
+    session_id = created.json()["id"]
+
+    assert client.get(f"/api/v1/study-sessions/{session_id}", headers=other_headers).status_code == 403
+    assert client.patch(
+        f"/api/v1/study-sessions/{session_id}/complete",
+        headers=other_headers,
+    ).status_code == 403
+    assert client.delete(f"/api/v1/study-sessions/{session_id}", headers=other_headers).status_code == 403
+
+    owner_session = client.get(f"/api/v1/study-sessions/{session_id}", headers=owner_headers)
+    assert owner_session.status_code == 200
+    assert owner_session.json()["status"] == "in_progress"
+    assert owner_session.json()["ended_at"] is None
+
+
 def test_delete_study_session_for_current_user(client):
     token = _create_user(client, email="session-delete@example.com")
     subject = _create_subject(client, token, name="Química")

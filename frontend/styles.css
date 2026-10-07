@@ -145,6 +145,7 @@ textarea { resize: vertical; }
 .session-search-field { grid-column: 1 / -1; }
 .session-history-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .session-history-actions > button { min-height: 38px; }
+.sessions-summary { margin: 14px 0 -10px; color: var(--muted); font-size: 11px; font-weight: 700; }
 .session-info { display: grid; gap: 3px; min-width: 0; }
 .session-info strong, .session-info > span { overflow-wrap: anywhere; }
 .session-info > span { color: var(--ink); font-size: 11px; }

@@ -1066,6 +1066,7 @@ async function deleteQuest(id) {
 
 async function loadSessions() {
   const list = document.querySelector('#sessions-list');
+  const summary = document.querySelector('#sessions-summary');
   const filter = document.querySelector('#session-filter');
   const subjectFilter = document.querySelector('#session-subject-filter');
   const periodFilter = document.querySelector('#session-period-filter');
@@ -1076,6 +1077,7 @@ async function loadSessions() {
   let activeSubjectFilter = localStorage.getItem(SESSION_SUBJECT_FILTER_KEY) || 'all';
   const activePeriodFilter = getSavedSessionPeriodFilter();
   const activeSearch = localStorage.getItem(SESSION_SEARCH_KEY) || '';
+  if (summary) summary.textContent = '';
   if (filter) filter.value = activeFilter;
   if (periodFilter) periodFilter.value = activePeriodFilter;
   if (state.sessionTimerInterval) {
@@ -1091,6 +1093,7 @@ async function loadSessions() {
       request('/quests/'),
     ]);
     if (!sessions.length) {
+      if (summary) summary.textContent = '0 sessões no histórico · 0 em andamento';
       list.innerHTML = '<p class="small-empty">Nenhuma sessão registrada ainda.</p>';
       return;
     }
@@ -1120,6 +1123,11 @@ async function loadSessions() {
       subjects,
       quests,
     );
+    const activeCount = orderedSessions.filter((session) => session.status === 'in_progress').length;
+    if (summary) {
+      const totalLabel = sessions.length === 1 ? 'sessão' : 'sessões';
+      summary.textContent = `${orderedSessions.length} de ${sessions.length} ${totalLabel} · ${activeCount} em andamento`;
+    }
     if (!orderedSessions.length) {
       list.innerHTML = '<p class="small-empty">Nenhuma sessão encontrada com este filtro.</p>';
       return;
@@ -1168,6 +1176,7 @@ async function loadSessions() {
       button.addEventListener('click', () => deleteStudySession(button.dataset.deleteSessionId));
     });
   } catch (error) {
+    if (summary) summary.textContent = '';
     list.innerHTML = `<p class="small-empty">${escapeHtml(error.message || 'Não foi possível carregar as sessões.')}</p>`;
   }
 }

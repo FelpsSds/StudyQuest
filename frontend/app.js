@@ -135,10 +135,11 @@ function updateActiveSessionTimers() {
     const isGoalReached = elapsedMinutes === plannedMinutes;
     const isOverPlan = elapsedMinutes > plannedMinutes;
     const percentage = (progressMinutes / plannedMinutes) * 100;
+    const percentageLabel = `${Math.floor(percentage)}% concluído`;
     progress.setAttribute('aria-valuenow', String(progressMinutes));
     progress.setAttribute(
       'aria-valuetext',
-      `${formatDuration(progressMinutes)} de ${formatDuration(plannedMinutes)}${isOverPlan ? '; meta ultrapassada' : ''}`,
+      `${formatDuration(progressMinutes)} de ${formatDuration(plannedMinutes)}; ${percentageLabel}${isOverPlan ? '; meta ultrapassada' : ''}`,
     );
     progress.classList.toggle('session-goal-progress-reached', isGoalReached);
     progress.classList.toggle('session-goal-progress-overrun', isOverPlan);
@@ -148,10 +149,10 @@ function updateActiveSessionTimers() {
       goalStatus.classList.toggle('session-goal-status-reached', isGoalReached);
       goalStatus.classList.toggle('session-goal-status-overrun', isOverPlan);
       goalStatus.textContent = isOverPlan
-        ? `Meta excedida há ${formatDuration(elapsedMinutes - plannedMinutes)}`
+        ? `Meta excedida há ${formatDuration(elapsedMinutes - plannedMinutes)} · ${percentageLabel}`
         : isGoalReached
-          ? 'Meta atingida'
-          : `Restam ${formatDuration(plannedMinutes - elapsedMinutes)}`;
+          ? `Meta atingida · ${percentageLabel}`
+          : `Restam ${formatDuration(plannedMinutes - elapsedMinutes)} · ${percentageLabel}`;
     }
   });
 }

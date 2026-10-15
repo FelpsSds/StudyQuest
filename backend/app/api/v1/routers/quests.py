@@ -110,8 +110,7 @@ def _ensure_subject_for_plan(
         color="#c7f36b",
     )
     db.add(subject)
-    db.commit()
-    db.refresh(subject)
+    db.flush()
     return subject
 
 

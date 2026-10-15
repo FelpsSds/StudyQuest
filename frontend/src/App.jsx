@@ -148,6 +148,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     const filtered = data.quests.filter((quest) => {
       if (filter === 'pending') return quest.status !== 'completed' && quest.status !== 'archived';
       if (filter === 'completed') return quest.status === 'completed';
+      if (filter === 'archived') return quest.status === 'archived';
       if (filter === 'overdue') return quest.due_date && quest.due_date < today && !['completed', 'archived'].includes(quest.status);
       return true;
     });
@@ -157,7 +158,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       if (sort === 'minutes') return (a.estimated_minutes || 0) - (b.estimated_minutes || 0);
       if (sort === 'xp') return (b.xp_reward || 0) - (a.xp_reward || 0);
       if (a.status === b.status) return (b.xp_reward || 0) - (a.xp_reward || 0);
-      return a.status === 'completed' ? 1 : -1;
+      const statusOrder = { in_progress: 0, pending: 1, archived: 2, completed: 3 };
+      return (statusOrder[a.status] ?? 1) - (statusOrder[b.status] ?? 1);
     });
   }, [data.quests, filter, sort]);
 
@@ -259,6 +261,13 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   async function completeQuest(questId) {
     await run(`quest-${questId}`, async () => {
       await request(`/quests/${questId}/complete`, jsonRequest('POST', { notes: 'Concluída pelo painel React' }));
+      await refresh();
+    });
+  }
+
+  async function updateQuestStatus(quest, status) {
+    await run(`quest-${quest.id}`, async () => {
+      await request(`/quests/${quest.id}`, jsonRequest('PUT', { status }));
       await refresh();
     });
   }
@@ -521,14 +530,14 @@ function Dashboard({ data, refresh, onLogout, onError }) {
 
         <section className="quests-section">
           <div className="section-heading"><div><span className="kicker">SEU MAPA</span><h2>Missões</h2></div><div className="row-actions">
-            <label className="compact-field inline-filter"><span>Filtrar</span><select value={filter} onChange={(event) => { setFilter(event.target.value); localStorage.setItem('studyquest_quest_filter', event.target.value); }}><option value="all">Todas</option><option value="pending">Pendentes</option><option value="completed">Concluídas</option><option value="overdue">Atrasadas</option></select></label>
+            <label className="compact-field inline-filter"><span>Filtrar</span><select value={filter} onChange={(event) => { setFilter(event.target.value); localStorage.setItem('studyquest_quest_filter', event.target.value); }}><option value="all">Todas</option><option value="pending">Pendentes</option><option value="completed">Concluídas</option><option value="archived">Arquivadas</option><option value="overdue">Atrasadas</option></select></label>
             <label className="compact-field inline-filter"><span>Ordenar</span><select value={sort} onChange={(event) => { setSort(event.target.value); localStorage.setItem('studyquest_quest_sort', event.target.value); }}><option value="priority">Prioridade</option><option value="due_date">Prazo</option><option value="xp">XP</option><option value="minutes">Tempo</option><option value="title">Título</option></select></label>
             <button className="icon-button" type="button" onClick={refresh}>Atualizar <span aria-hidden="true">↻</span></button>
           </div></div>
           <div className="quests-list">
             {questList.length === 0 ? <p className="empty-state">Nenhuma missão neste filtro. Crie uma missão para começar.</p> : questList.map((quest) => {
               const subject = data.subjects.find((item) => item.id === quest.subject_id);
-              return <article className={`quest-item ${quest.status === 'completed' ? 'completed' : ''}`} key={quest.id}>
+              return <article className={`quest-item ${quest.status === 'completed' ? 'completed' : ''} ${quest.status === 'archived' ? 'archived' : ''}`} key={quest.id}>
                 {editingQuestId === quest.id ? <form className="quest-edit-form" onSubmit={(event) => updateQuest(event, quest.id)}>
                   <label className="compact-field">Título<input name="title" defaultValue={quest.title} maxLength="200" required /></label>
                   <label className="compact-field">Descrição<textarea name="description" rows="2" defaultValue={quest.description || ''} /></label>
@@ -542,11 +551,11 @@ function Dashboard({ data, refresh, onLogout, onError }) {
                   <label className="compact-field">Prazo<input name="due_date" type="date" defaultValue={quest.due_date || ''} /></label>
                   <div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === `quest-${quest.id}`}>Salvar</button><button className="text-button" type="button" onClick={() => { setEditingQuestId(null); setEditingQuestSubject(''); setEditingQuestBossId(''); }}>Cancelar</button></div>
                 </form> : <>
-                  <div><div className="quest-title-line"><h3 className="quest-title">{quest.title}</h3>{quest.due_date && <span className="quest-due-badge">{formatDate(quest.due_date)}</span>}</div>
+                  <div><div className="quest-title-line"><h3 className="quest-title">{quest.title}</h3>{quest.status === 'archived' && <span className="quest-status-badge">Arquivada</span>}{quest.due_date && <span className="quest-due-badge">{formatDate(quest.due_date)}</span>}</div>
                     <div className="quest-meta">{subject?.name || 'Sem disciplina'} · {quest.xp_reward} XP · {formatDuration(quest.estimated_minutes)}</div>
                     {quest.description && <details className="quest-details"><summary>Ver detalhes</summary><p>{quest.description}</p></details>}
                   </div>
-                  <div className="quest-actions"><button className="complete-button" type="button" disabled={quest.status === 'completed' || busyKey === `quest-${quest.id}`} onClick={() => completeQuest(quest.id)}>{quest.status === 'completed' ? 'Concluída' : 'Concluir'}</button>{quest.status !== 'completed' && <button className="mini-edit" type="button" onClick={() => editQuest(quest)}>Editar</button>}<button className="delete-button" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => deleteQuest(quest)}>Excluir</button></div>
+                  <div className="quest-actions">{quest.status !== 'archived' && <button className="complete-button" type="button" disabled={quest.status === 'completed' || busyKey === `quest-${quest.id}`} onClick={() => completeQuest(quest.id)}>{quest.status === 'completed' ? 'Concluída' : 'Concluir'}</button>}{quest.status !== 'completed' && <button className="mini-edit" type="button" onClick={() => editQuest(quest)}>Editar</button>}{quest.status === 'archived' ? <button className="archive-button" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => updateQuestStatus(quest, 'pending')}>Restaurar</button> : quest.status !== 'completed' && <button className="archive-button" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => updateQuestStatus(quest, 'archived')}>Arquivar</button>}<button className="delete-button" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => deleteQuest(quest)}>Excluir</button></div>
                 </>}
               </article>;
             })}

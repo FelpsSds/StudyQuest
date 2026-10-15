@@ -449,6 +449,9 @@ async function loadSubjects() {
       const saved = localStorage.getItem(SESSION_SUBJECT_KEY);
       if (saved && Array.from(sessionSelect.options).some((option) => option.value === saved)) {
         sessionSelect.value = saved;
+      } else if (saved) {
+        localStorage.removeItem(SESSION_SUBJECT_KEY);
+        localStorage.removeItem(SESSION_QUEST_KEY);
       }
     }
 

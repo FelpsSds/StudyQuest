@@ -69,15 +69,17 @@ function getFilteredSessions(
   const filtered = sessions.filter((session) => {
     const matchesStatus = filter === 'all' || session.status === filter;
     const matchesSubject = subjectFilter === 'all'
-      || (subjectFilter === 'none' ? session.subject_id == null : String(session.subject_id) === subjectFilter);
+      || (subjectFilter === 'none' ? session.subject_id == null && !session.subject_name
+        : subjectFilter === 'removed' ? session.subject_id == null && Boolean(session.subject_name)
+          : String(session.subject_id) === subjectFilter);
     const startedAt = new Date(session.started_at);
     const matchesPeriod = periodFilter === 'all'
       || (!Number.isNaN(startedAt.getTime()) && startedAt >= earliestDate && startedAt <= now);
     const subject = subjects.find((item) => item.id === session.subject_id);
     const quest = quests.find((item) => item.id === session.quest_id);
     const matchesSearch = !normalizedSearch
-      || (subject?.name || '').toLocaleLowerCase('pt-BR').includes(normalizedSearch)
-      || (quest?.title || '').toLocaleLowerCase('pt-BR').includes(normalizedSearch);
+      || (subject?.name || session.subject_name || '').toLocaleLowerCase('pt-BR').includes(normalizedSearch)
+      || (quest?.title || session.quest_title || '').toLocaleLowerCase('pt-BR').includes(normalizedSearch);
     return matchesStatus && matchesSubject && matchesPeriod && matchesSearch;
   });
   return [...filtered].sort((a, b) => {
@@ -1105,12 +1107,14 @@ async function loadSessions() {
     }
 
     if (subjectFilter) {
-      const validSubjectFilters = new Set(['all', 'none', ...subjects.map((subject) => String(subject.id))]);
+      const hasRemovedSubjectSessions = sessions.some((session) => session.subject_id == null && session.subject_name);
+      const validSubjectFilters = new Set(['all', 'none', ...(hasRemovedSubjectSessions ? ['removed'] : []), ...subjects.map((subject) => String(subject.id))]);
       if (!validSubjectFilters.has(activeSubjectFilter)) {
         activeSubjectFilter = 'all';
         localStorage.setItem(SESSION_SUBJECT_FILTER_KEY, activeSubjectFilter);
       }
       subjectFilter.innerHTML = '<option value="all">Todas as disciplinas</option><option value="none">Sem disciplina</option>';
+      if (hasRemovedSubjectSessions) subjectFilter.add(new Option('Disciplina removida', 'removed'));
       subjects.forEach((subject) => {
         const option = document.createElement('option');
         option.value = String(subject.id);
@@ -1165,8 +1169,8 @@ async function loadSessions() {
       return `
         <article class="session-row ${session.status === 'completed' ? 'session-completed' : 'session-active'}">
           <div class="session-info">
-            <strong>${escapeHtml(subject?.name || (session.subject_id ? 'Disciplina removida' : 'Sessão livre'))}</strong>
-            ${quest ? `<span>${escapeHtml(quest.title)}</span>` : session.quest_id ? '<span>Missão removida</span>' : ''}
+            <strong>${escapeHtml(subject?.name || (session.subject_name ? `${session.subject_name} (removida)` : session.subject_id ? 'Disciplina removida' : 'Sessão livre'))}</strong>
+            ${quest || session.quest_title || session.quest_id ? `<span>${escapeHtml(quest?.title || (session.quest_title ? `${session.quest_title} (removida)` : 'Missão removida'))}</span>` : ''}
             <small>${session.status === 'completed' ? 'Concluída' : 'Em andamento'} · ${formatSessionDate(session.started_at)}${session.status === 'in_progress' ? '' : ` · ${durationLabel}`}</small>
             ${activeTimer}
             ${activeProgress}
@@ -1226,8 +1230,8 @@ async function exportStudySessions() {
         return [
           formatSessionDate(session.started_at),
           session.status === 'completed' ? 'Concluída' : 'Em andamento',
-          subject?.name || (session.subject_id ? 'Disciplina removida' : 'Sessão livre'),
-          quest?.title || (session.quest_id ? 'Missão removida' : ''),
+          subject?.name || session.subject_name || (session.subject_id ? 'Disciplina removida' : 'Sessão livre'),
+          quest?.title || session.quest_title || (session.quest_id ? 'Missão removida' : ''),
           session.duration_minutes ?? '',
         ];
       }),

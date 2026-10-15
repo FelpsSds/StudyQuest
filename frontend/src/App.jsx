@@ -192,7 +192,9 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     () => data.sessions.find((session) => session.status === 'in_progress'),
     [data.sessions],
   );
+  const hasRemovedSubjectSessions = data.sessions.some((session) => session.subject_id == null && session.subject_name);
   const effectiveSessionSubjectFilter = ['all', 'none'].includes(sessionSubjectFilter)
+    || (sessionSubjectFilter === 'removed' && hasRemovedSubjectSessions)
     || data.subjects.some((subject) => String(subject.id) === sessionSubjectFilter)
     ? sessionSubjectFilter
     : 'all';
@@ -205,12 +207,13 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     const term = sessionSearch.trim().toLocaleLowerCase('pt-BR');
     return [...data.sessions].filter((session) => {
       if (sessionStatusFilter !== 'all' && session.status !== sessionStatusFilter) return false;
-      if (effectiveSessionSubjectFilter === 'none' && session.subject_id != null) return false;
-      if (effectiveSessionSubjectFilter !== 'all' && effectiveSessionSubjectFilter !== 'none' && String(session.subject_id) !== effectiveSessionSubjectFilter) return false;
+      if (effectiveSessionSubjectFilter === 'none' && (session.subject_id != null || session.subject_name)) return false;
+      if (effectiveSessionSubjectFilter === 'removed' && (session.subject_id != null || !session.subject_name)) return false;
+      if (!['all', 'none', 'removed'].includes(effectiveSessionSubjectFilter) && String(session.subject_id) !== effectiveSessionSubjectFilter) return false;
       const startedAt = parseApiDateTime(session.started_at).getTime();
       if (cutoff != null && (!Number.isFinite(startedAt) || startedAt < cutoff)) return false;
-      const subject = data.subjects.find((item) => item.id === session.subject_id)?.name || '';
-      const quest = data.quests.find((item) => item.id === session.quest_id)?.title || '';
+      const subject = data.subjects.find((item) => item.id === session.subject_id)?.name || session.subject_name || '';
+      const quest = data.quests.find((item) => item.id === session.quest_id)?.title || session.quest_title || '';
       return !term || `${subject} ${quest}`.toLocaleLowerCase('pt-BR').includes(term);
     }).sort((a, b) => parseApiDateTime(b.started_at).getTime() - parseApiDateTime(a.started_at).getTime());
   }, [data.sessions, data.subjects, data.quests, sessionStatusFilter, effectiveSessionSubjectFilter, sessionPeriodFilter, sessionSearch]);
@@ -383,8 +386,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       ...filteredSessions.map((session) => [
         formatDateTime(session.started_at),
         session.status === 'completed' ? 'Concluída' : 'Em andamento',
-        data.subjects.find((item) => item.id === session.subject_id)?.name || 'Estudo livre',
-        data.quests.find((item) => item.id === session.quest_id)?.title || '',
+        data.subjects.find((item) => item.id === session.subject_id)?.name || session.subject_name || 'Estudo livre',
+        data.quests.find((item) => item.id === session.quest_id)?.title || session.quest_title || '',
         session.duration_minutes ?? '',
       ]),
     ];
@@ -736,7 +739,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             </form>}
             <div className="session-history-controls">
               <label className="compact-field">Situação<select value={sessionStatusFilter} onChange={(event) => setSessionStatusFilter(event.target.value)}><option value="all">Todas</option><option value="in_progress">Em andamento</option><option value="completed">Concluídas</option></select></label>
-              <label className="compact-field">Disciplina<select value={effectiveSessionSubjectFilter} onChange={(event) => setSessionSubjectFilter(event.target.value)}><option value="all">Todas</option><option value="none">Estudo livre</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+              <label className="compact-field">Disciplina<select value={effectiveSessionSubjectFilter} onChange={(event) => setSessionSubjectFilter(event.target.value)}><option value="all">Todas</option><option value="none">Estudo livre</option>{hasRemovedSubjectSessions && <option value="removed">Disciplina removida</option>}{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
               <label className="compact-field">Período<select value={sessionPeriodFilter} onChange={(event) => setSessionPeriodFilter(event.target.value)}><option value="all">Todo o histórico</option><option value="today">Hoje</option><option value="7days">Últimos 7 dias</option><option value="30days">Últimos 30 dias</option></select></label>
               <label className="compact-field session-search-field">Buscar<input type="search" value={sessionSearch} onChange={(event) => setSessionSearch(event.target.value)} placeholder="Disciplina ou missão" /></label>
               <button className="mini-edit" type="button" onClick={exportSessions}>Exportar CSV</button>
@@ -746,7 +749,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
               const subject = data.subjects.find((item) => item.id === session.subject_id);
               const quest = data.quests.find((item) => item.id === session.quest_id);
               const elapsed = Math.max(0, Math.floor((now - parseApiDateTime(session.started_at).getTime()) / 60_000));
-              return <div className={`session-row ${session.status === 'in_progress' ? 'session-active' : 'session-completed'}`} key={session.id}><div className="session-info"><strong>{subject?.name || (session.subject_id ? 'Disciplina removida' : 'Estudo livre')}</strong>{quest && <span>{quest.title}</span>}<small>{session.status === 'in_progress' ? `Em andamento · meta ${formatDuration(session.duration_minutes)} · ${formatDuration(elapsed)} decorridos` : `Concluída · ${formatDateTime(session.started_at)} · ${formatDuration(session.duration_minutes)}`}</small></div><div className="session-row-actions">{session.status === 'in_progress' && <button className="mini-edit" type="button" disabled={busyKeys.has(`session-${session.id}`)} onClick={() => completeSession(session.id)}>Finalizar</button>}<button className="mini-delete" type="button" disabled={busyKeys.has(`session-${session.id}`)} onClick={() => deleteSession(session)}>Excluir</button></div></div>;
+              return <div className={`session-row ${session.status === 'in_progress' ? 'session-active' : 'session-completed'}`} key={session.id}><div className="session-info"><strong>{subject?.name || (session.subject_name ? `${session.subject_name} (removida)` : session.subject_id ? 'Disciplina removida' : 'Estudo livre')}</strong>{(quest || session.quest_title || session.quest_id) && <span>{quest?.title || (session.quest_title ? `${session.quest_title} (removida)` : 'Missão removida')}</span>}<small>{session.status === 'in_progress' ? `Em andamento · meta ${formatDuration(session.duration_minutes)} · ${formatDuration(elapsed)} decorridos` : `Concluída · ${formatDateTime(session.started_at)} · ${formatDuration(session.duration_minutes)}`}</small></div><div className="session-row-actions">{session.status === 'in_progress' && <button className="mini-edit" type="button" disabled={busyKeys.has(`session-${session.id}`)} onClick={() => completeSession(session.id)}>Finalizar</button>}<button className="mini-delete" type="button" disabled={busyKeys.has(`session-${session.id}`)} onClick={() => deleteSession(session)}>Excluir</button></div></div>;
             })}</div>
           </section>
         </section>

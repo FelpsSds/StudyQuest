@@ -24,3 +24,5 @@ class StudySessionRead(StudySessionBase):
     started_at: datetime
     ended_at: datetime | None = None
     duration_minutes: int | None = None
+    subject_name: str | None = None
+    quest_title: str | None = None

@@ -70,12 +70,15 @@ def create_study_session(
         )
 
     session_subject_id = payload.subject_id
+    session_subject_name = None
+    quest_title = None
     if session_subject_id is not None:
         subject = db.query(Subject).filter(Subject.id == session_subject_id).first()
         if not subject:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
         if subject.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this subject")
+        session_subject_name = subject.name
 
     if payload.quest_id is not None:
         quest = db.query(Quest).filter(Quest.id == payload.quest_id).first()
@@ -88,6 +91,7 @@ def create_study_session(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="New study sessions can only be linked to active quests",
             )
+        quest_title = quest.title
         if session_subject_id is not None and quest.subject_id is not None and session_subject_id != quest.subject_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -95,11 +99,14 @@ def create_study_session(
             )
         if session_subject_id is None:
             session_subject_id = quest.subject_id
+            session_subject_name = quest.subject.name if quest.subject else None
 
     study_session = StudySession(
         user_id=current_user.id,
         subject_id=session_subject_id,
+        subject_name=session_subject_name,
         quest_id=payload.quest_id,
+        quest_title=quest_title,
         duration_minutes=payload.duration_minutes,
         status=payload.status,
     )

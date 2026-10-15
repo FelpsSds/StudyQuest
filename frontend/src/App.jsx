@@ -27,8 +27,15 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? 'Data inválida' : date.toLocaleDateString('pt-BR');
 }
 
+function parseApiDateTime(value) {
+  if (!value) return new Date(Number.NaN);
+  const serialized = String(value);
+  const hasTimezone = /(?:z|[+-]\d{2}:?\d{2})$/i.test(serialized);
+  return new Date(hasTimezone ? serialized : `${serialized}Z`);
+}
+
 function formatDateTime(value) {
-  const date = new Date(value);
+  const date = parseApiDateTime(value);
   return Number.isNaN(date.getTime()) ? 'Data indisponível' : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
@@ -187,12 +194,12 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       if (sessionStatusFilter !== 'all' && session.status !== sessionStatusFilter) return false;
       if (sessionSubjectFilter === 'none' && session.subject_id != null) return false;
       if (sessionSubjectFilter !== 'all' && sessionSubjectFilter !== 'none' && String(session.subject_id) !== sessionSubjectFilter) return false;
-      const startedAt = new Date(session.started_at).getTime();
+      const startedAt = parseApiDateTime(session.started_at).getTime();
       if (cutoff != null && (!Number.isFinite(startedAt) || startedAt < cutoff)) return false;
       const subject = data.subjects.find((item) => item.id === session.subject_id)?.name || '';
       const quest = data.quests.find((item) => item.id === session.quest_id)?.title || '';
       return !term || `${subject} ${quest}`.toLocaleLowerCase('pt-BR').includes(term);
-    }).sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+    }).sort((a, b) => parseApiDateTime(b.started_at).getTime() - parseApiDateTime(a.started_at).getTime());
   }, [data.sessions, data.subjects, data.quests, sessionStatusFilter, sessionSubjectFilter, sessionPeriodFilter, sessionSearch]);
 
   async function run(key, action) {
@@ -503,7 +510,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   }
 
   const activeElapsed = activeSession
-    ? Math.max(0, Math.floor((now - new Date(activeSession.started_at).getTime()) / 60_000))
+    ? Math.max(0, Math.floor((now - parseApiDateTime(activeSession.started_at).getTime()) / 60_000))
     : 0;
   const activeSessionGoal = Number(activeSession?.duration_minutes) || 0;
   const activeSessionProgress = activeSessionGoal ? Math.min(100, Math.round(activeElapsed / activeSessionGoal * 100)) : 0;
@@ -713,7 +720,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <div className="sessions-list">{filteredSessions.length === 0 ? <p className="small-empty">Nenhuma sessão encontrada com estes filtros.</p> : filteredSessions.map((session) => {
               const subject = data.subjects.find((item) => item.id === session.subject_id);
               const quest = data.quests.find((item) => item.id === session.quest_id);
-              const elapsed = Math.max(0, Math.floor((now - new Date(session.started_at).getTime()) / 60_000));
+              const elapsed = Math.max(0, Math.floor((now - parseApiDateTime(session.started_at).getTime()) / 60_000));
               return <div className={`session-row ${session.status === 'in_progress' ? 'session-active' : 'session-completed'}`} key={session.id}><div className="session-info"><strong>{subject?.name || (session.subject_id ? 'Disciplina removida' : 'Estudo livre')}</strong>{quest && <span>{quest.title}</span>}<small>{session.status === 'in_progress' ? `Em andamento · meta ${formatDuration(session.duration_minutes)} · ${formatDuration(elapsed)} decorridos` : `Concluída · ${formatDateTime(session.started_at)} · ${formatDuration(session.duration_minutes)}`}</small></div><div className="session-row-actions">{session.status === 'in_progress' && <button className="mini-edit" type="button" disabled={busyKey === `session-${session.id}`} onClick={() => completeSession(session.id)}>Finalizar</button>}<button className="mini-delete" type="button" disabled={busyKey === `session-${session.id}`} onClick={() => deleteSession(session)}>Excluir</button></div></div>;
             })}</div>
           </section>

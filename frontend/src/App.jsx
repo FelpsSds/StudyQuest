@@ -748,9 +748,10 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     const labels = ['perfil', 'sequência', 'missões', 'disciplinas', 'sessões', 'análises', 'recompensas', 'desafios', 'conquistas', 'ranking'];
+    const activityTimezone = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
     const results = await Promise.allSettled([
-      request('/users/dashboard'), request('/users/streak'), request('/quests/'), request('/subjects/'),
-      request('/study-sessions/'), request('/users/analytics'), request('/users/rewards'), request('/boss-fights/'),
+      request('/users/dashboard'), request(`/users/streak?timezone=${activityTimezone}`), request('/quests/'), request('/subjects/'),
+      request('/study-sessions/'), request(`/users/analytics?timezone=${activityTimezone}`), request('/users/rewards'), request('/boss-fights/'),
       request('/achievements/progress'), request('/users/leaderboard'),
     ]);
     if (results[0].status === 'rejected') throw results[0].reason;

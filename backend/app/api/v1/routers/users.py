@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -17,6 +18,13 @@ from app.models.user import User
 from app.models.xp_transaction import XPTransaction
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+def _get_activity_timezone(timezone_name: str) -> ZoneInfo:
+    try:
+        return ZoneInfo(timezone_name)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid timezone") from exc
 
 
 @router.get("/me", response_model=UserRead)
@@ -100,6 +108,7 @@ def read_leaderboard(
 
 @router.get("/streak")
 def read_streak(
+    timezone_name: str = Query(default="UTC", alias="timezone", max_length=64),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
@@ -114,14 +123,15 @@ def read_streak(
         .all()
     )
 
+    activity_timezone = _get_activity_timezone(timezone_name)
     activity_dates = set()
     for session in sessions:
         started_at = session.started_at
         if started_at.tzinfo is None:
             started_at = started_at.replace(tzinfo=timezone.utc)
-        activity_dates.add(started_at.astimezone(timezone.utc).date())
+        activity_dates.add(started_at.astimezone(activity_timezone).date())
 
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(activity_timezone).date()
     current_streak, best_streak = calculate_streak(activity_dates, today)
     last_session_date = max(activity_dates).isoformat() if activity_dates else None
 
@@ -139,9 +149,11 @@ def read_streak(
 
 @router.get("/analytics")
 def read_analytics(
+    timezone_name: str = Query(default="UTC", alias="timezone", max_length=64),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
+    activity_timezone = _get_activity_timezone(timezone_name)
     sessions = db.query(StudySession).filter(StudySession.user_id == current_user.id).all()
     completed_sessions = [session for session in sessions if session.status == "completed"]
 
@@ -150,7 +162,7 @@ def read_analytics(
         total_study_minutes / len(completed_sessions) if completed_sessions else 0
     )
     quests_completed = db.query(QuestCompletion).filter(QuestCompletion.user_id == current_user.id).count()
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(activity_timezone).date()
     first_day = today - timedelta(days=6)
     daily_activity = {
         first_day + timedelta(days=offset): {"minutes": 0, "sessions": 0}
@@ -160,7 +172,7 @@ def read_analytics(
         started_at = session.started_at
         if started_at.tzinfo is None:
             started_at = started_at.replace(tzinfo=timezone.utc)
-        activity = daily_activity.get(started_at.astimezone(timezone.utc).date())
+        activity = daily_activity.get(started_at.astimezone(activity_timezone).date())
         if activity is not None:
             activity["minutes"] += session.duration_minutes or 0
             activity["sessions"] += 1

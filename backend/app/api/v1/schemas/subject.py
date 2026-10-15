@@ -1,4 +1,12 @@
+import re
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+def _validate_color(value: str | None) -> str | None:
+    if value is not None and not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+        raise ValueError("Color must use the #RRGGBB format")
+    return value
 
 
 class SubjectBase(BaseModel):
@@ -20,6 +28,11 @@ class SubjectBase(BaseModel):
         if not normalized:
             return None
         return normalized
+
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, value: str | None) -> str | None:
+        return _validate_color(value)
 
     @field_validator("name")
     @classmethod
@@ -53,6 +66,11 @@ class SubjectUpdate(BaseModel):
         if not normalized:
             return None
         return normalized
+
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, value: str | None) -> str | None:
+        return _validate_color(value)
 
     @field_validator("name")
     @classmethod

@@ -27,6 +27,10 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? 'Data inválida' : date.toLocaleDateString('pt-BR');
 }
 
+function subjectColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(value || '') ? value : '#c7f36b';
+}
+
 function parseApiDateTime(value) {
   if (!value) return new Date(Number.NaN);
   const serialized = String(value);
@@ -631,7 +635,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <label className="compact-field">Cor<input name="color" type="color" defaultValue="#c7f36b" /></label>
             <button className="secondary-button" type="submit" disabled={busyKeys.has('subject')}>Adicionar disciplina <span aria-hidden="true">→</span></button>
             <div className="subjects-list">{data.subjects.length === 0 ? <p className="small-empty">Suas disciplinas aparecem aqui.</p> : data.subjects.map((subject) => <div className="subject-entry" key={subject.id}>
-              <div className="subject-row"><div className="subject-row-heading"><span className="subject-color-dot" style={{ '--subject-color': subject.color || '#c7f36b' }} /><div><strong>{subject.name}</strong><small>{data.quests.filter((quest) => quest.subject_id === subject.id).length} missões{subject.professor ? ` · ${subject.professor}` : ''}{subject.semester ? ` · ${subject.semester}` : ''}</small></div></div><div className="subject-actions"><button className="mini-edit" type="button" onClick={() => setEditingSubjectId(editingSubjectId === subject.id ? null : subject.id)}>{editingSubjectId === subject.id ? 'Fechar' : 'Editar'}</button><button className="mini-delete" type="button" disabled={busyKeys.has(`subject-${subject.id}`)} onClick={() => deleteSubject(subject)}>Excluir</button></div></div>
+              <div className="subject-row"><div className="subject-row-heading"><span className="subject-color-dot" style={{ '--subject-color': subjectColor(subject.color) }} /><div><strong>{subject.name}</strong><small>{data.quests.filter((quest) => quest.subject_id === subject.id).length} missões{subject.professor ? ` · ${subject.professor}` : ''}{subject.semester ? ` · ${subject.semester}` : ''}</small></div></div><div className="subject-actions"><button className="mini-edit" type="button" onClick={() => setEditingSubjectId(editingSubjectId === subject.id ? null : subject.id)}>{editingSubjectId === subject.id ? 'Fechar' : 'Editar'}</button><button className="mini-delete" type="button" disabled={busyKeys.has(`subject-${subject.id}`)} onClick={() => deleteSubject(subject)}>Excluir</button></div></div>
               {editingSubjectId === subject.id && <form className="subject-edit-form" onSubmit={(event) => updateSubject(event, subject.id)}>
                 <label className="compact-field">Nome<input name="name" defaultValue={subject.name} maxLength="120" required /></label>
                 <label className="compact-field">Descrição<textarea name="description" defaultValue={subject.description || ''} maxLength="500" rows="2" /></label>

@@ -5,6 +5,7 @@ const validationFieldLabels = {
   audience: 'Público',
   boss_damage: 'Dano no Boss',
   boss_fight_id: 'Boss Fight',
+  color: 'Cor',
   description: 'Descrição',
   difficulty: 'Dificuldade',
   duration_minutes: 'Duração',

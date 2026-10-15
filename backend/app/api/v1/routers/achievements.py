@@ -61,6 +61,7 @@ def ensure_default_achievements(db: Session) -> bool:
 
 def _award_achievement_if_needed(db: Session, user: User) -> list[Achievement]:
     ensure_default_achievements(db)
+    db.flush()
     quest_count = db.query(QuestCompletion).filter(QuestCompletion.user_id == user.id).count()
     existing_ids = {
         item.achievement_id

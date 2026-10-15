@@ -71,11 +71,15 @@ def complete_boss_fight(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> BossFight:
-    boss_fight = _get_owned_boss_fight(db, boss_fight_id, current_user)
+    user = db.query(User).filter(User.id == current_user.id).populate_existing().with_for_update().first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    boss_fight = _get_owned_boss_fight(db, boss_fight_id, user)
     if boss_fight.status == "completed":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Boss fight already completed")
 
-    award_boss_defeat(db, boss_fight, current_user)
+    award_boss_defeat(db, boss_fight, user)
     db.commit()
     db.refresh(boss_fight)
     return boss_fight

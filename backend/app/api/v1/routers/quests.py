@@ -398,17 +398,21 @@ def complete_quest(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Quest:
+    user = db.query(User).filter(User.id == current_user.id).populate_existing().with_for_update().first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
     quest = db.query(Quest).filter(Quest.id == quest_id).first()
     if not quest:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quest not found")
-    if quest.user_id != current_user.id:
+    if quest.user_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this quest")
     if quest.status == QuestStatus.ARCHIVED:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Archived quest cannot be completed")
 
     existing = (
         db.query(QuestCompletion)
-        .filter(QuestCompletion.user_id == current_user.id, QuestCompletion.quest_id == quest.id)
+        .filter(QuestCompletion.user_id == user.id, QuestCompletion.quest_id == quest.id)
         .first()
     )
     if existing:
@@ -416,18 +420,18 @@ def complete_quest(
 
     quest.status = QuestStatus.COMPLETED
     quest.completed_at = datetime.now(timezone.utc)
-    current_user.xp += quest.xp_reward
-    current_user.level = level_for_xp(current_user.xp)
+    user.xp += quest.xp_reward
+    user.level = level_for_xp(user.xp)
 
     if quest.boss_fight_id is not None:
-        boss_fight = db.query(BossFight).filter(BossFight.id == quest.boss_fight_id).first()
+        boss_fight = db.query(BossFight).filter(BossFight.id == quest.boss_fight_id).with_for_update().first()
         if boss_fight is not None and boss_fight.status == "active":
             boss_fight.hp_current = max(0, boss_fight.hp_current - quest.boss_damage)
             if boss_fight.hp_current == 0:
-                award_boss_defeat(db, boss_fight, current_user)
+                award_boss_defeat(db, boss_fight, user)
 
     completion = QuestCompletion(
-        user_id=current_user.id,
+        user_id=user.id,
         quest_id=quest.id,
         xp_earned=quest.xp_reward,
         notes=payload.notes,
@@ -436,15 +440,15 @@ def complete_quest(
     db.add(completion)
     db.add(
         XPTransaction(
-            user_id=current_user.id,
+            user_id=user.id,
             amount=quest.xp_reward,
             reason=f"Quest completed: {quest.title}",
             source_type="quest",
             source_id=quest.id,
         )
     )
-    award_achievement_for_quest_completion(db, current_user)
+    award_achievement_for_quest_completion(db, user)
     db.commit()
     db.refresh(quest)
-    db.refresh(current_user)
+    db.refresh(user)
     return quest

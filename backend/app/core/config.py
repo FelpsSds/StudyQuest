@@ -1,7 +1,8 @@
 import secrets
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL
 
 
 class Settings(BaseSettings):
@@ -9,6 +10,11 @@ class Settings(BaseSettings):
 
     app_name: str = "StudyQuest"
     database_url: str = Field(default="sqlite:///./studyquest.db")
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_db: str = "studyquest"
+    postgres_user: str = "postgres"
+    postgres_password: str = "postgres"
     jwt_secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24
@@ -17,6 +23,19 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-4o-mini"
     ai_generation_enabled: bool = False
+
+    @model_validator(mode="after")
+    def build_postgresql_url_when_unset(self) -> "Settings":
+        if not self.database_url.strip():
+            self.database_url = URL.create(
+                "postgresql+psycopg",
+                username=self.postgres_user,
+                password=self.postgres_password,
+                host=self.postgres_host,
+                port=self.postgres_port,
+                database=self.postgres_db,
+            ).render_as_string(hide_password=False)
+        return self
 
     @field_validator("database_url", mode="before")
     @classmethod

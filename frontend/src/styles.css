@@ -61,7 +61,11 @@ body { min-width: 320px; }
 .plan-task strong { font-size: 11px; }
 .plan-task small { margin-top: 5px; color: #52611f; font-size: 10px; }
 .plan-task p { margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.subject-entry { display: grid; gap: 8px; }
 .subject-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.subject-actions { display: flex; align-items: center; gap: 6px; }
+.subject-edit-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcf7; }
+.subject-edit-form .compact-field:nth-child(2), .subject-edit-form .quest-edit-actions { grid-column: 1 / -1; }
 .subject-row-heading { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .subject-color-dot { flex: 0 0 9px; height: 28px; border-radius: 5px; background: var(--subject-color, var(--lime)); }
 .subject-row-heading strong, .subject-row-heading small { display: block; }
@@ -119,6 +123,10 @@ body { min-width: 320px; }
   .wide-creation-card > div:first-child, .wide-creation-card > button, .wide-creation-card .compact-field:nth-of-type(2) { grid-column: 1; }
   .quest-edit-form { grid-template-columns: 1fr; }
   .quest-edit-form .compact-field, .quest-edit-actions { grid-column: 1; }
+  .subject-edit-form { grid-template-columns: 1fr; }
+  .subject-edit-form .compact-field, .subject-edit-form .quest-edit-actions { grid-column: 1; }
+  .subject-row { grid-template-columns: 1fr; }
+  .subject-actions { justify-content: flex-start; }
   .plan-task-list { grid-template-columns: 1fr; }
   .leaderboard-row { grid-template-columns: 24px minmax(0, 1fr); }
   .leaderboard-row small { grid-column: 2; }

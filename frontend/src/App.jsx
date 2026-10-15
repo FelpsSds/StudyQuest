@@ -117,6 +117,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [planProviderUrl, setPlanProviderUrl] = useState('');
   const [planProviderModel, setPlanProviderModel] = useState('');
   const [profileEditing, setProfileEditing] = useState(false);
+  const [editingSubjectId, setEditingSubjectId] = useState(null);
   const [editingQuestId, setEditingQuestId] = useState(null);
   const [questSubject, setQuestSubject] = useState('');
   const [planDraft, setPlanDraft] = useState(null);
@@ -194,6 +195,23 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         color: String(form.get('color') || '#c7f36b'),
       }));
       formElement.reset();
+      await refresh();
+    });
+  }
+
+  async function updateSubject(event, subjectId) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(`subject-${subjectId}`, async () => {
+      await request(`/subjects/${subjectId}`, jsonRequest('PUT', {
+        name: String(form.get('name')).trim(),
+        description: String(form.get('description') || '').trim() || null,
+        professor: String(form.get('professor') || '').trim() || null,
+        semester: String(form.get('semester') || '').trim() || null,
+        icon: String(form.get('icon') || '').trim() || null,
+        color: String(form.get('color') || '#c7f36b'),
+      }));
+      setEditingSubjectId(null);
       await refresh();
     });
   }
@@ -483,7 +501,18 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <label className="compact-field">Nome<input name="name" type="text" placeholder="Ex.: História" maxLength="120" required /></label>
             <label className="compact-field">Cor<input name="color" type="color" defaultValue="#c7f36b" /></label>
             <button className="secondary-button" type="submit" disabled={busyKey === 'subject'}>Adicionar disciplina <span aria-hidden="true">→</span></button>
-            <div className="subjects-list">{data.subjects.length === 0 ? <p className="small-empty">Suas disciplinas aparecem aqui.</p> : data.subjects.map((subject) => <div className="subject-row" key={subject.id}><div className="subject-row-heading"><span className="subject-color-dot" style={{ '--subject-color': subject.color || '#c7f36b' }} /><div><strong>{subject.name}</strong><small>{data.quests.filter((quest) => quest.subject_id === subject.id).length} missões</small></div></div><button className="mini-delete" type="button" disabled={busyKey === `subject-${subject.id}`} onClick={() => deleteSubject(subject)}>Excluir</button></div>)}</div>
+            <div className="subjects-list">{data.subjects.length === 0 ? <p className="small-empty">Suas disciplinas aparecem aqui.</p> : data.subjects.map((subject) => <div className="subject-entry" key={subject.id}>
+              <div className="subject-row"><div className="subject-row-heading"><span className="subject-color-dot" style={{ '--subject-color': subject.color || '#c7f36b' }} /><div><strong>{subject.name}</strong><small>{data.quests.filter((quest) => quest.subject_id === subject.id).length} missões{subject.professor ? ` · ${subject.professor}` : ''}{subject.semester ? ` · ${subject.semester}` : ''}</small></div></div><div className="subject-actions"><button className="mini-edit" type="button" onClick={() => setEditingSubjectId(editingSubjectId === subject.id ? null : subject.id)}>{editingSubjectId === subject.id ? 'Fechar' : 'Editar'}</button><button className="mini-delete" type="button" disabled={busyKey === `subject-${subject.id}`} onClick={() => deleteSubject(subject)}>Excluir</button></div></div>
+              {editingSubjectId === subject.id && <form className="subject-edit-form" onSubmit={(event) => updateSubject(event, subject.id)}>
+                <label className="compact-field">Nome<input name="name" defaultValue={subject.name} maxLength="120" required /></label>
+                <label className="compact-field">Descrição<textarea name="description" defaultValue={subject.description || ''} maxLength="500" rows="2" /></label>
+                <label className="compact-field">Professor<input name="professor" defaultValue={subject.professor || ''} maxLength="120" /></label>
+                <label className="compact-field">Semestre<input name="semester" defaultValue={subject.semester || ''} maxLength="50" placeholder="Ex.: 2026/1" /></label>
+                <label className="compact-field">Ícone<input name="icon" defaultValue={subject.icon || ''} maxLength="64" placeholder="Ex.: 📚" /></label>
+                <label className="compact-field">Cor<input name="color" type="color" defaultValue={/^#[0-9a-f]{6}$/i.test(subject.color || '') ? subject.color : '#c7f36b'} /></label>
+                <div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === `subject-${subject.id}`}>Salvar disciplina</button><button className="text-button" type="button" onClick={() => setEditingSubjectId(null)}>Cancelar</button></div>
+              </form>}
+            </div>)}</div>
           </form>
 
           <form className="creation-card wide-creation-card" onSubmit={createQuest}>

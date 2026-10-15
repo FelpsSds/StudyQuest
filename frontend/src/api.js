@@ -42,6 +42,7 @@ function formatValidationMessage(message = '') {
   if (match) return `deve ter no máximo ${match[1]} caracteres`;
   if (message === 'Field required') return 'é obrigatório';
   if (message === 'Value error, Invalid email format') return 'formato inválido';
+  if (message === 'Value error, Color must use the #RRGGBB format') return 'deve usar o formato #RRGGBB';
   return message.replace(/^Value error, /, '');
 }
 

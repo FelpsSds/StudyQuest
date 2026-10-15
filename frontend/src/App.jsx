@@ -159,6 +159,10 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     });
   }, [data.quests, filter, sort]);
 
+  const nextFocusQuest = useMemo(() => data.quests
+    .filter((quest) => !['completed', 'archived'].includes(quest.status))
+    .sort((a, b) => (Number(b.xp_reward) || 0) / Math.max(1, Number(b.estimated_minutes) || 1) - (Number(a.xp_reward) || 0) / Math.max(1, Number(a.estimated_minutes) || 1))[0], [data.quests]);
+
   const activeSession = useMemo(
     () => data.sessions.find((session) => session.status === 'in_progress'),
     [data.sessions],
@@ -542,6 +546,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
           {!profileEditing ? <button className="mini-edit" type="button" onClick={() => setProfileEditing(true)}>Editar nome</button> : <form className="profile-edit-form" onSubmit={updateProfile}><label className="compact-field">Nome<input name="name" defaultValue={user?.name} maxLength="120" required /></label><div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === 'profile'}>Salvar</button><button className="text-button" type="button" onClick={() => setProfileEditing(false)}>Cancelar</button></div></form>}
           <div className="side-rule" />
           <span className="kicker">XP RECENTE</span><div className="activity-list">{data.rewards?.xp_history?.slice(0, 4).map((item) => <div className="activity-row" key={item.id}><span className="activity-badge">+{item.amount}</span><div><strong>{item.reason}</strong><small>XP conquistado</small></div></div>) || <p className="mini-empty">Conclua uma missão para ganhar XP.</p>}</div>
+          <div className="side-rule" />
+          <span className="kicker">PRÓXIMO FOCO</span>{nextFocusQuest ? <div className="next-focus-card"><strong>{nextFocusQuest.title}</strong><span>{nextFocusQuest.xp_reward} XP · {formatDuration(nextFocusQuest.estimated_minutes)}</span><button className="mini-edit" type="button" disabled={busyKey === `quest-${nextFocusQuest.id}`} onClick={() => completeQuest(nextFocusQuest.id)}>Marcar como concluída</button></div> : <p className="mini-empty">Sem missões pendentes. Crie uma nova para continuar.</p>}
           <div className="side-rule" />
           <span className="kicker">CONQUISTAS</span><div className="achievement-list">{data.achievements.length === 0 ? <p className="mini-empty">Nenhuma conquista disponível ainda.</p> : data.achievements.map((item) => {
             const progress = item.criteria_value > 0 ? Math.min(100, Math.round(item.current_value / item.criteria_value * 100)) : 0;

@@ -82,6 +82,10 @@ body { min-width: 320px; }
 .activity-row strong, .activity-row small { display: block; }
 .activity-row strong { font-size: 11px; }
 .activity-row small { margin-top: 3px; color: #52611f; font-size: 10px; }
+.next-focus-card { display: grid; gap: 7px; }
+.next-focus-card strong { font-size: 13px; line-height: 1.35; }
+.next-focus-card span { color: #52611f; font-size: 10px; }
+.next-focus-card .mini-edit { justify-self: start; }
 .insight-row { display: flex; justify-content: space-between; gap: 10px; margin: 0; padding: 8px 0; border-bottom: 1px solid rgba(16,24,39,.1); font-size: 12px; }
 .insight-row span { color: #52611f; }
 .weekly-chart { margin: 8px 0 12px; }

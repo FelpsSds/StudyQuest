@@ -90,7 +90,7 @@ function getFilteredSessions(
 
 function csvCell(value) {
   const text = String(value ?? '');
-  const safeText = /^[\t\r=+\-@]/.test(text) ? `'${text}` : text;
+  const safeText = typeof value === 'string' && /^[\u0000-\u0020]*[=+\-@]/.test(text) ? `'${text}` : text;
   return `"${safeText.replace(/"/g, '""')}"`;
 }
 

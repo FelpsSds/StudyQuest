@@ -96,7 +96,7 @@ function AuthScreen({ onAuthenticated, initialError = '' }) {
         <form onSubmit={submit}>
           {register && <label className="field">Nome<input name="name" type="text" autoComplete="name" maxLength="120" required /></label>}
           <label className="field">E-mail<input name="email" type="email" autoComplete="email" required /></label>
-          <label className="field">Senha<input name="password" type="password" autoComplete={register ? 'new-password' : 'current-password'} required /></label>
+          <label className="field">Senha<input name="password" type="password" autoComplete={register ? 'new-password' : 'current-password'} minLength={register ? 8 : undefined} placeholder={register ? 'Mínimo de 8 caracteres' : ''} required /></label>
           <button className="primary-button" type="submit" disabled={busy}>
             <span>{busy ? 'Aguarde…' : register ? 'Criar conta' : 'Entrar'}</span><span aria-hidden="true">→</span>
           </button>

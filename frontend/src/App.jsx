@@ -482,6 +482,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const activeElapsed = activeSession
     ? Math.max(0, Math.floor((now - new Date(activeSession.started_at).getTime()) / 60_000))
     : 0;
+  const activeSessionGoal = Number(activeSession?.duration_minutes) || 0;
+  const activeSessionProgress = activeSessionGoal ? Math.min(100, Math.round(activeElapsed / activeSessionGoal * 100)) : 0;
 
   return (
     <section className="app-view">
@@ -666,10 +668,11 @@ function Dashboard({ data, refresh, onLogout, onError }) {
 
           <section className="creation-card session-card">
             <div><span className="kicker">FOCO NO AGORA</span><h2>Sessão de estudo</h2></div>
-            {activeSession ? <div className="active-session-box"><strong>Sessão em andamento</strong><span>{formatDuration(activeElapsed)} decorridos · meta de {formatDuration(activeSession.duration_minutes)}</span><button className="secondary-button" type="button" disabled={busyKey === `session-${activeSession.id}`} onClick={() => completeSession(activeSession.id)}>Concluir sessão</button></div> : <form className="session-start-form" onSubmit={startSession}>
+            {activeSession ? <div className="active-session-box"><strong>Sessão em andamento</strong><span>{formatDuration(activeElapsed)} decorridos · {activeSessionProgress >= 100 ? `meta atingida${activeElapsed > activeSessionGoal ? ` · ${formatDuration(activeElapsed - activeSessionGoal)} além da meta` : ''}` : `meta de ${formatDuration(activeSession.duration_minutes)} · ${activeSessionProgress}%`}</span><div className={`session-goal-progress ${activeSessionProgress >= 100 ? 'session-goal-progress-reached' : ''}`} role="progressbar" aria-label="Progresso da meta da sessão" aria-valuemin="0" aria-valuemax={activeSessionGoal || 1} aria-valuenow={activeSessionGoal ? Math.min(activeElapsed, activeSessionGoal) : 0}><span style={{ width: `${activeSessionProgress}%` }} /></div><button className="secondary-button" type="button" disabled={busyKey === `session-${activeSession.id}`} onClick={() => completeSession(activeSession.id)}>Concluir sessão</button></div> : <form className="session-start-form" onSubmit={startSession}>
               <label className="compact-field">Disciplina<select value={sessionSubject} onChange={(event) => { setSessionSubject(event.target.value); setSessionQuest(''); }}><option value="">Sem disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
               <label className="compact-field">Missão<select value={sessionQuest} onChange={(event) => setSessionQuest(event.target.value)}><option value="">Sem missão</option>{data.quests.filter((quest) => quest.status !== 'completed' && (!sessionSubject || String(quest.subject_id || '') === sessionSubject)).map((quest) => <option key={quest.id} value={quest.id}>{quest.title}</option>)}</select></label>
               <label className="compact-field">Duração (min)<input type="number" min="15" value={sessionMinutes} onChange={(event) => setSessionMinutes(event.target.value)} required /></label>
+              <div className="duration-presets" aria-label="Atalhos de duração">{[15, 25, 45, 60].map((minutes) => <button className={`preset-button ${Number(sessionMinutes) === minutes ? 'active' : ''}`} type="button" key={minutes} aria-pressed={Number(sessionMinutes) === minutes} onClick={() => setSessionMinutes(minutes)}>{minutes} min</button>)}</div>
               <button className="secondary-button" type="submit" disabled={busyKey === 'session'}>Começar estudo <span aria-hidden="true">→</span></button>
             </form>}
             <div className="session-history-controls">

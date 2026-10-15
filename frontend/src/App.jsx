@@ -124,6 +124,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [now, setNow] = useState(Date.now());
   const user = data.dashboard?.user;
   const stats = data.dashboard?.stats;
+  const topLeaderboard = data.leaderboard.slice(0, 5);
+  const currentLeaderboard = data.leaderboard.find((item) => item.id === user?.id);
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 15_000);
@@ -462,9 +464,15 @@ function Dashboard({ data, refresh, onLogout, onError }) {
           <div className="side-rule" />
           <span className="kicker">XP RECENTE</span><div className="activity-list">{data.rewards?.xp_history?.slice(0, 4).map((item) => <div className="activity-row" key={item.id}><span className="activity-badge">+{item.amount}</span><div><strong>{item.reason}</strong><small>XP conquistado</small></div></div>) || <p className="mini-empty">Conclua uma missão para ganhar XP.</p>}</div>
           <div className="side-rule" />
-          <span className="kicker">CONQUISTAS</span><div className="achievement-list">{data.achievements.filter((item) => item.unlocked).length === 0 ? <p className="mini-empty">Conclua missões e sessões para desbloquear conquistas.</p> : data.achievements.filter((item) => item.unlocked).map((item) => <div className="achievement-row" key={item.id}><span>{item.icon || '✦'}</span><div><strong>{item.title}</strong><small>{item.description}</small></div></div>)}</div>
+          <span className="kicker">CONQUISTAS</span><div className="achievement-list">{data.achievements.length === 0 ? <p className="mini-empty">Nenhuma conquista disponível ainda.</p> : data.achievements.map((item) => {
+            const progress = item.criteria_value > 0 ? Math.min(100, Math.round(item.current_value / item.criteria_value * 100)) : 0;
+            return <article className={`achievement-row ${item.unlocked ? 'unlocked' : 'locked'}`} key={item.id}><span aria-hidden="true">{item.icon || '✦'}</span><div><strong>{item.title}</strong><small>{item.description}</small><div className="achievement-progress" role="progressbar" aria-label={`Progresso: ${item.title}`} aria-valuemin="0" aria-valuemax={item.criteria_value} aria-valuenow={item.current_value}><span style={{ width: `${progress}%` }} /></div><small>{item.unlocked ? `Desbloqueada${item.unlocked_at ? ` em ${formatDateTime(item.unlocked_at)}` : ''}` : `${item.current_value} de ${item.criteria_value} missões`}</small></div></article>;
+          })}</div>
           <div className="side-rule" />
-          <span className="kicker">RANKING</span><div className="leaderboard-list">{data.leaderboard.slice(0, 5).map((item) => <div className="leaderboard-row" key={item.user_id || item.rank}><span className="rank-number">{item.rank}</span><strong>{item.name}</strong><small>Nv. {item.level} · {item.xp} XP</small></div>)}</div>
+          <span className="kicker">RANKING</span><div className="leaderboard-list">{data.leaderboard.length === 0 ? <p className="mini-empty">O ranking ainda está vazio.</p> : <>
+            {topLeaderboard.map((item) => <div className={`leaderboard-row ${item.id === user?.id ? 'current-user' : ''}`} key={item.id}><span className="rank-number">{item.rank}</span><strong>{item.name}{item.id === user?.id ? ' (você)' : ''}</strong><small>Nv. {item.level} · {item.xp} XP</small></div>)}
+            {currentLeaderboard && currentLeaderboard.rank > topLeaderboard.length && <><p className="leaderboard-separator">Sua posição</p><div className="leaderboard-row current-user"><span className="rank-number">{currentLeaderboard.rank}</span><strong>{currentLeaderboard.name} (você)</strong><small>Nv. {currentLeaderboard.level} · {currentLeaderboard.xp} XP</small></div></>}
+          </>}</div>
           <div className="side-rule" />
           <span className="kicker">ESTA SEMANA</span><div className="insights-list"><p className="insight-row"><span>Sessões</span><strong>{data.analytics?.completed_sessions ?? 0}</strong></p><p className="insight-row"><span>Média por sessão</span><strong>{formatDuration(Math.round(data.analytics?.average_session_minutes ?? 0))}</strong></p></div>
         </aside>

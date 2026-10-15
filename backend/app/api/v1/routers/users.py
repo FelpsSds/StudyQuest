@@ -90,7 +90,6 @@ def read_leaderboard(
                 "rank": index,
                 "id": user.id,
                 "name": user.name,
-                "email": user.email,
                 "level": user.level,
                 "xp": user.xp,
                 "score": user.xp,

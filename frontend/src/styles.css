@@ -36,6 +36,8 @@ body { min-width: 320px; }
 .leaderboard-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 8px 0; border-bottom: 1px solid rgba(16,24,39,.1); font-size: 11px; }
 .rank-number { color: #52611f; font-family: 'DM Mono', monospace; }
 .leaderboard-row small { color: #52611f; font-size: 9px; }
+.leaderboard-row.current-user { margin: 0 -7px; padding-right: 7px; padding-left: 7px; border-radius: 6px; background: rgba(255,255,255,.5); font-weight: 800; }
+.leaderboard-separator { margin: 8px 0 0; color: #52611f; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .boss-row { display: grid; gap: 7px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: white; }
 .boss-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .boss-heading strong { font-size: 12px; }

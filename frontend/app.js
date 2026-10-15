@@ -1,4 +1,5 @@
-const API_BASE = 'http://127.0.0.1:8000/api/v1';
+const configuredApiBase = document.querySelector('meta[name="studyquest-api-base"]')?.content.trim();
+const API_BASE = window.STUDYQUEST_API_BASE || configuredApiBase || `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
 const state = { token: localStorage.getItem('studyquest_token'), registerMode: false, generatedPlan: null, sessionTimerInterval: null };
 const QUEST_FILTER_KEY = 'studyquest_quest_filter';
 const QUEST_SORT_KEY = 'studyquest_quest_sort';
@@ -193,10 +194,15 @@ const authSubmit = document.querySelector('#auth-submit');
 const authToggle = document.querySelector('#auth-toggle');
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...(options.headers || {}) },
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...(options.headers || {}) },
+    });
+  } catch {
+    throw new Error('Não foi possível acessar a API. Confira se o backend está ativo e se a URL configurada está correta.');
+  }
 
   const hasBody = response.status !== 204 && response.headers.get('content-length') !== '0';
   const payload = hasBody ? await response.json().catch(() => ({})) : null;

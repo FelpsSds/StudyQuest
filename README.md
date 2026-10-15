@@ -9,11 +9,10 @@ StudyQuest é uma plataforma de estudos gamificada. O usuário transforma ativid
 - SQLAlchemy e migrations com Alembic
 - Autenticação com JWT e senha protegida por hash
 - Disciplinas, missões, XP, conquistas, Boss Fights e sessões de estudo
-- Frontend estático funcional consumindo a API
+- Frontend principal em React + Vite com autenticação, painel, disciplinas, missões e sessões de estudo
+- Interface anterior preservada em `frontend/legacy.html` enquanto os recursos restantes migram
 - Testes automatizados para as principais regras de negócio
 - GitHub Actions executa os testes backend em cada push e pull request
-
-A migração do frontend para React + Vite está planejada para a próxima etapa.
 
 ## Configuração de ambiente
 
@@ -25,6 +24,8 @@ Copy-Item backend\.env.example backend\.env
 ```
 
 Os valores padrão já servem para desenvolvimento local; ajuste `JWT_SECRET_KEY` em produção.
+
+No Docker, o Nginx encaminha `/api` ao backend no mesmo host do frontend. Para desenvolvimento local com Vite, o proxy envia as chamadas para `http://127.0.0.1:8000`. Se usar a interface antiga ou uma API hospedada em outro domínio, configure `CORS_ORIGINS` no `.env` e ajuste `studyquest-api-base` em `frontend/index.html` para a URL da API, incluindo `/api/v1`.
 
 A geração de planos funciona sem provedor de IA, usando um gerador local. Para ativar a integração compatível com a API da OpenAI, configure `AI_GENERATION_ENABLED=true` e `OPENAI_API_KEY` em `backend\.env`. Provedores locais compatíveis, como Ollama, podem ser selecionados na interface sem chave da OpenAI.
 
@@ -64,11 +65,15 @@ cd backend
 ..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-Em outro terminal, sirva o frontend atual:
+Em outro terminal, inicie o frontend React com Node.js 24:
 
 ```powershell
-python -m http.server 5173 --directory frontend
+cd frontend
+npm ci
+npm run dev
 ```
+
+Abra `http://localhost:5173`. A interface anterior continua disponível em `http://localhost:5173/legacy.html`.
 
 ## Testes
 
@@ -88,12 +93,11 @@ backend/
     models/    # entidades SQLAlchemy
   alembic/     # migrations do banco
   tests/       # testes das regras de negócio
-frontend/      # interface atual
+frontend/      # React + Vite e interface anterior em legacy.html
 ```
 
 ## Próximas etapas
 
-1. Migrar a interface para React + Vite.
-2. Adicionar filtros, edição e detalhes de missões.
-3. Construir as telas de perfil, conquistas e Boss Fight.
-4. Preparar deploy.
+1. Migrar para React os recursos que ainda estão disponíveis na interface anterior.
+2. Completar edição, filtros e histórico avançado na nova interface.
+3. Preparar e validar o deploy.

@@ -1,0 +1,479 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { jsonRequest, request, setAccessToken } from './api.js';
+
+const EMPTY_DATA = {
+  dashboard: null,
+  streak: null,
+  quests: [],
+  subjects: [],
+  sessions: [],
+  bosses: [],
+  achievements: [],
+  leaderboard: [],
+  analytics: null,
+  rewards: null,
+};
+
+function formatDuration(minutes = 0) {
+  const value = Math.max(0, Number(minutes) || 0);
+  const hours = Math.floor(value / 60);
+  const rest = value % 60;
+  return hours ? `${hours} h${rest ? ` ${rest} min` : ''}` : `${rest} min`;
+}
+
+function formatDate(value) {
+  if (!value) return 'Sem prazo';
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? 'Data inválida' : date.toLocaleDateString('pt-BR');
+}
+
+function localDateKey() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function getErrorMessage(error) {
+  return error instanceof Error ? error.message : 'Algo deu errado. Tente novamente.';
+}
+
+function AuthScreen({ onAuthenticated, initialError = '' }) {
+  const [register, setRegister] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(initialError);
+
+  async function submit(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const payload = {
+      email: String(form.get('email') || '').trim(),
+      password: String(form.get('password') || ''),
+    };
+    if (register) payload.name = String(form.get('name') || '').trim();
+    setBusy(true);
+    setError('');
+    try {
+      const response = await request(register ? '/auth/register' : '/auth/login', jsonRequest('POST', payload));
+      setAccessToken(response.access_token);
+      await onAuthenticated();
+    } catch (submissionError) {
+      setError(getErrorMessage(submissionError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="auth-layout">
+      <section className="brand-panel">
+        <span className="eyebrow">STUDYQUEST / 01</span>
+        <h1>Transforme estudo em <em>aventura.</em></h1>
+        <p>Uma central tranquila para acompanhar suas missões, XP e ritmo de aprendizagem.</p>
+        <div className="orbit orbit-one" />
+        <div className="orbit orbit-two" />
+        <div className="brand-note">FOCO · RITMO · EVOLUÇÃO</div>
+      </section>
+      <section className="auth-panel">
+        <div className="panel-heading">
+          <span className="kicker">{register ? 'SUA PRÓXIMA JORNADA' : 'BEM-VINDO DE VOLTA'}</span>
+          <h2>{register ? 'Começar uma nova jornada' : 'Entrar na sua jornada'}</h2>
+        </div>
+        <form onSubmit={submit}>
+          {register && <label className="field">Nome<input name="name" type="text" autoComplete="name" maxLength="120" required /></label>}
+          <label className="field">E-mail<input name="email" type="email" autoComplete="email" required /></label>
+          <label className="field">Senha<input name="password" type="password" autoComplete={register ? 'new-password' : 'current-password'} required /></label>
+          <button className="primary-button" type="submit" disabled={busy}>
+            <span>{busy ? 'Aguarde…' : register ? 'Criar conta' : 'Entrar'}</span><span aria-hidden="true">→</span>
+          </button>
+        </form>
+        <p className="error-message" role="alert">{error}</p>
+        <button className="text-button" type="button" onClick={() => { setRegister((value) => !value); setError(''); }}>
+          {register ? 'Já tenho uma conta' : 'Ainda não tenho uma conta'}
+        </button>
+      </section>
+    </main>
+  );
+}
+
+function Dashboard({ data, refresh, onLogout, onError }) {
+  const [filter, setFilter] = useState(localStorage.getItem('studyquest_quest_filter') || 'all');
+  const [sort, setSort] = useState(localStorage.getItem('studyquest_quest_sort') || 'priority');
+  const [sessionMinutes, setSessionMinutes] = useState(25);
+  const [sessionSubject, setSessionSubject] = useState('');
+  const [sessionQuest, setSessionQuest] = useState('');
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [editingQuestId, setEditingQuestId] = useState(null);
+  const [questSubject, setQuestSubject] = useState('');
+  const [busyKey, setBusyKey] = useState('');
+  const [now, setNow] = useState(Date.now());
+  const user = data.dashboard?.user;
+  const stats = data.dashboard?.stats;
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 15_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const questList = useMemo(() => {
+    const today = localDateKey();
+    const filtered = data.quests.filter((quest) => {
+      if (filter === 'pending') return quest.status !== 'completed' && quest.status !== 'archived';
+      if (filter === 'completed') return quest.status === 'completed';
+      if (filter === 'overdue') return quest.due_date && quest.due_date < today && !['completed', 'archived'].includes(quest.status);
+      return true;
+    });
+    return [...filtered].sort((a, b) => {
+      if (sort === 'due_date') return (a.due_date || '9999').localeCompare(b.due_date || '9999');
+      if (sort === 'title') return a.title.localeCompare(b.title, 'pt-BR');
+      if (sort === 'minutes') return (a.estimated_minutes || 0) - (b.estimated_minutes || 0);
+      if (sort === 'xp') return (b.xp_reward || 0) - (a.xp_reward || 0);
+      if (a.status === b.status) return (b.xp_reward || 0) - (a.xp_reward || 0);
+      return a.status === 'completed' ? 1 : -1;
+    });
+  }, [data.quests, filter, sort]);
+
+  const activeSession = useMemo(
+    () => data.sessions.find((session) => session.status === 'in_progress'),
+    [data.sessions],
+  );
+
+  async function run(key, action) {
+    setBusyKey(key);
+    try {
+      await action();
+    } catch (error) {
+      onError(getErrorMessage(error));
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function createSubject(event) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    await run('subject', async () => {
+      await request('/subjects/', jsonRequest('POST', {
+        name: String(form.get('name')).trim(),
+        color: String(form.get('color') || '#c7f36b'),
+      }));
+      formElement.reset();
+      await refresh();
+    });
+  }
+
+  async function createQuest(event) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    await run('quest', async () => {
+      const subjectId = form.get('subject_id');
+      const bossFightId = form.get('boss_fight_id');
+      await request('/quests/', jsonRequest('POST', {
+        title: String(form.get('title')).trim(),
+        description: String(form.get('description') || '').trim() || null,
+        type: String(form.get('type') || 'study'),
+        difficulty: String(form.get('difficulty') || 'medium'),
+        xp_reward: Number(form.get('xp_reward') || 0),
+        estimated_minutes: Number(form.get('estimated_minutes') || 30),
+        due_date: String(form.get('due_date') || '') || null,
+        subject_id: subjectId ? Number(subjectId) : null,
+        boss_fight_id: bossFightId ? Number(bossFightId) : null,
+        status: 'pending',
+      }));
+      formElement.reset();
+      setQuestSubject('');
+      await refresh();
+    });
+  }
+
+  async function completeQuest(questId) {
+    await run(`quest-${questId}`, async () => {
+      await request(`/quests/${questId}/complete`, jsonRequest('POST', { notes: 'Concluída pelo painel React' }));
+      await refresh();
+    });
+  }
+
+  async function updateQuest(event, questId) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(`quest-${questId}`, async () => {
+      await request(`/quests/${questId}`, jsonRequest('PUT', {
+        title: String(form.get('title')).trim(),
+        description: String(form.get('description') || '').trim() || null,
+        type: String(form.get('type')),
+        difficulty: String(form.get('difficulty')),
+        xp_reward: Number(form.get('xp_reward')),
+        estimated_minutes: Number(form.get('estimated_minutes')),
+        due_date: String(form.get('due_date') || '') || null,
+        subject_id: form.get('subject_id') ? Number(form.get('subject_id')) : null,
+      }));
+      setEditingQuestId(null);
+      await refresh();
+    });
+  }
+
+  function editQuest(quest) {
+    setEditingQuestId(quest.id);
+  }
+
+  async function deleteQuest(quest) {
+    if (!window.confirm(`Excluir a missão “${quest.title}”?`)) return;
+    await run(`quest-${quest.id}`, async () => {
+      await request(`/quests/${quest.id}`, { method: 'DELETE' });
+      await refresh();
+    });
+  }
+
+  async function deleteSubject(subject) {
+    if (!window.confirm(`Excluir a disciplina “${subject.name}”? As missões e os desafios vinculados também serão excluídos.`)) return;
+    await run(`subject-${subject.id}`, async () => {
+      await request(`/subjects/${subject.id}`, { method: 'DELETE' });
+      await refresh();
+    });
+  }
+
+  async function startSession(event) {
+    event.preventDefault();
+    await run('session', async () => {
+      await request('/study-sessions/', jsonRequest('POST', {
+        duration_minutes: Number(sessionMinutes),
+        subject_id: sessionSubject ? Number(sessionSubject) : null,
+        quest_id: sessionQuest ? Number(sessionQuest) : null,
+      }));
+      await refresh();
+    });
+  }
+
+  async function completeSession(sessionId) {
+    await run(`session-${sessionId}`, async () => {
+      await request(`/study-sessions/${sessionId}/complete`, { method: 'PATCH' });
+      await refresh();
+    });
+  }
+
+  async function createBossFight(event) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    await run('boss', async () => {
+      const hp = Number(form.get('hp_max'));
+      await request('/boss-fights/', jsonRequest('POST', {
+        subject_id: Number(form.get('subject_id')),
+        title: String(form.get('title')).trim(),
+        hp_max: hp,
+        hp_current: hp,
+        xp_reward: Number(form.get('xp_reward')),
+      }));
+      formElement.reset();
+      await refresh();
+    });
+  }
+
+  async function deleteBossFight(boss) {
+    if (!window.confirm(`Excluir o desafio “${boss.title}”?`)) return;
+    await run(`boss-${boss.id}`, async () => {
+      await request(`/boss-fights/${boss.id}`, { method: 'DELETE' });
+      await refresh();
+    });
+  }
+
+  async function updateProfile(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run('profile', async () => {
+      await request('/users/me', jsonRequest('PUT', { name: String(form.get('name')).trim() }));
+      setProfileEditing(false);
+      await refresh();
+    });
+  }
+
+  const activeElapsed = activeSession
+    ? Math.max(0, Math.floor((now - new Date(activeSession.started_at).getTime()) / 60_000))
+    : 0;
+
+  return (
+    <section className="app-view">
+      <header className="topbar">
+        <a className="wordmark" href="#top">study<span>quest</span></a>
+        <div className="topbar-actions">
+          <span>Olá, {user?.name}</span>
+          <a className="legacy-link" href="/legacy.html">Interface completa</a>
+          <button className="icon-button" type="button" onClick={onLogout}>Sair <span aria-hidden="true">↗</span></button>
+        </div>
+      </header>
+
+      <div className="dashboard-grid" id="top">
+        <section className="intro-block"><span className="eyebrow">PAINEL DE COMANDO</span><h1>Olá, {user?.name?.split(' ')[0]}. Vamos avançar?</h1><p>Pequenos avanços, registrados todos os dias.</p></section>
+        <section className="level-card">
+          <div className="level-top"><span>NÍVEL <strong>{user?.level ?? 1}</strong></span><span>{user?.xp ?? 0} XP</span></div>
+          <div className="progress-track"><span style={{ width: `${user?.progress_percent ?? 0}%` }} /></div>
+          <small>{Math.max(0, (user?.next_level_xp ?? 100) - (user?.xp ?? 0))} XP para o próximo nível</small>
+        </section>
+
+        <section className="stats-row">
+          <article className="stat-card accent"><span className="stat-label">MISSÕES FEITAS</span><strong>{stats?.quests_completed ?? 0}</strong><span>de {stats?.quests_total ?? 0} no total</span></article>
+          <article className="stat-card"><span className="stat-label">SEQUÊNCIA ATUAL</span><strong>{data.streak?.current_streak ?? 0} <small>dias</small></strong><span>melhor: {data.streak?.best_streak ?? 0} dias</span></article>
+          <article className="stat-card"><span className="stat-label">TEMPO DE ESTUDO</span><strong>{data.analytics?.total_study_minutes ?? 0}</strong><span>minutos acumulados</span></article>
+        </section>
+
+        <section className="quests-section">
+          <div className="section-heading"><div><span className="kicker">SEU MAPA</span><h2>Missões</h2></div><div className="row-actions">
+            <label className="compact-field inline-filter"><span>Filtrar</span><select value={filter} onChange={(event) => { setFilter(event.target.value); localStorage.setItem('studyquest_quest_filter', event.target.value); }}><option value="all">Todas</option><option value="pending">Pendentes</option><option value="completed">Concluídas</option><option value="overdue">Atrasadas</option></select></label>
+            <label className="compact-field inline-filter"><span>Ordenar</span><select value={sort} onChange={(event) => { setSort(event.target.value); localStorage.setItem('studyquest_quest_sort', event.target.value); }}><option value="priority">Prioridade</option><option value="due_date">Prazo</option><option value="xp">XP</option><option value="minutes">Tempo</option><option value="title">Título</option></select></label>
+            <button className="icon-button" type="button" onClick={refresh}>Atualizar <span aria-hidden="true">↻</span></button>
+          </div></div>
+          <div className="quests-list">
+            {questList.length === 0 ? <p className="empty-state">Nenhuma missão neste filtro. Crie uma missão para começar.</p> : questList.map((quest) => {
+              const subject = data.subjects.find((item) => item.id === quest.subject_id);
+              return <article className={`quest-item ${quest.status === 'completed' ? 'completed' : ''}`} key={quest.id}>
+                {editingQuestId === quest.id ? <form className="quest-edit-form" onSubmit={(event) => updateQuest(event, quest.id)}>
+                  <label className="compact-field">Título<input name="title" defaultValue={quest.title} maxLength="200" required /></label>
+                  <label className="compact-field">Descrição<textarea name="description" rows="2" defaultValue={quest.description || ''} /></label>
+                  <label className="compact-field">Disciplina<select name="subject_id" defaultValue={quest.subject_id || ''}><option value="">Sem disciplina</option>{data.subjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+                  <label className="compact-field">Tipo<select name="type" defaultValue={quest.type}><option value="study">Estudo</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="review">Revisão</option><option value="project">Projeto</option></select></label>
+                  <label className="compact-field">Dificuldade<select name="difficulty" defaultValue={quest.difficulty}><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option></select></label>
+                  <label className="compact-field">XP<input name="xp_reward" type="number" min="0" defaultValue={quest.xp_reward} /></label>
+                  <label className="compact-field">Minutos<input name="estimated_minutes" type="number" min="1" defaultValue={quest.estimated_minutes} /></label>
+                  <label className="compact-field">Prazo<input name="due_date" type="date" defaultValue={quest.due_date || ''} /></label>
+                  <div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === `quest-${quest.id}`}>Salvar</button><button className="text-button" type="button" onClick={() => setEditingQuestId(null)}>Cancelar</button></div>
+                </form> : <>
+                  <div><div className="quest-title-line"><h3 className="quest-title">{quest.title}</h3>{quest.due_date && <span className="quest-due-badge">{formatDate(quest.due_date)}</span>}</div>
+                    <div className="quest-meta">{subject?.name || 'Sem disciplina'} · {quest.xp_reward} XP · {formatDuration(quest.estimated_minutes)}</div>
+                    {quest.description && <details className="quest-details"><summary>Ver detalhes</summary><p>{quest.description}</p></details>}
+                  </div>
+                  <div className="quest-actions"><button className="complete-button" type="button" disabled={quest.status === 'completed' || busyKey === `quest-${quest.id}`} onClick={() => completeQuest(quest.id)}>{quest.status === 'completed' ? 'Concluída' : 'Concluir'}</button>{quest.status !== 'completed' && <button className="mini-edit" type="button" onClick={() => editQuest(quest)}>Editar</button>}<button className="delete-button" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => deleteQuest(quest)}>Excluir</button></div>
+                </>}
+              </article>;
+            })}
+          </div>
+        </section>
+
+        <aside className="side-panel">
+          <span className="kicker">SEU PERFIL</span><h2>{user?.name}</h2>
+          <p className="profile-email">{user?.email}</p>
+          {!profileEditing ? <button className="mini-edit" type="button" onClick={() => setProfileEditing(true)}>Editar nome</button> : <form className="profile-edit-form" onSubmit={updateProfile}><label className="compact-field">Nome<input name="name" defaultValue={user?.name} maxLength="120" required /></label><div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === 'profile'}>Salvar</button><button className="text-button" type="button" onClick={() => setProfileEditing(false)}>Cancelar</button></div></form>}
+          <div className="side-rule" />
+          <span className="kicker">XP RECENTE</span><div className="activity-list">{data.rewards?.xp_history?.slice(0, 4).map((item) => <div className="activity-row" key={item.id}><span className="activity-badge">+{item.amount}</span><div><strong>{item.reason}</strong><small>XP conquistado</small></div></div>) || <p className="mini-empty">Conclua uma missão para ganhar XP.</p>}</div>
+          <div className="side-rule" />
+          <span className="kicker">CONQUISTAS</span><div className="achievement-list">{data.achievements.filter((item) => item.unlocked).length === 0 ? <p className="mini-empty">Conclua missões e sessões para desbloquear conquistas.</p> : data.achievements.filter((item) => item.unlocked).map((item) => <div className="achievement-row" key={item.id}><span>{item.icon || '✦'}</span><div><strong>{item.title}</strong><small>{item.description}</small></div></div>)}</div>
+          <div className="side-rule" />
+          <span className="kicker">RANKING</span><div className="leaderboard-list">{data.leaderboard.slice(0, 5).map((item) => <div className="leaderboard-row" key={item.user_id || item.rank}><span className="rank-number">{item.rank}</span><strong>{item.name}</strong><small>Nv. {item.level} · {item.xp} XP</small></div>)}</div>
+          <div className="side-rule" />
+          <span className="kicker">ESTA SEMANA</span><div className="insights-list"><p className="insight-row"><span>Sessões</span><strong>{data.analytics?.completed_sessions ?? 0}</strong></p><p className="insight-row"><span>Média por sessão</span><strong>{formatDuration(Math.round(data.analytics?.average_session_minutes ?? 0))}</strong></p></div>
+        </aside>
+
+        <section className="creation-grid">
+          <form className="creation-card" onSubmit={createSubject}>
+            <div><span className="kicker">NOVO FOCO</span><h2>Criar disciplina</h2></div>
+            <label className="compact-field">Nome<input name="name" type="text" placeholder="Ex.: História" maxLength="120" required /></label>
+            <label className="compact-field">Cor<input name="color" type="color" defaultValue="#c7f36b" /></label>
+            <button className="secondary-button" type="submit" disabled={busyKey === 'subject'}>Adicionar disciplina <span aria-hidden="true">→</span></button>
+            <div className="subjects-list">{data.subjects.length === 0 ? <p className="small-empty">Suas disciplinas aparecem aqui.</p> : data.subjects.map((subject) => <div className="subject-row" key={subject.id}><div className="subject-row-heading"><span className="subject-color-dot" style={{ '--subject-color': subject.color || '#c7f36b' }} /><div><strong>{subject.name}</strong><small>{data.quests.filter((quest) => quest.subject_id === subject.id).length} missões</small></div></div><button className="mini-delete" type="button" disabled={busyKey === `subject-${subject.id}`} onClick={() => deleteSubject(subject)}>Excluir</button></div>)}</div>
+          </form>
+
+          <form className="creation-card wide-creation-card" onSubmit={createQuest}>
+            <div><span className="kicker">PRÓXIMO PASSO</span><h2>Criar missão</h2></div>
+            <label className="compact-field">Título<input name="title" type="text" placeholder="Ex.: Revisar capítulo 3" maxLength="200" required /></label>
+            <label className="compact-field">Descrição<textarea name="description" rows="2" placeholder="O que precisa ser feito nesta missão?" /></label>
+            <label className="compact-field">Disciplina<select name="subject_id" value={questSubject} onChange={(event) => setQuestSubject(event.target.value)}><option value="">Sem disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+            <label className="compact-field">Boss Fight<select name="boss_fight_id"><option value="">Sem desafio</option>{data.bosses.filter((boss) => boss.status === 'active' && (!questSubject || String(boss.subject_id) === questSubject)).map((boss) => <option key={boss.id} value={boss.id}>{boss.title}</option>)}</select></label>
+            <label className="compact-field">Tipo<select name="type"><option value="study">Estudo</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="review">Revisão</option><option value="project">Projeto</option></select></label>
+            <label className="compact-field">Dificuldade<select name="difficulty" defaultValue="medium"><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option></select></label>
+            <label className="compact-field">XP<input name="xp_reward" type="number" min="0" defaultValue="40" /></label>
+            <label className="compact-field">Minutos<input name="estimated_minutes" type="number" min="1" defaultValue="30" /></label>
+            <label className="compact-field">Prazo<input name="due_date" type="date" /></label>
+            <button className="secondary-button" type="submit" disabled={busyKey === 'quest'}>Adicionar missão <span aria-hidden="true">→</span></button>
+          </form>
+
+          <form className="creation-card" onSubmit={createBossFight}>
+            <div><span className="kicker">DESAFIO ÉPICO</span><h2>Criar Boss Fight</h2></div>
+            <label className="compact-field">Disciplina<select name="subject_id" required defaultValue=""><option value="" disabled>Escolha uma disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+            <label className="compact-field">Nome do desafio<input name="title" placeholder="Ex.: Prova de cálculo" maxLength="200" required /></label>
+            <label className="compact-field">Pontos de vida<input name="hp_max" type="number" min="1" defaultValue="100" required /></label>
+            <label className="compact-field">Recompensa em XP<input name="xp_reward" type="number" min="0" defaultValue="150" /></label>
+            <button className="secondary-button" type="submit" disabled={busyKey === 'boss' || data.subjects.length === 0}>Criar desafio <span aria-hidden="true">→</span></button>
+            <div className="boss-list">{data.bosses.length === 0 ? <p className="small-empty">Crie um desafio e vincule missões para reduzir sua vida.</p> : data.bosses.map((boss) => {
+              const linkedQuests = data.quests.filter((quest) => quest.boss_fight_id === boss.id);
+              const percent = boss.hp_max ? Math.max(0, Math.min(100, boss.hp_current / boss.hp_max * 100)) : 0;
+              return <div className="boss-row" key={boss.id}><div className="boss-heading"><strong>{boss.title}</strong><button className="mini-delete" type="button" disabled={busyKey === `boss-${boss.id}`} onClick={() => deleteBossFight(boss)}>Excluir</button></div><div className="boss-hp-track"><span style={{ width: `${percent}%` }} /></div><small>{boss.hp_current} / {boss.hp_max} HP · {linkedQuests.length} missões{boss.status === 'defeated' ? ' · Derrotado!' : ''}</small></div>;
+            })}</div>
+          </form>
+
+          <section className="creation-card session-card">
+            <div><span className="kicker">FOCO NO AGORA</span><h2>Sessão de estudo</h2></div>
+            {activeSession ? <div className="active-session-box"><strong>Sessão em andamento</strong><span>{formatDuration(activeElapsed)} decorridos · meta de {formatDuration(activeSession.duration_minutes)}</span><button className="secondary-button" type="button" disabled={busyKey === `session-${activeSession.id}`} onClick={() => completeSession(activeSession.id)}>Concluir sessão</button></div> : <form className="session-start-form" onSubmit={startSession}>
+              <label className="compact-field">Disciplina<select value={sessionSubject} onChange={(event) => { setSessionSubject(event.target.value); setSessionQuest(''); }}><option value="">Sem disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+              <label className="compact-field">Missão<select value={sessionQuest} onChange={(event) => setSessionQuest(event.target.value)}><option value="">Sem missão</option>{data.quests.filter((quest) => quest.status !== 'completed' && (!sessionSubject || String(quest.subject_id || '') === sessionSubject)).map((quest) => <option key={quest.id} value={quest.id}>{quest.title}</option>)}</select></label>
+              <label className="compact-field">Duração (min)<input type="number" min="15" value={sessionMinutes} onChange={(event) => setSessionMinutes(event.target.value)} required /></label>
+              <button className="secondary-button" type="submit" disabled={busyKey === 'session'}>Começar estudo <span aria-hidden="true">→</span></button>
+            </form>}
+            <div className="sessions-list">{data.sessions.slice().reverse().slice(0, 5).map((session) => {
+              const subject = data.subjects.find((item) => item.id === session.subject_id);
+              const quest = data.quests.find((item) => item.id === session.quest_id);
+              return <div className={`session-row ${session.status === 'in_progress' ? 'session-active' : 'session-completed'}`} key={session.id}><div className="session-info"><strong>{subject?.name || 'Estudo livre'}</strong><span>{quest?.title || 'Sem missão vinculada'}</span><small>{session.status === 'in_progress' ? 'Em andamento' : `${formatDuration(session.duration_minutes)} · concluída`}</small></div></div>;
+            })}</div>
+          </section>
+        </section>
+      </div>
+      <footer className="dashboard-footer"><span>STUDYQUEST · FOCO · RITMO · EVOLUÇÃO</span><a href="/legacy.html">Abrir a interface anterior com gerador de planos, conquistas e Boss Fights</a></footer>
+    </section>
+  );
+}
+
+export default function App() {
+  const [token, setToken] = useState(() => localStorage.getItem('studyquest_token'));
+  const [data, setData] = useState(EMPTY_DATA);
+  const [loading, setLoading] = useState(Boolean(localStorage.getItem('studyquest_token')));
+  const [error, setError] = useState('');
+
+  const refresh = useCallback(async () => {
+    const [dashboard, streak, quests, subjects, sessions, analytics, rewards, bosses, achievements, leaderboard] = await Promise.all([
+      request('/users/dashboard'), request('/users/streak'), request('/quests/'), request('/subjects/'),
+      request('/study-sessions/'), request('/users/analytics'), request('/users/rewards'), request('/boss-fights/'),
+      request('/achievements/progress'), request('/users/leaderboard'),
+    ]);
+    setData({ dashboard, streak, quests, subjects, sessions, analytics, rewards, bosses, achievements, leaderboard });
+    setError('');
+  }, []);
+
+  useEffect(() => {
+    function expireSession() {
+      setToken(null);
+      setData(EMPTY_DATA);
+      setError('Sua sessão expirou. Entre novamente.');
+    }
+    window.addEventListener('studyquest:session-expired', expireSession);
+    return () => window.removeEventListener('studyquest:session-expired', expireSession);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!token) {
+      setLoading(false);
+      return undefined;
+    }
+    setLoading(true);
+    refresh().catch((loadError) => {
+      if (!cancelled) setError(getErrorMessage(loadError));
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [token, refresh]);
+
+  async function handleAuthenticated() {
+    setToken(localStorage.getItem('studyquest_token'));
+  }
+
+  function logout() {
+    setAccessToken(null);
+    setData(EMPTY_DATA);
+    setToken(null);
+  }
+
+  if (!token) return <main className="shell"><AuthScreen onAuthenticated={handleAuthenticated} initialError={error} /></main>;
+  if (loading) return <main className="loading-screen"><div className="loading-mark">study<span>quest</span></div><p>Carregando sua jornada…</p>{error && <p className="error-message" role="alert">{error}<br /><button className="secondary-button" type="button" onClick={() => window.location.reload()}>Tentar novamente</button></p>}</main>;
+  if (!data.dashboard) return <main className="loading-screen"><div className="loading-mark">study<span>quest</span></div><p className="error-message" role="alert">{error || 'Não foi possível carregar sua jornada.'}<br /><button className="secondary-button" type="button" onClick={() => { setLoading(true); refresh().catch((loadError) => setError(getErrorMessage(loadError))).finally(() => setLoading(false)); }}>Tentar novamente</button><br /><button className="text-button" type="button" onClick={logout}>Sair</button></p></main>;
+
+  return <main className="shell">{error && <div className="global-notice" role="alert"><span>{error}</span><button type="button" onClick={() => setError('')} aria-label="Fechar aviso">×</button></div>}<Dashboard data={data} refresh={() => refresh().catch((loadError) => setError(getErrorMessage(loadError)))} onLogout={logout} onError={setError} /></main>;
+}

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101827" />
+    <title>StudyQuest | Seu mapa de progresso</title>
+    <link rel="stylesheet" href="legacy-styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section id="auth-view" class="auth-layout">
+        <div class="brand-panel">
+          <span class="eyebrow">STUDYQUEST / 01</span>
+          <h1>Transforme estudo em <em>aventura.</em></h1>
+          <p>Uma central tranquila para acompanhar suas missões, XP e ritmo de aprendizagem.</p>
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="brand-note">FOCO &middot; RITMO &middot; EVOLUÇÃO</div>
+        </div>
+        <div class="auth-panel">
+          <div class="panel-heading">
+            <span class="kicker">BEM-VINDO DE VOLTA</span>
+            <h2 id="auth-title">Entrar na sua jornada</h2>
+          </div>
+          <form id="auth-form">
+            <label id="name-field" class="field hidden">Nome<input id="name" type="text" autocomplete="name" /></label>
+            <label class="field">E-mail<input id="email" type="email" autocomplete="email" required /></label>
+            <label class="field">Senha<input id="password" type="password" autocomplete="current-password" required /></label>
+            <button class="primary-button" type="submit"><span id="auth-submit">Entrar</span><span aria-hidden="true">&#8594;</span></button>
+          </form>
+          <p id="auth-error" class="error-message" role="alert"></p>
+          <button id="auth-toggle" class="text-button" type="button">Ainda não tenho uma conta</button>
+        </div>
+      </section>
+
+      <section id="app-view" class="app-view hidden">
+        <header class="topbar">
+          <a class="wordmark" href="#">study<span>quest</span></a>
+          <div class="topbar-actions"><span id="user-greeting"></span><button id="logout-button" class="icon-button" type="button" title="Sair">Sair <span aria-hidden="true">&#8599;</span></button></div>
+        </header>
+        <div class="dashboard-grid">
+          <section class="intro-block"><span class="eyebrow">PAINEL DE COMANDO</span><h1 id="dashboard-title">Sua próxima conquista começa aqui.</h1><p>Pequenos avanços, registrados todos os dias.</p></section>
+          <section class="level-card"><div class="level-top"><span>NÍVEL <strong id="level-value">1</strong></span><span id="xp-value">0 XP</span></div><div class="progress-track"><span id="xp-progress"></span></div><small id="xp-caption">100 XP para o próximo nível</small></section>
+          <section class="stats-row"><article class="stat-card accent"><span class="stat-label">MISSÕES FEITAS</span><strong id="quests-completed">0</strong><span>de <span id="quests-total">0</span> no total</span></article><article class="stat-card"><span class="stat-label">SEQUÊNCIA ATUAL</span><strong id="streak-value">0 <small>dias</small></strong><span>melhor: <span id="best-streak">0</span> dias</span></article><article class="stat-card"><span class="stat-label">TEMPO DE ESTUDO</span><strong id="study-minutes">0</strong><span>minutos acumulados</span></article></section>
+          <section class="creation-grid">
+            <form id="subject-form" class="creation-card">
+              <div><span class="kicker">NOVO FOCO</span><h2>Criar disciplina</h2></div>
+              <label class="compact-field">Nome<input id="subject-name" type="text" placeholder="Ex.: História" required /></label>
+              <label class="compact-field">Cor<input id="subject-color" type="color" value="#c7f36b" /></label>
+              <button class="secondary-button" type="submit">Adicionar disciplina <span aria-hidden="true">&#8594;</span></button>
+              <div id="subjects-list" class="subjects-list"></div>
+            </form>
+            <form id="quest-form" class="creation-card wide-creation-card">
+              <div><span class="kicker">PRÓXIMO PASSO</span><h2>Criar missão</h2></div>
+              <label class="compact-field">Título<input id="quest-title" type="text" placeholder="Ex.: Revisar capítulo 3" required /></label>
+              <label class="compact-field">Descrição<textarea id="quest-description" rows="2" placeholder="Anote o que precisa ser feito nesta missão."></textarea></label>
+              <label class="compact-field">Disciplina<select id="quest-subject"><option value="">Sem disciplina</option></select></label>
+              <label class="compact-field">Tipo<select id="quest-type"><option value="study">Estudo</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="review">Revisão</option><option value="project">Projeto</option></select></label>
+              <label class="compact-field">Dificuldade<select id="quest-difficulty"><option value="easy">Fácil</option><option value="medium" selected>Média</option><option value="hard">Difícil</option></select></label>
+              <label class="compact-field">XP<input id="quest-xp" type="number" min="0" value="40" /></label>
+              <label class="compact-field">Minutos<input id="quest-minutes" type="number" min="1" value="30" /></label>
+              <label class="compact-field">Prazo<input id="quest-due-date" type="date" /></label>
+              <button class="secondary-button" type="submit">Adicionar missão <span aria-hidden="true">&#8594;</span></button>
+            </form>
+            <form id="generate-plan-form" class="creation-card wide-creation-card">
+              <div><span class="kicker">INTELIGÊNCIA SIMPLES</span><h2>Gerar plano de estudo</h2></div>
+              <label class="compact-field">Tema<input id="plan-title" type="text" placeholder="Ex.: Álgebra linear" required /></label>
+              <label class="compact-field">Conteúdo<textarea id="plan-content" rows="3" placeholder="Cole tópicos, capítulos ou um resumo do material para gerar as missões."></textarea></label>
+              <label class="compact-field">Material em arquivo<input id="plan-material-file" type="file" accept=".txt,.md,.markdown,text/plain" /></label>
+              <label class="compact-field">Objetivo<input id="plan-goal" type="text" placeholder="Ex.: dominar operações com matrizes" /></label>
+              <label class="compact-field">Público<input id="plan-audience" type="text" placeholder="Ex.: alunos do ensino médio" /></label>
+              <label class="compact-field">Estilo<select id="plan-style"><option value="objetivo">Objetivo</option><option value="prática">Prática</option><option value="intensivo">Intensivo</option></select></label>
+              <label class="compact-field">Provedor IA<select id="plan-provider-type">
+                <option value="openai">OpenAI</option>
+                <option value="ollama">Ollama local</option>
+                <option value="custom">Personalizado</option>
+              </select></label>
+              <label class="compact-field">Endpoint IA (opcional)<input id="plan-provider-base-url" type="text" placeholder="Ex.: http://localhost:11434/v1" /></label>
+              <label class="compact-field">Modelo IA (opcional)<input id="plan-provider-model" type="text" placeholder="Ex.: llama3.1" /></label>
+              <label class="compact-field">Disciplina<select id="plan-subject"><option value="">Criar nova disciplina</option></select></label>
+              <button class="secondary-button" type="submit">Gerar plano <span aria-hidden="true">&#8594;</span></button>
+              <div id="plan-preview" class="small-empty">Ainda não há plano gerado.</div>
+            </form>
+            <form id="session-form" class="creation-card">
+              <div><span class="kicker">FOCO NO AGORA</span><h2>Iniciar sessão</h2></div>
+              <label class="compact-field">Disciplina<select id="session-subject"><option value="">Sem disciplina</option></select></label>
+              <label class="compact-field">Missão<select id="session-quest"><option value="">Sem missão</option></select></label>
+              <label class="compact-field">Duração (min)<input id="session-duration" type="number" min="15" value="30" /></label>
+              <div class="duration-presets" aria-label="Atalhos de duração">
+                <button class="preset-button" type="button" data-duration="15" aria-pressed="false">15m</button>
+                <button class="preset-button" type="button" data-duration="25" aria-pressed="false">25m</button>
+                <button class="preset-button" type="button" data-duration="45" aria-pressed="false">45m</button>
+                <button class="preset-button" type="button" data-duration="60" aria-pressed="false">60m</button>
+              </div>
+              <button class="secondary-button" type="submit">Começar estudo <span aria-hidden="true">&#8594;</span></button>
+              <div class="session-history-controls">
+                <label class="compact-field">Situação<select id="session-filter"><option value="all">Todas</option><option value="in_progress">Em andamento</option><option value="completed">Concluídas</option></select></label>
+                <label class="compact-field">Disciplina<select id="session-subject-filter"><option value="all">Todas as disciplinas</option><option value="none">Sem disciplina</option></select></label>
+                <label class="compact-field">Período<select id="session-period-filter"><option value="all">Todo o histórico</option><option value="today">Hoje</option><option value="7days">Últimos 7 dias</option><option value="30days">Últimos 30 dias</option></select></label>
+                <label class="compact-field session-search-field">Buscar disciplina ou missão<input id="session-search" type="search" placeholder="Digite para filtrar..." autocomplete="off" /></label>
+                <div class="session-history-actions"><button id="clear-session-filters" class="mini-edit" type="button">Limpar filtros</button><button id="export-session-history" class="mini-edit" type="button">Exportar CSV</button></div>
+              </div>
+              <p id="sessions-summary" class="sessions-summary" role="status" aria-live="polite"></p>
+              <div id="sessions-list" class="sessions-list"></div>
+            </form>
+            <form id="boss-form" class="creation-card">
+              <div><span class="kicker">DESAFIO FINAL</span><h2>Criar Boss Fight</h2></div>
+              <label class="compact-field">Disciplina<select id="boss-subject"><option value="">Sem disciplina</option></select></label>
+              <label class="compact-field">Título<input id="boss-title" type="text" placeholder="Ex.: Revisão de álgebra" required /></label>
+              <label class="compact-field">HP<input id="boss-hp" type="number" min="1" value="100" /></label>
+              <label class="compact-field">XP<input id="boss-xp" type="number" min="0" value="200" /></label>
+              <button class="secondary-button" type="submit">Criar desafio <span aria-hidden="true">&#8594;</span></button>
+              <div id="bosses-list" class="sessions-list"></div>
+            </form>
+          </section>
+          <section class="quests-section"><div class="section-heading"><div><span class="kicker">SEU MAPA</span><h2>Missões atuais</h2></div><div class="row-actions"><label class="compact-field inline-filter"><span>Filtrar</span><select id="quest-filter"><option value="all">Todas</option></select></label><label class="compact-field inline-filter"><span>Ordenar</span><select id="quest-sort"><option value="priority">Prioridade</option><option value="due_date">Prazo</option><option value="xp">XP</option><option value="minutes">Tempo</option><option value="title">Título</option></select></label><button id="refresh-button" class="icon-button" type="button" title="Atualizar missões">Atualizar <span aria-hidden="true">&#8635;</span></button></div></div><div id="quests-list" class="quests-list"></div></section>
+          <aside class="side-panel"><span class="kicker">ÚLTIMO MOVIMENTO</span><h2>Recompensas</h2><div id="reward-summary" class="reward-summary"><strong>0 XP</strong><span>Seu histórico aparece aqui.</span></div><div class="side-rule"></div><div id="activity-list" class="activity-list"></div><div class="side-rule"></div><div class="side-card"><span class="kicker">INSIGHTS</span><div id="insights-list" class="insights-list"></div></div><div class="side-card momentum-card"><span class="kicker">MOMENTUM</span><div id="momentum-summary" class="momentum-summary"></div></div><div class="side-card profile-card"><span class="kicker">PERFIL</span><div class="profile-summary"><strong id="profile-name">Estudante</strong><small id="profile-email">email@estudo.com</small><span id="profile-status">Nível em evolução.</span><button id="profile-edit-toggle" class="mini-edit" type="button">Editar nome</button><form id="profile-edit-form" class="profile-edit-form hidden"><label class="compact-field" for="profile-name-input">Nome<input id="profile-name-input" name="name" type="text" maxlength="120" required /></label><p id="profile-edit-error" class="quest-edit-error" role="alert"></p><div class="quest-edit-actions"><button class="secondary-button" type="submit">Salvar</button><button id="profile-edit-cancel" class="text-button" type="button">Cancelar</button></div></form></div></div><div class="side-card focus-card"><span class="kicker">PRÓXIMO ALVO</span><div id="next-focus" class="focus-summary"><strong>Sem missão pendente.</strong><span>Escolha a próxima tarefa para manter o ritmo.</span></div></div><div class="side-card"><span class="kicker">RANKING</span><div id="leaderboard-list" class="mini-list"></div></div><div class="side-card"><span class="kicker">CONQUISTAS</span><div id="achievement-list" class="mini-list"></div></div><div class="side-rule"></div><span class="kicker">LEMBRETE</span><p class="quote">A consistência vence a pressa.</p></aside>
+        </div>
+      </section>
+    </main>
+    <script src="legacy-app.js"></script>
+  </body>
+</html>

@@ -11,6 +11,7 @@ from app.api.v1.routers.quests import router as quests_router
 from app.api.v1.routers.study_sessions import router as study_sessions_router
 from app.api.v1.routers.subjects import router as subjects_router
 from app.api.v1.routers.users import router as users_router
+from app.core.config import settings
 from app.core.database import SessionLocal
 
 
@@ -33,7 +34,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

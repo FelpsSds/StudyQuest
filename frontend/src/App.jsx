@@ -40,7 +40,9 @@ function formatDateTime(value) {
 }
 
 function csvCell(value) {
-  return `"${String(value ?? '').replaceAll('"', '""')}"`;
+  const text = String(value ?? '');
+  const safeText = typeof value === 'string' && /^[\u0000-\u0020]*[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safeText.replaceAll('"', '""')}"`;
 }
 
 function localDateKey() {

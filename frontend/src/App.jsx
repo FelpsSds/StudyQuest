@@ -162,6 +162,17 @@ function Dashboard({ data, refresh, onLogout, onError }) {
 
   useEffect(() => {
     const subjectIds = new Set(data.subjects.map((subject) => String(subject.id)));
+    const validQuestFilter = ['all', 'none'].includes(questSubjectFilter) || subjectIds.has(questSubjectFilter);
+    if (!validQuestFilter) {
+      setQuestSubjectFilter('all');
+      localStorage.setItem('studyquest_quest_subject_filter', 'all');
+    }
+    const hasRemovedSubjects = data.sessions.some((session) => session.subject_id == null && session.subject_name);
+    const validSessionFilter = ['all', 'none'].includes(sessionSubjectFilter)
+      || (sessionSubjectFilter === 'removed' && hasRemovedSubjects)
+      || subjectIds.has(sessionSubjectFilter);
+    if (!validSessionFilter) setSessionSubjectFilter('all');
+
     if (sessionSubject && !subjectIds.has(sessionSubject)) {
       setSessionSubject('');
       setSessionQuest('');
@@ -187,7 +198,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     ))) {
       setEditingQuestBossId('');
     }
-  }, [data.subjects, data.quests, data.bosses, sessionSubject, sessionQuest, questSubject, editingQuestId, editingQuestSubject, editingQuestBossId]);
+  }, [data.subjects, data.quests, data.bosses, data.sessions, questSubjectFilter, sessionSubjectFilter, sessionSubject, sessionQuest, questSubject, editingQuestId, editingQuestSubject, editingQuestBossId]);
 
   const questList = useMemo(() => {
     const today = localDateKey();

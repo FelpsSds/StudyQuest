@@ -8,6 +8,7 @@ from app.api.deps import get_db
 from app.api.v1.schemas.quest import QuestCompleteRequest, QuestCreate, QuestRead, QuestUpdate
 from app.api.v1.routers.achievements import award_achievement_for_quest_completion
 from app.core.boss_fights import award_boss_defeat
+from app.core.concurrency import user_operation_lock
 from app.core.plan_generator import generate_plan_spec
 from app.core.progression import level_for_xp
 from app.core.security import get_current_user
@@ -401,6 +402,16 @@ def complete_quest(
     payload: QuestCompleteRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+) -> Quest:
+    with user_operation_lock(current_user.id):
+        return _complete_quest(quest_id, payload, current_user, db)
+
+
+def _complete_quest(
+    quest_id: int,
+    payload: QuestCompleteRequest,
+    current_user: User,
+    db: Session,
 ) -> Quest:
     user = db.query(User).filter(User.id == current_user.id).populate_existing().with_for_update().first()
     if user is None:

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.api.v1.schemas.boss_fight import BossFightCreate, BossFightRead
 from app.core.boss_fights import award_boss_defeat
+from app.core.concurrency import user_operation_lock
 from app.core.security import get_current_user
 from app.models.boss_fight import BossFight
 from app.models.subject import Subject
@@ -70,6 +71,15 @@ def complete_boss_fight(
     boss_fight_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+) -> BossFight:
+    with user_operation_lock(current_user.id):
+        return _complete_boss_fight(boss_fight_id, current_user, db)
+
+
+def _complete_boss_fight(
+    boss_fight_id: int,
+    current_user: User,
+    db: Session,
 ) -> BossFight:
     user = db.query(User).filter(User.id == current_user.id).populate_existing().with_for_update().first()
     if user is None:

@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
-from threading import Lock
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.api.v1.schemas.study_session import StudySessionCreate, StudySessionRead
+from app.core.concurrency import user_operation_lock
 from app.core.security import get_current_user
 from app.models.quest import Quest, QuestStatus
 from app.models.study_session import StudySession
@@ -13,7 +13,6 @@ from app.models.subject import Subject
 from app.models.user import User
 
 router = APIRouter(prefix="/study-sessions", tags=["study-sessions"])
-_SESSION_CREATION_LOCKS = tuple(Lock() for _ in range(64))
 
 
 def _get_owned_study_session(db: Session, study_session_id: int, current_user: User) -> StudySession:
@@ -60,8 +59,7 @@ def create_study_session(
     db: Session = Depends(get_db),
 ) -> StudySession:
     # SQLite ignores SELECT ... FOR UPDATE, so also serialize requests in this process.
-    lock = _SESSION_CREATION_LOCKS[current_user.id % len(_SESSION_CREATION_LOCKS)]
-    with lock:
+    with user_operation_lock(current_user.id):
         return _create_study_session(payload, current_user, db)
 
 

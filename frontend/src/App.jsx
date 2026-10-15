@@ -27,6 +27,15 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? 'Data inválida' : date.toLocaleDateString('pt-BR');
 }
 
+function formatDateTime(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Data indisponível' : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function csvCell(value) {
+  return `"${String(value ?? '').replaceAll('"', '""')}"`;
+}
+
 function localDateKey() {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -100,6 +109,10 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [sessionMinutes, setSessionMinutes] = useState(25);
   const [sessionSubject, setSessionSubject] = useState('');
   const [sessionQuest, setSessionQuest] = useState('');
+  const [sessionStatusFilter, setSessionStatusFilter] = useState('all');
+  const [sessionSubjectFilter, setSessionSubjectFilter] = useState('all');
+  const [sessionPeriodFilter, setSessionPeriodFilter] = useState('all');
+  const [sessionSearch, setSessionSearch] = useState('');
   const [profileEditing, setProfileEditing] = useState(false);
   const [editingQuestId, setEditingQuestId] = useState(null);
   const [questSubject, setQuestSubject] = useState('');
@@ -136,6 +149,24 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     () => data.sessions.find((session) => session.status === 'in_progress'),
     [data.sessions],
   );
+
+  const filteredSessions = useMemo(() => {
+    const cutoff = sessionPeriodFilter === 'today'
+      ? new Date(new Date().setHours(0, 0, 0, 0)).getTime()
+      : sessionPeriodFilter === '7days' ? Date.now() - 7 * 86_400_000
+        : sessionPeriodFilter === '30days' ? Date.now() - 30 * 86_400_000 : null;
+    const term = sessionSearch.trim().toLocaleLowerCase('pt-BR');
+    return [...data.sessions].filter((session) => {
+      if (sessionStatusFilter !== 'all' && session.status !== sessionStatusFilter) return false;
+      if (sessionSubjectFilter === 'none' && session.subject_id != null) return false;
+      if (sessionSubjectFilter !== 'all' && sessionSubjectFilter !== 'none' && String(session.subject_id) !== sessionSubjectFilter) return false;
+      const startedAt = new Date(session.started_at).getTime();
+      if (cutoff != null && (!Number.isFinite(startedAt) || startedAt < cutoff)) return false;
+      const subject = data.subjects.find((item) => item.id === session.subject_id)?.name || '';
+      const quest = data.quests.find((item) => item.id === session.quest_id)?.title || '';
+      return !term || `${subject} ${quest}`.toLocaleLowerCase('pt-BR').includes(term);
+    }).sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+  }, [data.sessions, data.subjects, data.quests, sessionStatusFilter, sessionSubjectFilter, sessionPeriodFilter, sessionSearch]);
 
   async function run(key, action) {
     setBusyKey(key);
@@ -250,6 +281,36 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       await request(`/study-sessions/${sessionId}/complete`, { method: 'PATCH' });
       await refresh();
     });
+  }
+
+  async function deleteSession(session) {
+    if (!window.confirm(`Excluir a sessão de ${formatDateTime(session.started_at)} do histórico?`)) return;
+    await run(`session-${session.id}`, async () => {
+      await request(`/study-sessions/${session.id}`, { method: 'DELETE' });
+      await refresh();
+    });
+  }
+
+  function exportSessions() {
+    const rows = [
+      ['Data', 'Situação', 'Disciplina', 'Missão', 'Duração (min)'],
+      ...filteredSessions.map((session) => [
+        formatDateTime(session.started_at),
+        session.status === 'completed' ? 'Concluída' : 'Em andamento',
+        data.subjects.find((item) => item.id === session.subject_id)?.name || 'Estudo livre',
+        data.quests.find((item) => item.id === session.quest_id)?.title || '',
+        session.duration_minutes ?? '',
+      ]),
+    ];
+    const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(';')).join('\r\n')}`;
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'studyquest-sessoes.csv';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   async function createBossFight(event) {
@@ -469,10 +530,19 @@ function Dashboard({ data, refresh, onLogout, onError }) {
               <label className="compact-field">Duração (min)<input type="number" min="15" value={sessionMinutes} onChange={(event) => setSessionMinutes(event.target.value)} required /></label>
               <button className="secondary-button" type="submit" disabled={busyKey === 'session'}>Começar estudo <span aria-hidden="true">→</span></button>
             </form>}
-            <div className="sessions-list">{data.sessions.slice().reverse().slice(0, 5).map((session) => {
+            <div className="session-history-controls">
+              <label className="compact-field">Situação<select value={sessionStatusFilter} onChange={(event) => setSessionStatusFilter(event.target.value)}><option value="all">Todas</option><option value="in_progress">Em andamento</option><option value="completed">Concluídas</option></select></label>
+              <label className="compact-field">Disciplina<select value={sessionSubjectFilter} onChange={(event) => setSessionSubjectFilter(event.target.value)}><option value="all">Todas</option><option value="none">Estudo livre</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+              <label className="compact-field">Período<select value={sessionPeriodFilter} onChange={(event) => setSessionPeriodFilter(event.target.value)}><option value="all">Todo o histórico</option><option value="today">Hoje</option><option value="7days">Últimos 7 dias</option><option value="30days">Últimos 30 dias</option></select></label>
+              <label className="compact-field session-search-field">Buscar<input type="search" value={sessionSearch} onChange={(event) => setSessionSearch(event.target.value)} placeholder="Disciplina ou missão" /></label>
+              <button className="mini-edit" type="button" onClick={exportSessions}>Exportar CSV</button>
+            </div>
+            <p className="sessions-summary" role="status" aria-live="polite">{filteredSessions.length} de {data.sessions.length} sessões · {filteredSessions.filter((session) => session.status === 'in_progress').length} em andamento · {formatDuration(filteredSessions.filter((session) => session.status === 'completed').reduce((total, session) => total + (Number(session.duration_minutes) || 0), 0))} concluídos</p>
+            <div className="sessions-list">{filteredSessions.length === 0 ? <p className="small-empty">Nenhuma sessão encontrada com estes filtros.</p> : filteredSessions.map((session) => {
               const subject = data.subjects.find((item) => item.id === session.subject_id);
               const quest = data.quests.find((item) => item.id === session.quest_id);
-              return <div className={`session-row ${session.status === 'in_progress' ? 'session-active' : 'session-completed'}`} key={session.id}><div className="session-info"><strong>{subject?.name || 'Estudo livre'}</strong><span>{quest?.title || 'Sem missão vinculada'}</span><small>{session.status === 'in_progress' ? 'Em andamento' : `${formatDuration(session.duration_minutes)} · concluída`}</small></div></div>;
+              const elapsed = Math.max(0, Math.floor((now - new Date(session.started_at).getTime()) / 60_000));
+              return <div className={`session-row ${session.status === 'in_progress' ? 'session-active' : 'session-completed'}`} key={session.id}><div className="session-info"><strong>{subject?.name || (session.subject_id ? 'Disciplina removida' : 'Estudo livre')}</strong>{quest && <span>{quest.title}</span>}<small>{session.status === 'in_progress' ? `Em andamento · meta ${formatDuration(session.duration_minutes)} · ${formatDuration(elapsed)} decorridos` : `Concluída · ${formatDateTime(session.started_at)} · ${formatDuration(session.duration_minutes)}`}</small></div><div className="session-row-actions">{session.status === 'in_progress' && <button className="mini-edit" type="button" disabled={busyKey === `session-${session.id}`} onClick={() => completeSession(session.id)}>Finalizar</button>}<button className="mini-delete" type="button" disabled={busyKey === `session-${session.id}`} onClick={() => deleteSession(session)}>Excluir</button></div></div>;
             })}</div>
           </section>
         </section>

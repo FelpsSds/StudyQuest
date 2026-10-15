@@ -75,9 +75,6 @@ def _award_achievement_if_needed(db: Session, user: User) -> list[Achievement]:
             db.add(UserAchievement(user_id=user.id, achievement_id=achievement.id))
             unlocked.append(achievement)
 
-    if unlocked:
-        db.commit()
-
     return unlocked
 
 

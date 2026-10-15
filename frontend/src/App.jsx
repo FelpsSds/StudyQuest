@@ -192,6 +192,10 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     () => data.sessions.find((session) => session.status === 'in_progress'),
     [data.sessions],
   );
+  const effectiveSessionSubjectFilter = ['all', 'none'].includes(sessionSubjectFilter)
+    || data.subjects.some((subject) => String(subject.id) === sessionSubjectFilter)
+    ? sessionSubjectFilter
+    : 'all';
 
   const filteredSessions = useMemo(() => {
     const cutoff = sessionPeriodFilter === 'today'
@@ -201,15 +205,15 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     const term = sessionSearch.trim().toLocaleLowerCase('pt-BR');
     return [...data.sessions].filter((session) => {
       if (sessionStatusFilter !== 'all' && session.status !== sessionStatusFilter) return false;
-      if (sessionSubjectFilter === 'none' && session.subject_id != null) return false;
-      if (sessionSubjectFilter !== 'all' && sessionSubjectFilter !== 'none' && String(session.subject_id) !== sessionSubjectFilter) return false;
+      if (effectiveSessionSubjectFilter === 'none' && session.subject_id != null) return false;
+      if (effectiveSessionSubjectFilter !== 'all' && effectiveSessionSubjectFilter !== 'none' && String(session.subject_id) !== effectiveSessionSubjectFilter) return false;
       const startedAt = parseApiDateTime(session.started_at).getTime();
       if (cutoff != null && (!Number.isFinite(startedAt) || startedAt < cutoff)) return false;
       const subject = data.subjects.find((item) => item.id === session.subject_id)?.name || '';
       const quest = data.quests.find((item) => item.id === session.quest_id)?.title || '';
       return !term || `${subject} ${quest}`.toLocaleLowerCase('pt-BR').includes(term);
     }).sort((a, b) => parseApiDateTime(b.started_at).getTime() - parseApiDateTime(a.started_at).getTime());
-  }, [data.sessions, data.subjects, data.quests, sessionStatusFilter, sessionSubjectFilter, sessionPeriodFilter, sessionSearch]);
+  }, [data.sessions, data.subjects, data.quests, sessionStatusFilter, effectiveSessionSubjectFilter, sessionPeriodFilter, sessionSearch]);
 
   async function run(key, action) {
     if (busyKeysRef.current.has(key)) return;
@@ -732,7 +736,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             </form>}
             <div className="session-history-controls">
               <label className="compact-field">Situação<select value={sessionStatusFilter} onChange={(event) => setSessionStatusFilter(event.target.value)}><option value="all">Todas</option><option value="in_progress">Em andamento</option><option value="completed">Concluídas</option></select></label>
-              <label className="compact-field">Disciplina<select value={sessionSubjectFilter} onChange={(event) => setSessionSubjectFilter(event.target.value)}><option value="all">Todas</option><option value="none">Estudo livre</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+              <label className="compact-field">Disciplina<select value={effectiveSessionSubjectFilter} onChange={(event) => setSessionSubjectFilter(event.target.value)}><option value="all">Todas</option><option value="none">Estudo livre</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
               <label className="compact-field">Período<select value={sessionPeriodFilter} onChange={(event) => setSessionPeriodFilter(event.target.value)}><option value="all">Todo o histórico</option><option value="today">Hoje</option><option value="7days">Últimos 7 dias</option><option value="30days">Últimos 30 dias</option></select></label>
               <label className="compact-field session-search-field">Buscar<input type="search" value={sessionSearch} onChange={(event) => setSessionSearch(event.target.value)} placeholder="Disciplina ou missão" /></label>
               <button className="mini-edit" type="button" onClick={exportSessions}>Exportar CSV</button>

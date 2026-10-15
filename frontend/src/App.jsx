@@ -426,16 +426,38 @@ function Dashboard({ data, refresh, onLogout, onError }) {
 
   async function savePlan() {
     if (!planDraft) return;
+    const tasks = planDraft.tasks.map((task) => ({
+      ...task,
+      title: String(task.title || '').trim(),
+      description: String(task.description || '').trim() || null,
+      xp_reward: Number(task.xp_reward),
+      estimated_minutes: Number(task.estimated_minutes),
+    }));
+    if (tasks.some((task) => !task.title)) {
+      onError('Cada missão do plano precisa ter um título.');
+      return;
+    }
+    if (tasks.some((task) => String(task.xp_reward).trim() === '' || String(task.estimated_minutes).trim() === '' || !Number.isInteger(task.xp_reward) || task.xp_reward < 0 || !Number.isInteger(task.estimated_minutes) || task.estimated_minutes < 1)) {
+      onError('Revise os valores de XP e duração: XP deve ser zero ou maior e os minutos devem ser pelo menos 1.');
+      return;
+    }
     await run('plan', async () => {
       await request('/quests/generate-plan', jsonRequest('POST', {
         ...planDraft.payload,
         preview_only: false,
         learning_objectives: planDraft.learning_objectives,
-        tasks: planDraft.tasks,
+        tasks,
       }));
       setPlanDraft(null);
       await refresh();
     });
+  }
+
+  function updatePlanTask(index, field, value) {
+    setPlanDraft((current) => current ? {
+      ...current,
+      tasks: current.tasks.map((task, taskIndex) => taskIndex === index ? { ...task, [field]: value } : task),
+    } : current);
   }
 
   async function updateProfile(event) {
@@ -608,7 +630,13 @@ function Dashboard({ data, refresh, onLogout, onError }) {
               <strong>Objetivos de aprendizagem</strong>
               <ul>{planDraft.learning_objectives.map((objective, index) => <li key={index}>{objective}</li>)}</ul>
               <strong>Missões propostas</strong>
-              <div className="plan-task-list">{planDraft.tasks.map((task, index) => <div className="plan-task" key={`${task.title}-${index}`}><strong>{task.title}</strong><small>{task.xp_reward} XP · {formatDuration(task.estimated_minutes)}</small><p>{task.description}</p></div>)}</div>
+              <div className="plan-task-list">{planDraft.tasks.map((task, index) => <div className="plan-task plan-task-edit" key={index}>
+                <label className="compact-field">Título<input value={task.title} maxLength="200" onChange={(event) => updatePlanTask(index, 'title', event.target.value)} /></label>
+                <label className="compact-field">Tipo<select value={task.type} onChange={(event) => updatePlanTask(index, 'type', event.target.value)}><option value="review">Revisão</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="project">Projeto</option><option value="study">Estudo</option></select></label>
+                <label className="compact-field">Dificuldade<select value={task.difficulty} onChange={(event) => updatePlanTask(index, 'difficulty', event.target.value)}><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option></select></label>
+                <div className="plan-task-numbers"><label className="compact-field">XP<input type="number" min="0" step="1" value={task.xp_reward} onChange={(event) => updatePlanTask(index, 'xp_reward', event.target.value)} /></label><label className="compact-field">Minutos<input type="number" min="1" step="1" value={task.estimated_minutes} onChange={(event) => updatePlanTask(index, 'estimated_minutes', event.target.value)} /></label></div>
+                <label className="compact-field">Descrição<textarea rows="2" value={task.description || ''} onChange={(event) => updatePlanTask(index, 'description', event.target.value)} /></label>
+              </div>)}</div>
               <div className="quest-edit-actions"><button className="secondary-button" type="button" onClick={savePlan} disabled={busyKey === 'plan'}>Adicionar plano</button><button className="text-button" type="button" onClick={() => setPlanDraft(null)}>Descartar</button></div>
             </div>}
           </form>

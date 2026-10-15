@@ -339,7 +339,7 @@ def generate_plan_spec(
     )
     if ai_payload:
         learning_objectives = ai_payload.get("learning_objectives")
-        if not isinstance(learning_objectives, list) or not all(
+        if not isinstance(learning_objectives, list) or not learning_objectives or not all(
             isinstance(item, str) and item.strip() for item in learning_objectives
         ):
             learning_objectives = build_learning_objectives(title, content, goal, audience, learning_style)

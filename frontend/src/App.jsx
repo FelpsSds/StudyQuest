@@ -160,6 +160,35 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const subjectIds = new Set(data.subjects.map((subject) => String(subject.id)));
+    if (sessionSubject && !subjectIds.has(sessionSubject)) {
+      setSessionSubject('');
+      setSessionQuest('');
+    } else if (sessionQuest && !data.quests.some((quest) => (
+      String(quest.id) === sessionQuest
+      && !['completed', 'archived'].includes(quest.status)
+      && (!sessionSubject || String(quest.subject_id || '') === sessionSubject)
+    ))) {
+      setSessionQuest('');
+    }
+
+    if (questSubject && !subjectIds.has(questSubject)) setQuestSubject('');
+
+    if (editingQuestId && !data.quests.some((quest) => quest.id === editingQuestId)) {
+      setEditingQuestId(null);
+      setEditingQuestSubject('');
+      setEditingQuestBossId('');
+    } else if (editingQuestSubject && !subjectIds.has(editingQuestSubject)) {
+      setEditingQuestSubject('');
+      setEditingQuestBossId('');
+    } else if (editingQuestBossId && !data.bosses.some((boss) => (
+      String(boss.id) === editingQuestBossId && String(boss.subject_id) === editingQuestSubject
+    ))) {
+      setEditingQuestBossId('');
+    }
+  }, [data.subjects, data.quests, data.bosses, sessionSubject, sessionQuest, questSubject, editingQuestId, editingQuestSubject, editingQuestBossId]);
+
   const questList = useMemo(() => {
     const today = localDateKey();
     const effectiveSubjectFilter = ['all', 'none'].includes(questSubjectFilter) || data.subjects.some((subject) => String(subject.id) === questSubjectFilter) ? questSubjectFilter : 'all';

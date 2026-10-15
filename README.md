@@ -9,10 +9,11 @@ StudyQuest é uma plataforma de estudos gamificada. O usuário transforma ativid
 - SQLAlchemy e migrations com Alembic
 - Autenticação com JWT e senha protegida por hash
 - Disciplinas, missões, XP, conquistas, Boss Fights e sessões de estudo
-- Frontend principal em React + Vite com autenticação, painel, disciplinas, missões e sessões de estudo
-- Interface anterior preservada em `frontend/legacy.html` enquanto os recursos restantes migram
-- Testes automatizados para as principais regras de negócio
-- GitHub Actions executa os testes backend em cada push e pull request
+- Frontend principal em React + Vite com autenticação, painel de progresso, edição de disciplinas e ciclo completo de missões
+- Sessões com cronômetro, filtros, histórico e exportação CSV
+- Boss Fights, conquistas, ranking e gerador de planos com provedores opcionais de IA
+- Interface anterior preservada em `frontend/legacy.html` como alternativa
+- Testes automatizados para as regras de negócio; GitHub Actions executa os testes backend e compila o frontend em cada push e pull request
 
 ## Configuração de ambiente
 
@@ -25,7 +26,7 @@ Copy-Item backend\.env.example backend\.env
 
 Os valores padrão já servem para desenvolvimento local; ajuste `JWT_SECRET_KEY` em produção.
 
-No Docker, o Nginx encaminha `/api` ao backend no mesmo host do frontend. Para desenvolvimento local com Vite, o proxy envia as chamadas para `http://127.0.0.1:8000`. Se usar a interface antiga ou uma API hospedada em outro domínio, configure `CORS_ORIGINS` no `.env` e ajuste `studyquest-api-base` em `frontend/index.html` para a URL da API, incluindo `/api/v1`.
+No Docker, o Nginx encaminha `/api` ao backend no mesmo host do frontend. Para desenvolvimento local com Vite, o proxy envia as chamadas para `http://127.0.0.1:8000`. Se usar uma API hospedada em outro domínio, configure `CORS_ORIGINS` no `.env` e defina `VITE_API_BASE` ou ajuste `studyquest-api-base` em `frontend/index.html` para a URL da API, incluindo `/api/v1`.
 
 A geração de planos funciona sem provedor de IA, usando um gerador local. Para ativar a integração compatível com a API da OpenAI, configure `AI_GENERATION_ENABLED=true` e `OPENAI_API_KEY` em `backend\.env`. Provedores locais compatíveis, como Ollama, podem ser selecionados na interface sem chave da OpenAI; o endpoint escolhido precisa estar acessível a partir do backend. No Docker Desktop, use `host.docker.internal` para acessar um provedor executado no computador.
 
@@ -98,6 +99,6 @@ frontend/      # React + Vite e interface anterior em legacy.html
 
 ## Próximas etapas
 
-1. Migrar para React os recursos que ainda estão disponíveis na interface anterior.
-2. Completar edição, filtros e histórico avançado na nova interface.
-3. Preparar e validar o deploy.
+1. Validar os fluxos completos em uma instalação limpa com Docker e PostgreSQL.
+2. Adicionar cobertura ponta a ponta no navegador para autenticação, missões, sessões e geração de planos.
+3. Preparar o deploy de produção com segredo JWT, HTTPS, backups e configuração externa.

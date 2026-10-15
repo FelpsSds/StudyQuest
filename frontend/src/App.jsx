@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { jsonRequest, request, setAccessToken } from './api.js';
 
 const EMPTY_DATA = {
@@ -134,7 +134,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [editingQuestBossId, setEditingQuestBossId] = useState('');
   const [questSubject, setQuestSubject] = useState('');
   const [planDraft, setPlanDraft] = useState(null);
-  const [busyKey, setBusyKey] = useState('');
+  const [busyKeys, setBusyKeys] = useState(() => new Set());
+  const busyKeysRef = useRef(new Set());
   const [now, setNow] = useState(Date.now());
   const user = data.dashboard?.user;
   const stats = data.dashboard?.stats;
@@ -204,13 +205,20 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   }, [data.sessions, data.subjects, data.quests, sessionStatusFilter, sessionSubjectFilter, sessionPeriodFilter, sessionSearch]);
 
   async function run(key, action) {
-    setBusyKey(key);
+    if (busyKeysRef.current.has(key)) return;
+    const started = new Set(busyKeysRef.current);
+    started.add(key);
+    busyKeysRef.current = started;
+    setBusyKeys(started);
     try {
       await action();
     } catch (error) {
       onError(getErrorMessage(error));
     } finally {
-      setBusyKey('');
+      const finished = new Set(busyKeysRef.current);
+      finished.delete(key);
+      busyKeysRef.current = finished;
+      setBusyKeys(finished);
     }
   }
 
@@ -563,13 +571,13 @@ function Dashboard({ data, refresh, onLogout, onError }) {
                   <label className="compact-field">Dano no Boss<input name="boss_damage" type="number" min="0" defaultValue={quest.boss_damage} /></label>
                   <label className="compact-field">Minutos<input name="estimated_minutes" type="number" min="1" defaultValue={quest.estimated_minutes} /></label>
                   <label className="compact-field">Prazo<input name="due_date" type="date" defaultValue={quest.due_date || ''} /></label>
-                  <div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === `quest-${quest.id}`}>Salvar</button><button className="text-button" type="button" onClick={() => { setEditingQuestId(null); setEditingQuestSubject(''); setEditingQuestBossId(''); }}>Cancelar</button></div>
+                  <div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKeys.has(`quest-${quest.id}`)}>Salvar</button><button className="text-button" type="button" onClick={() => { setEditingQuestId(null); setEditingQuestSubject(''); setEditingQuestBossId(''); }}>Cancelar</button></div>
                 </form> : <>
                   <div><div className="quest-title-line"><h3 className="quest-title">{quest.title}</h3>{quest.status === 'archived' && <span className="quest-status-badge">Arquivada</span>}{quest.status === 'in_progress' && <span className="quest-status-badge in-progress-badge">Em andamento</span>}{quest.due_date && <span className="quest-due-badge">{formatDate(quest.due_date)}</span>}</div>
                     <div className="quest-meta">{subject?.name || 'Sem disciplina'} · {quest.xp_reward} XP · {formatDuration(quest.estimated_minutes)}</div>
                     {quest.description && <details className="quest-details"><summary>Ver detalhes</summary><p>{quest.description}</p></details>}
                   </div>
-                  <div className="quest-actions">{quest.status === 'pending' && <button className="mini-edit" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => updateQuestStatus(quest, 'in_progress')}>Iniciar</button>}{quest.status !== 'archived' && <button className="complete-button" type="button" disabled={quest.status === 'completed' || busyKey === `quest-${quest.id}`} onClick={() => completeQuest(quest.id)}>{quest.status === 'completed' ? 'Concluída' : 'Concluir'}</button>}{quest.status !== 'completed' && <button className="mini-edit" type="button" onClick={() => editQuest(quest)}>Editar</button>}{quest.status === 'archived' ? <button className="archive-button" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => updateQuestStatus(quest, 'pending')}>Restaurar</button> : quest.status === 'in_progress' ? <button className="archive-button" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => updateQuestStatus(quest, 'pending')}>Voltar para pendentes</button> : quest.status === 'pending' && <button className="archive-button" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => updateQuestStatus(quest, 'archived')}>Arquivar</button>}<button className="delete-button" type="button" disabled={busyKey === `quest-${quest.id}`} onClick={() => deleteQuest(quest)}>Excluir</button></div>
+                  <div className="quest-actions">{quest.status === 'pending' && <button className="mini-edit" type="button" disabled={busyKeys.has(`quest-${quest.id}`)} onClick={() => updateQuestStatus(quest, 'in_progress')}>Iniciar</button>}{quest.status !== 'archived' && <button className="complete-button" type="button" disabled={quest.status === 'completed' || busyKeys.has(`quest-${quest.id}`)} onClick={() => completeQuest(quest.id)}>{quest.status === 'completed' ? 'Concluída' : 'Concluir'}</button>}{quest.status !== 'completed' && <button className="mini-edit" type="button" onClick={() => editQuest(quest)}>Editar</button>}{quest.status === 'archived' ? <button className="archive-button" type="button" disabled={busyKeys.has(`quest-${quest.id}`)} onClick={() => updateQuestStatus(quest, 'pending')}>Restaurar</button> : quest.status === 'in_progress' ? <button className="archive-button" type="button" disabled={busyKeys.has(`quest-${quest.id}`)} onClick={() => updateQuestStatus(quest, 'pending')}>Voltar para pendentes</button> : quest.status === 'pending' && <button className="archive-button" type="button" disabled={busyKeys.has(`quest-${quest.id}`)} onClick={() => updateQuestStatus(quest, 'archived')}>Arquivar</button>}<button className="delete-button" type="button" disabled={busyKeys.has(`quest-${quest.id}`)} onClick={() => deleteQuest(quest)}>Excluir</button></div>
                 </>}
               </article>;
             })}
@@ -579,11 +587,11 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         <aside className="side-panel">
           <span className="kicker">SEU PERFIL</span><h2>{user?.name}</h2>
           <p className="profile-email">{user?.email}</p>
-          {!profileEditing ? <button className="mini-edit" type="button" onClick={() => setProfileEditing(true)}>Editar nome</button> : <form className="profile-edit-form" onSubmit={updateProfile}><label className="compact-field">Nome<input name="name" defaultValue={user?.name} maxLength="120" required /></label><div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === 'profile'}>Salvar</button><button className="text-button" type="button" onClick={() => setProfileEditing(false)}>Cancelar</button></div></form>}
+          {!profileEditing ? <button className="mini-edit" type="button" onClick={() => setProfileEditing(true)}>Editar nome</button> : <form className="profile-edit-form" onSubmit={updateProfile}><label className="compact-field">Nome<input name="name" defaultValue={user?.name} maxLength="120" required /></label><div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKeys.has('profile')}>Salvar</button><button className="text-button" type="button" onClick={() => setProfileEditing(false)}>Cancelar</button></div></form>}
           <div className="side-rule" />
           <span className="kicker">XP RECENTE</span><div className="activity-list">{recentRewards.length ? recentRewards.map((item) => <div className="activity-row" key={item.id}><span className="activity-badge">+{item.amount}</span><div><strong>{item.reason}</strong><small>{formatDateTime(item.created_at)} · XP conquistado</small></div></div>) : <p className="mini-empty">Conclua uma missão ou Boss Fight para ganhar XP.</p>}</div>
           <div className="side-rule" />
-          <span className="kicker">PRÓXIMO FOCO</span>{nextFocusQuest ? <div className="next-focus-card"><strong>{nextFocusQuest.title}</strong><span>{nextFocusQuest.xp_reward} XP · {formatDuration(nextFocusQuest.estimated_minutes)}</span><button className="mini-edit" type="button" disabled={busyKey === `quest-${nextFocusQuest.id}`} onClick={() => completeQuest(nextFocusQuest.id)}>Marcar como concluída</button></div> : <p className="mini-empty">Sem missões pendentes. Crie uma nova para continuar.</p>}
+          <span className="kicker">PRÓXIMO FOCO</span>{nextFocusQuest ? <div className="next-focus-card"><strong>{nextFocusQuest.title}</strong><span>{nextFocusQuest.xp_reward} XP · {formatDuration(nextFocusQuest.estimated_minutes)}</span><button className="mini-edit" type="button" disabled={busyKeys.has(`quest-${nextFocusQuest.id}`)} onClick={() => completeQuest(nextFocusQuest.id)}>Marcar como concluída</button></div> : <p className="mini-empty">Sem missões pendentes. Crie uma nova para continuar.</p>}
           <div className="side-rule" />
           <span className="kicker">CONQUISTAS</span><div className="achievement-list">{data.achievements.length === 0 ? <p className="mini-empty">Nenhuma conquista disponível ainda.</p> : data.achievements.map((item) => {
             const progress = item.criteria_value > 0 ? Math.min(100, Math.round(item.current_value / item.criteria_value * 100)) : 0;
@@ -615,9 +623,9 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <div><span className="kicker">NOVO FOCO</span><h2>Criar disciplina</h2></div>
             <label className="compact-field">Nome<input name="name" type="text" placeholder="Ex.: História" maxLength="120" required /></label>
             <label className="compact-field">Cor<input name="color" type="color" defaultValue="#c7f36b" /></label>
-            <button className="secondary-button" type="submit" disabled={busyKey === 'subject'}>Adicionar disciplina <span aria-hidden="true">→</span></button>
+            <button className="secondary-button" type="submit" disabled={busyKeys.has('subject')}>Adicionar disciplina <span aria-hidden="true">→</span></button>
             <div className="subjects-list">{data.subjects.length === 0 ? <p className="small-empty">Suas disciplinas aparecem aqui.</p> : data.subjects.map((subject) => <div className="subject-entry" key={subject.id}>
-              <div className="subject-row"><div className="subject-row-heading"><span className="subject-color-dot" style={{ '--subject-color': subject.color || '#c7f36b' }} /><div><strong>{subject.name}</strong><small>{data.quests.filter((quest) => quest.subject_id === subject.id).length} missões{subject.professor ? ` · ${subject.professor}` : ''}{subject.semester ? ` · ${subject.semester}` : ''}</small></div></div><div className="subject-actions"><button className="mini-edit" type="button" onClick={() => setEditingSubjectId(editingSubjectId === subject.id ? null : subject.id)}>{editingSubjectId === subject.id ? 'Fechar' : 'Editar'}</button><button className="mini-delete" type="button" disabled={busyKey === `subject-${subject.id}`} onClick={() => deleteSubject(subject)}>Excluir</button></div></div>
+              <div className="subject-row"><div className="subject-row-heading"><span className="subject-color-dot" style={{ '--subject-color': subject.color || '#c7f36b' }} /><div><strong>{subject.name}</strong><small>{data.quests.filter((quest) => quest.subject_id === subject.id).length} missões{subject.professor ? ` · ${subject.professor}` : ''}{subject.semester ? ` · ${subject.semester}` : ''}</small></div></div><div className="subject-actions"><button className="mini-edit" type="button" onClick={() => setEditingSubjectId(editingSubjectId === subject.id ? null : subject.id)}>{editingSubjectId === subject.id ? 'Fechar' : 'Editar'}</button><button className="mini-delete" type="button" disabled={busyKeys.has(`subject-${subject.id}`)} onClick={() => deleteSubject(subject)}>Excluir</button></div></div>
               {editingSubjectId === subject.id && <form className="subject-edit-form" onSubmit={(event) => updateSubject(event, subject.id)}>
                 <label className="compact-field">Nome<input name="name" defaultValue={subject.name} maxLength="120" required /></label>
                 <label className="compact-field">Descrição<textarea name="description" defaultValue={subject.description || ''} maxLength="500" rows="2" /></label>
@@ -625,7 +633,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
                 <label className="compact-field">Semestre<input name="semester" defaultValue={subject.semester || ''} maxLength="50" placeholder="Ex.: 2026/1" /></label>
                 <label className="compact-field">Ícone<input name="icon" defaultValue={subject.icon || ''} maxLength="64" placeholder="Ex.: 📚" /></label>
                 <label className="compact-field">Cor<input name="color" type="color" defaultValue={/^#[0-9a-f]{6}$/i.test(subject.color || '') ? subject.color : '#c7f36b'} /></label>
-                <div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === `subject-${subject.id}`}>Salvar disciplina</button><button className="text-button" type="button" onClick={() => setEditingSubjectId(null)}>Cancelar</button></div>
+                <div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKeys.has(`subject-${subject.id}`)}>Salvar disciplina</button><button className="text-button" type="button" onClick={() => setEditingSubjectId(null)}>Cancelar</button></div>
               </form>}
             </div>)}</div>
           </form>
@@ -642,7 +650,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <label className="compact-field">Dano no Boss<input name="boss_damage" type="number" min="0" defaultValue="10" /></label>
             <label className="compact-field">Minutos<input name="estimated_minutes" type="number" min="1" defaultValue="30" /></label>
             <label className="compact-field">Prazo<input name="due_date" type="date" /></label>
-            <button className="secondary-button" type="submit" disabled={busyKey === 'quest'}>Adicionar missão <span aria-hidden="true">→</span></button>
+            <button className="secondary-button" type="submit" disabled={busyKeys.has('quest')}>Adicionar missão <span aria-hidden="true">→</span></button>
           </form>
 
           <form className="creation-card" onSubmit={createBossFight}>
@@ -651,11 +659,11 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <label className="compact-field">Nome do desafio<input name="title" placeholder="Ex.: Prova de cálculo" maxLength="200" required /></label>
             <label className="compact-field">Pontos de vida<input name="hp_max" type="number" min="1" defaultValue="100" required /></label>
             <label className="compact-field">Recompensa em XP<input name="xp_reward" type="number" min="0" defaultValue="150" /></label>
-            <button className="secondary-button" type="submit" disabled={busyKey === 'boss' || data.subjects.length === 0}>Criar desafio <span aria-hidden="true">→</span></button>
+            <button className="secondary-button" type="submit" disabled={busyKeys.has('boss') || data.subjects.length === 0}>Criar desafio <span aria-hidden="true">→</span></button>
             <div className="boss-list">{data.bosses.length === 0 ? <p className="small-empty">Crie um desafio e vincule missões para reduzir sua vida.</p> : data.bosses.map((boss) => {
               const linkedQuests = data.quests.filter((quest) => quest.boss_fight_id === boss.id);
               const percent = boss.hp_max ? Math.max(0, Math.min(100, boss.hp_current / boss.hp_max * 100)) : 0;
-              return <div className={`boss-row ${boss.status === 'completed' ? 'boss-completed' : ''}`} key={boss.id}><div className="boss-heading"><strong>{boss.title}</strong><button className="mini-delete" type="button" disabled={busyKey === `boss-${boss.id}`} onClick={() => deleteBossFight(boss)}>Excluir</button></div><div className="boss-hp-track" role="progressbar" aria-label={`Vida de ${boss.title}`} aria-valuemin="0" aria-valuemax={boss.hp_max} aria-valuenow={boss.hp_current}><span style={{ width: `${percent}%` }} /></div><small>{boss.hp_current} / {boss.hp_max} HP · {linkedQuests.length} missões{boss.status === 'completed' ? ` · Derrotado! +${boss.xp_reward} XP` : ''}</small>{boss.status === 'active' && <button className="boss-complete-button" type="button" disabled={busyKey === `boss-${boss.id}`} onClick={() => completeBossFight(boss)}>Concluir desafio · +{boss.xp_reward} XP</button>}</div>;
+              return <div className={`boss-row ${boss.status === 'completed' ? 'boss-completed' : ''}`} key={boss.id}><div className="boss-heading"><strong>{boss.title}</strong><button className="mini-delete" type="button" disabled={busyKeys.has(`boss-${boss.id}`)} onClick={() => deleteBossFight(boss)}>Excluir</button></div><div className="boss-hp-track" role="progressbar" aria-label={`Vida de ${boss.title}`} aria-valuemin="0" aria-valuemax={boss.hp_max} aria-valuenow={boss.hp_current}><span style={{ width: `${percent}%` }} /></div><small>{boss.hp_current} / {boss.hp_max} HP · {linkedQuests.length} missões{boss.status === 'completed' ? ` · Derrotado! +${boss.xp_reward} XP` : ''}</small>{boss.status === 'active' && <button className="boss-complete-button" type="button" disabled={busyKeys.has(`boss-${boss.id}`)} onClick={() => completeBossFight(boss)}>Concluir desafio · +{boss.xp_reward} XP</button>}</div>;
             })}</div>
           </form>
 
@@ -683,7 +691,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
               <label className="compact-field">Modelo<input name="provider_model" value={planProviderModel} onChange={(event) => setPlanProviderModel(event.target.value)} placeholder="Ex.: llama3.1" /></label>
               <p className="provider-help">Habilite <code>AI_GENERATION_ENABLED=true</code> no backend. O endpoint precisa estar acessível a partir do backend; no Docker Desktop, use <code>host.docker.internal</code> para acessar um provedor rodando no computador.</p>
             </>}
-            <button className="secondary-button" type="submit" disabled={busyKey === 'plan'}>{busyKey === 'plan' ? 'Gerando…' : 'Gerar prévia'} <span aria-hidden="true">→</span></button>
+            <button className="secondary-button" type="submit" disabled={busyKeys.has('plan')}>{busyKeys.has('plan') ? 'Gerando…' : 'Gerar prévia'} <span aria-hidden="true">→</span></button>
             {planDraft && <div className="plan-preview" aria-live="polite">
               <h3>{planDraft.generated_from}</h3>
               <p className="plan-subject">Disciplina: {planDraft.subject?.name}</p>
@@ -697,18 +705,18 @@ function Dashboard({ data, refresh, onLogout, onError }) {
                 <div className="plan-task-numbers"><label className="compact-field">XP<input type="number" min="0" step="1" value={task.xp_reward} onChange={(event) => updatePlanTask(index, 'xp_reward', event.target.value)} /></label><label className="compact-field">Minutos<input type="number" min="1" step="1" value={task.estimated_minutes} onChange={(event) => updatePlanTask(index, 'estimated_minutes', event.target.value)} /></label></div>
                 <label className="compact-field">Descrição<textarea rows="2" value={task.description || ''} onChange={(event) => updatePlanTask(index, 'description', event.target.value)} /></label>
               </div>)}</div>
-              <div className="quest-edit-actions"><button className="secondary-button" type="button" onClick={savePlan} disabled={busyKey === 'plan'}>Adicionar plano</button><button className="text-button" type="button" onClick={() => setPlanDraft(null)}>Descartar</button></div>
+              <div className="quest-edit-actions"><button className="secondary-button" type="button" onClick={savePlan} disabled={busyKeys.has('plan')}>Adicionar plano</button><button className="text-button" type="button" onClick={() => setPlanDraft(null)}>Descartar</button></div>
             </div>}
           </form>
 
           <section className="creation-card session-card">
             <div><span className="kicker">FOCO NO AGORA</span><h2>Sessão de estudo</h2></div>
-            {activeSession ? <div className="active-session-box"><strong>Sessão em andamento</strong><span>{formatDuration(activeElapsed)} decorridos · {activeSessionProgress >= 100 ? `meta atingida${activeElapsed > activeSessionGoal ? ` · ${formatDuration(activeElapsed - activeSessionGoal)} além da meta` : ''}` : `meta de ${formatDuration(activeSession.duration_minutes)} · ${activeSessionProgress}%`}</span><div className={`session-goal-progress ${activeSessionProgress >= 100 ? 'session-goal-progress-reached' : ''}`} role="progressbar" aria-label="Progresso da meta da sessão" aria-valuemin="0" aria-valuemax={activeSessionGoal || 1} aria-valuenow={activeSessionGoal ? Math.min(activeElapsed, activeSessionGoal) : 0}><span style={{ width: `${activeSessionProgress}%` }} /></div><button className="secondary-button" type="button" disabled={busyKey === `session-${activeSession.id}`} onClick={() => completeSession(activeSession.id)}>Concluir sessão</button></div> : <form className="session-start-form" onSubmit={startSession}>
+            {activeSession ? <div className="active-session-box"><strong>Sessão em andamento</strong><span>{formatDuration(activeElapsed)} decorridos · {activeSessionProgress >= 100 ? `meta atingida${activeElapsed > activeSessionGoal ? ` · ${formatDuration(activeElapsed - activeSessionGoal)} além da meta` : ''}` : `meta de ${formatDuration(activeSession.duration_minutes)} · ${activeSessionProgress}%`}</span><div className={`session-goal-progress ${activeSessionProgress >= 100 ? 'session-goal-progress-reached' : ''}`} role="progressbar" aria-label="Progresso da meta da sessão" aria-valuemin="0" aria-valuemax={activeSessionGoal || 1} aria-valuenow={activeSessionGoal ? Math.min(activeElapsed, activeSessionGoal) : 0}><span style={{ width: `${activeSessionProgress}%` }} /></div><button className="secondary-button" type="button" disabled={busyKeys.has(`session-${activeSession.id}`)} onClick={() => completeSession(activeSession.id)}>Concluir sessão</button></div> : <form className="session-start-form" onSubmit={startSession}>
               <label className="compact-field">Disciplina<select value={sessionSubject} onChange={(event) => { setSessionSubject(event.target.value); setSessionQuest(''); }}><option value="">Sem disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
               <label className="compact-field">Missão<select value={sessionQuest} onChange={(event) => setSessionQuest(event.target.value)}><option value="">Sem missão</option>{data.quests.filter((quest) => quest.status !== 'completed' && (!sessionSubject || String(quest.subject_id || '') === sessionSubject)).map((quest) => <option key={quest.id} value={quest.id}>{quest.title}</option>)}</select></label>
               <label className="compact-field">Duração (min)<input type="number" min="15" value={sessionMinutes} onChange={(event) => setSessionMinutes(event.target.value)} required /></label>
               <div className="duration-presets" aria-label="Atalhos de duração">{[15, 25, 45, 60].map((minutes) => <button className={`preset-button ${Number(sessionMinutes) === minutes ? 'active' : ''}`} type="button" key={minutes} aria-pressed={Number(sessionMinutes) === minutes} onClick={() => setSessionMinutes(minutes)}>{minutes} min</button>)}</div>
-              <button className="secondary-button" type="submit" disabled={busyKey === 'session'}>Começar estudo <span aria-hidden="true">→</span></button>
+              <button className="secondary-button" type="submit" disabled={busyKeys.has('session')}>Começar estudo <span aria-hidden="true">→</span></button>
             </form>}
             <div className="session-history-controls">
               <label className="compact-field">Situação<select value={sessionStatusFilter} onChange={(event) => setSessionStatusFilter(event.target.value)}><option value="all">Todas</option><option value="in_progress">Em andamento</option><option value="completed">Concluídas</option></select></label>
@@ -722,7 +730,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
               const subject = data.subjects.find((item) => item.id === session.subject_id);
               const quest = data.quests.find((item) => item.id === session.quest_id);
               const elapsed = Math.max(0, Math.floor((now - parseApiDateTime(session.started_at).getTime()) / 60_000));
-              return <div className={`session-row ${session.status === 'in_progress' ? 'session-active' : 'session-completed'}`} key={session.id}><div className="session-info"><strong>{subject?.name || (session.subject_id ? 'Disciplina removida' : 'Estudo livre')}</strong>{quest && <span>{quest.title}</span>}<small>{session.status === 'in_progress' ? `Em andamento · meta ${formatDuration(session.duration_minutes)} · ${formatDuration(elapsed)} decorridos` : `Concluída · ${formatDateTime(session.started_at)} · ${formatDuration(session.duration_minutes)}`}</small></div><div className="session-row-actions">{session.status === 'in_progress' && <button className="mini-edit" type="button" disabled={busyKey === `session-${session.id}`} onClick={() => completeSession(session.id)}>Finalizar</button>}<button className="mini-delete" type="button" disabled={busyKey === `session-${session.id}`} onClick={() => deleteSession(session)}>Excluir</button></div></div>;
+              return <div className={`session-row ${session.status === 'in_progress' ? 'session-active' : 'session-completed'}`} key={session.id}><div className="session-info"><strong>{subject?.name || (session.subject_id ? 'Disciplina removida' : 'Estudo livre')}</strong>{quest && <span>{quest.title}</span>}<small>{session.status === 'in_progress' ? `Em andamento · meta ${formatDuration(session.duration_minutes)} · ${formatDuration(elapsed)} decorridos` : `Concluída · ${formatDateTime(session.started_at)} · ${formatDuration(session.duration_minutes)}`}</small></div><div className="session-row-actions">{session.status === 'in_progress' && <button className="mini-edit" type="button" disabled={busyKeys.has(`session-${session.id}`)} onClick={() => completeSession(session.id)}>Finalizar</button>}<button className="mini-delete" type="button" disabled={busyKeys.has(`session-${session.id}`)} onClick={() => deleteSession(session)}>Excluir</button></div></div>;
             })}</div>
           </section>
         </section>

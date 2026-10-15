@@ -278,6 +278,13 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     });
   }
 
+  async function completeBossFight(boss) {
+    await run(`boss-${boss.id}`, async () => {
+      await request(`/boss-fights/${boss.id}/complete`, { method: 'PATCH' });
+      await refresh();
+    });
+  }
+
   async function generatePlan(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -429,7 +436,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <div className="boss-list">{data.bosses.length === 0 ? <p className="small-empty">Crie um desafio e vincule missões para reduzir sua vida.</p> : data.bosses.map((boss) => {
               const linkedQuests = data.quests.filter((quest) => quest.boss_fight_id === boss.id);
               const percent = boss.hp_max ? Math.max(0, Math.min(100, boss.hp_current / boss.hp_max * 100)) : 0;
-              return <div className="boss-row" key={boss.id}><div className="boss-heading"><strong>{boss.title}</strong><button className="mini-delete" type="button" disabled={busyKey === `boss-${boss.id}`} onClick={() => deleteBossFight(boss)}>Excluir</button></div><div className="boss-hp-track"><span style={{ width: `${percent}%` }} /></div><small>{boss.hp_current} / {boss.hp_max} HP · {linkedQuests.length} missões{boss.status === 'defeated' ? ' · Derrotado!' : ''}</small></div>;
+              return <div className={`boss-row ${boss.status === 'completed' ? 'boss-completed' : ''}`} key={boss.id}><div className="boss-heading"><strong>{boss.title}</strong><button className="mini-delete" type="button" disabled={busyKey === `boss-${boss.id}`} onClick={() => deleteBossFight(boss)}>Excluir</button></div><div className="boss-hp-track" role="progressbar" aria-label={`Vida de ${boss.title}`} aria-valuemin="0" aria-valuemax={boss.hp_max} aria-valuenow={boss.hp_current}><span style={{ width: `${percent}%` }} /></div><small>{boss.hp_current} / {boss.hp_max} HP · {linkedQuests.length} missões{boss.status === 'completed' ? ` · Derrotado! +${boss.xp_reward} XP` : ''}</small>{boss.status === 'active' && <button className="boss-complete-button" type="button" disabled={busyKey === `boss-${boss.id}`} onClick={() => completeBossFight(boss)}>Concluir desafio · +{boss.xp_reward} XP</button>}</div>;
             })}</div>
           </form>
 

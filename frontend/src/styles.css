@@ -42,6 +42,9 @@ body { min-width: 320px; }
 .boss-row small { color: var(--muted); font-size: 10px; }
 .boss-hp-track { overflow: hidden; height: 8px; border-radius: 999px; background: #f1dfdc; }
 .boss-hp-track span { display: block; height: 100%; border-radius: inherit; background: var(--coral); transition: width .25s ease; }
+.boss-completed .boss-hp-track span { background: #82b62c; }
+.boss-complete-button { justify-self: start; padding: 7px 10px; border: 1px solid #dce8c6; border-radius: 6px; background: #f7faef; color: #425c17; font-size: 10px; font-weight: 800; }
+.boss-complete-button:hover { background: #edf5dc; }
 .plan-card { grid-column: 1 / -1; }
 .plan-explainer, .plan-subject { margin: 0 0 4px; color: var(--muted); font-size: 12px; line-height: 1.55; }
 .plan-preview { display: grid; gap: 10px; margin-top: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcf7; }

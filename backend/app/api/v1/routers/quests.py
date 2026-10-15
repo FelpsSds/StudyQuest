@@ -160,7 +160,12 @@ def generate_study_plan(
     provider_model = (payload.provider_model or "").strip() or None
     provider_api_key = (payload.provider_api_key or "").strip() or None
 
-    if payload.tasks:
+    if payload.tasks is not None:
+        if not payload.tasks:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="At least one task is required to generate a plan",
+            )
         plan_items = [
             {
                 "title": task.title,
@@ -172,8 +177,6 @@ def generate_study_plan(
             }
             for task in payload.tasks
         ]
-        if not plan_items:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one task is required to generate a plan")
         learning_objectives = payload.learning_objectives or [
             goal or f"Dominar os tópicos principais de {title}",
             f"Revisar o conteúdo de {title} para {audience or 'o estudante'}.",

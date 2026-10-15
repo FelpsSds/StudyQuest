@@ -24,11 +24,13 @@ Copy-Item .env.example .env
 Copy-Item backend\.env.example backend\.env
 ```
 
+O Docker Compose lê as configurações de `.env` na raiz do repositório. O backend iniciado diretamente no computador lê `backend\.env`.
+
 Em desenvolvimento, o backend gera um segredo JWT aleatório se `JWT_SECRET_KEY` estiver vazio. Esse segredo muda ao reiniciar o backend, invalidando sessões existentes. Configure um valor aleatório persistente no `.env` para manter as sessões e use um segredo exclusivo em produção.
 
 No Docker, o Nginx encaminha `/api` ao backend no mesmo host do frontend. Para desenvolvimento local com Vite, o proxy envia as chamadas para `http://127.0.0.1:8000`. Se usar uma API hospedada em outro domínio, configure `CORS_ORIGINS` no `.env` e defina `VITE_API_BASE` ou ajuste `studyquest-api-base` em `frontend/index.html` para a URL da API, incluindo `/api/v1`.
 
-A geração de planos funciona sem provedor de IA, usando um gerador local. Para ativar a integração compatível com a API da OpenAI, configure `AI_GENERATION_ENABLED=true` e `OPENAI_API_KEY` em `backend\.env`. Provedores locais compatíveis, como Ollama, podem ser selecionados na interface sem chave da OpenAI; o endpoint escolhido precisa estar acessível a partir do backend. No Docker Desktop, use `host.docker.internal` para acessar um provedor executado no computador.
+A geração de planos funciona sem provedor de IA, usando um gerador local. Para ativar a integração compatível com a API da OpenAI, configure `AI_GENERATION_ENABLED=true` e `OPENAI_API_KEY` em `.env` na raiz ao usar Docker, ou em `backend\.env` ao iniciar o backend localmente. O Compose repassa também `OPENAI_BASE_URL` e `OPENAI_MODEL`. Provedores locais compatíveis, como Ollama, podem ser selecionados na interface sem chave da OpenAI; o endpoint escolhido precisa estar acessível a partir do backend. No Docker Desktop, use `host.docker.internal` para acessar um provedor executado no computador.
 
 ## Executar com Docker
 

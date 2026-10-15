@@ -57,6 +57,8 @@ def create_study_session(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> StudySession:
+    # Serialize session creation per user so concurrent requests cannot both pass the active-session check.
+    db.query(User.id).filter(User.id == current_user.id).with_for_update().first()
     active_session = db.query(StudySession).filter(
         StudySession.user_id == current_user.id,
         StudySession.status == "in_progress",

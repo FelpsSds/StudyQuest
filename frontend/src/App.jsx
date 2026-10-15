@@ -113,6 +113,9 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [sessionSubjectFilter, setSessionSubjectFilter] = useState('all');
   const [sessionPeriodFilter, setSessionPeriodFilter] = useState('all');
   const [sessionSearch, setSessionSearch] = useState('');
+  const [planProvider, setPlanProvider] = useState('server');
+  const [planProviderUrl, setPlanProviderUrl] = useState('');
+  const [planProviderModel, setPlanProviderModel] = useState('');
   const [profileEditing, setProfileEditing] = useState(false);
   const [editingQuestId, setEditingQuestId] = useState(null);
   const [questSubject, setQuestSubject] = useState('');
@@ -357,6 +360,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         goal: String(form.get('goal') || '').trim() || null,
         audience: String(form.get('audience') || '').trim() || null,
         learning_style: String(form.get('learning_style') || 'objetivo'),
+        provider_base_url: String(form.get('provider_base_url') || '').trim() || null,
+        provider_model: String(form.get('provider_model') || '').trim() || null,
         subject_id: subjectId ? Number(subjectId) : null,
         preview_only: true,
       };
@@ -510,6 +515,18 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <label className="compact-field">Público<input name="audience" maxLength="200" placeholder="Ex.: iniciante" /></label>
             <label className="compact-field">Estilo<select name="learning_style"><option value="objetivo">Objetivo</option><option value="prática">Prático</option><option value="intensivo">Intensivo</option></select></label>
             <label className="compact-field">Disciplina<select name="subject_id" defaultValue=""><option value="">Criar nova disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+            <label className="compact-field">Provedor de IA<select value={planProvider} onChange={(event) => {
+              const provider = event.target.value;
+              setPlanProvider(provider);
+              if (provider === 'server') { setPlanProviderUrl(''); setPlanProviderModel(''); }
+              if (provider === 'ollama') { setPlanProviderUrl('http://localhost:11434/v1'); setPlanProviderModel('llama3.1'); }
+              if (provider === 'custom') { setPlanProviderUrl(''); setPlanProviderModel(''); }
+            }}><option value="server">Configuração do servidor</option><option value="ollama">Ollama local</option><option value="custom">API compatível personalizada</option></select></label>
+            {planProvider !== 'server' && <>
+              <label className="compact-field">Endpoint compatível com OpenAI<input name="provider_base_url" type="url" value={planProviderUrl} onChange={(event) => setPlanProviderUrl(event.target.value)} placeholder="Ex.: http://localhost:11434/v1" /></label>
+              <label className="compact-field">Modelo<input name="provider_model" value={planProviderModel} onChange={(event) => setPlanProviderModel(event.target.value)} placeholder="Ex.: llama3.1" /></label>
+              <p className="provider-help">Habilite <code>AI_GENERATION_ENABLED=true</code> no backend. O endpoint precisa estar acessível a partir do backend; no Docker Desktop, use <code>host.docker.internal</code> para acessar um provedor rodando no computador.</p>
+            </>}
             <button className="secondary-button" type="submit" disabled={busyKey === 'plan'}>{busyKey === 'plan' ? 'Gerando…' : 'Gerar prévia'} <span aria-hidden="true">→</span></button>
             {planDraft && <div className="plan-preview" aria-live="polite">
               <h3>{planDraft.generated_from}</h3>
@@ -547,7 +564,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
           </section>
         </section>
       </div>
-      <footer className="dashboard-footer"><span>STUDYQUEST · FOCO · RITMO · EVOLUÇÃO</span><a href="/legacy.html">Abrir a interface anterior com gerador de planos, conquistas e Boss Fights</a></footer>
+      <footer className="dashboard-footer"><span>STUDYQUEST · FOCO · RITMO · EVOLUÇÃO</span><a href="/legacy.html">Abrir a interface anterior com recursos avançados</a></footer>
     </section>
   );
 }

@@ -27,7 +27,7 @@ Os valores padrão já servem para desenvolvimento local; ajuste `JWT_SECRET_KEY
 
 No Docker, o Nginx encaminha `/api` ao backend no mesmo host do frontend. Para desenvolvimento local com Vite, o proxy envia as chamadas para `http://127.0.0.1:8000`. Se usar a interface antiga ou uma API hospedada em outro domínio, configure `CORS_ORIGINS` no `.env` e ajuste `studyquest-api-base` em `frontend/index.html` para a URL da API, incluindo `/api/v1`.
 
-A geração de planos funciona sem provedor de IA, usando um gerador local. Para ativar a integração compatível com a API da OpenAI, configure `AI_GENERATION_ENABLED=true` e `OPENAI_API_KEY` em `backend\.env`. Provedores locais compatíveis, como Ollama, podem ser selecionados na interface sem chave da OpenAI.
+A geração de planos funciona sem provedor de IA, usando um gerador local. Para ativar a integração compatível com a API da OpenAI, configure `AI_GENERATION_ENABLED=true` e `OPENAI_API_KEY` em `backend\.env`. Provedores locais compatíveis, como Ollama, podem ser selecionados na interface sem chave da OpenAI; o endpoint escolhido precisa estar acessível a partir do backend. No Docker Desktop, use `host.docker.internal` para acessar um provedor executado no computador.
 
 ## Executar com Docker
 

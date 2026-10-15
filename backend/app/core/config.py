@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     postgres_password: str = "postgres"
     jwt_secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24
+    access_token_expire_minutes: int = Field(default=60 * 24, gt=0)
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     openai_api_key: str | None = None
     openai_base_url: str = "https://api.openai.com/v1"

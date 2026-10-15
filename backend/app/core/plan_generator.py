@@ -262,6 +262,7 @@ def _call_openai_for_plan(
     learning_style: str | None,
     base_url: str | None = None,
     model: str | None = None,
+    api_key: str | None = None,
 ) -> dict[str, Any]:
     if not settings.ai_generation_enabled:
         return {}
@@ -272,7 +273,7 @@ def _call_openai_for_plan(
         marker in effective_base_url.lower()
         for marker in ("localhost", "127.0.0.1", "host.docker.internal", "ollama", "lmstudio")
     )
-    if not settings.openai_api_key and not is_local_provider:
+    if not settings.openai_api_key and not api_key and not is_local_provider:
         return {}
 
     prompt = (
@@ -288,7 +289,9 @@ def _call_openai_for_plan(
     endpoint = f"{effective_base_url}/chat/completions"
     headers = {"Content-Type": "application/json"}
     configured_base_url = (settings.openai_base_url or "https://api.openai.com/v1").rstrip("/")
-    if settings.openai_api_key and effective_base_url == configured_base_url:
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    elif settings.openai_api_key and effective_base_url == configured_base_url:
         headers["Authorization"] = f"Bearer {settings.openai_api_key}"
 
     try:
@@ -322,8 +325,18 @@ def generate_plan_spec(
     learning_style: str | None = None,
     base_url: str | None = None,
     model: str | None = None,
+    api_key: str | None = None,
 ) -> dict[str, Any]:
-    ai_payload = _call_openai_for_plan(title, content, goal, audience, learning_style, base_url=base_url, model=model)
+    ai_payload = _call_openai_for_plan(
+        title,
+        content,
+        goal,
+        audience,
+        learning_style,
+        base_url=base_url,
+        model=model,
+        api_key=api_key,
+    )
     if ai_payload:
         learning_objectives = ai_payload.get("learning_objectives")
         if not isinstance(learning_objectives, list) or not all(

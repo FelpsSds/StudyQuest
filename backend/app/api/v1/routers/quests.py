@@ -58,6 +58,7 @@ class StudyPlanGenerateRequest(BaseModel):
     learning_style: str | None = Field(default="objetivo", max_length=50)
     provider_base_url: str | None = Field(default=None, max_length=500)
     provider_model: str | None = Field(default=None, max_length=200)
+    provider_api_key: str | None = Field(default=None, max_length=500)
     learning_objectives: list[str] | None = None
     tasks: list[StudyPlanTaskRequest] | None = None
 
@@ -157,6 +158,7 @@ def generate_study_plan(
     learning_style = (payload.learning_style or "objetivo").strip() or "objetivo"
     provider_base_url = (payload.provider_base_url or "").strip() or None
     provider_model = (payload.provider_model or "").strip() or None
+    provider_api_key = (payload.provider_api_key or "").strip() or None
 
     if payload.tasks:
         plan_items = [
@@ -187,6 +189,7 @@ def generate_study_plan(
             learning_style=learning_style,
             base_url=provider_base_url,
             model=provider_model,
+            api_key=provider_api_key,
         )
         plan_items = plan_spec["tasks"]
         learning_objectives = plan_spec["learning_objectives"]

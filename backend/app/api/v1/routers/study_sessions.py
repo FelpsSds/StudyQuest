@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.api.v1.schemas.study_session import StudySessionCreate, StudySessionRead
 from app.core.security import get_current_user
-from app.models.quest import Quest
+from app.models.quest import Quest, QuestStatus
 from app.models.study_session import StudySession
 from app.models.subject import Subject
 from app.models.user import User
@@ -83,6 +83,11 @@ def create_study_session(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quest not found")
         if quest.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this quest")
+        if quest.status in {QuestStatus.COMPLETED, QuestStatus.ARCHIVED}:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New study sessions can only be linked to active quests",
+            )
         if session_subject_id is not None and quest.subject_id is not None and session_subject_id != quest.subject_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

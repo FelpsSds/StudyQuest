@@ -766,6 +766,7 @@ export default function App() {
   const [error, setError] = useState('');
 
   const refresh = useCallback(async () => {
+    const requestToken = localStorage.getItem('studyquest_token');
     const labels = ['perfil', 'sequência', 'missões', 'disciplinas', 'sessões', 'análises', 'recompensas', 'desafios', 'conquistas', 'ranking'];
     const activityTimezone = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
     const results = await Promise.allSettled([
@@ -773,6 +774,7 @@ export default function App() {
       request('/study-sessions/'), request(`/users/analytics?timezone=${activityTimezone}`), request('/users/rewards'), request('/boss-fights/'),
       request('/achievements/progress'), request('/users/leaderboard'),
     ]);
+    if (localStorage.getItem('studyquest_token') !== requestToken) return;
     if (results[0].status === 'rejected') throw results[0].reason;
 
     const keys = ['dashboard', 'streak', 'quests', 'subjects', 'sessions', 'analytics', 'rewards', 'bosses', 'achievements', 'leaderboard'];

@@ -21,4 +21,4 @@ class StudySession(Base):
 
     user: Mapped["User"] = relationship(back_populates="study_sessions")
     quest: Mapped[Optional["Quest"]] = relationship(back_populates="study_sessions")
-    subject: Mapped[Optional["Subject"]] = relationship()
+    subject: Mapped[Optional["Subject"]] = relationship(back_populates="study_sessions")

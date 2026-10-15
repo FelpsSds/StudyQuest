@@ -23,3 +23,4 @@ class Subject(Base):
     user: Mapped["User"] = relationship(back_populates="subjects")
     quests: Mapped[List["Quest"]] = relationship(back_populates="subject", cascade="all, delete-orphan")
     boss_fights: Mapped[List["BossFight"]] = relationship(back_populates="subject", cascade="all, delete-orphan")
+    study_sessions: Mapped[List["StudySession"]] = relationship(back_populates="subject")

@@ -547,9 +547,10 @@ async function loadSessionQuestOptions() {
   try {
     const quests = await request('/quests/');
     const activeSubject = subjectSelect ? subjectSelect.value : '';
-    const filteredQuests = activeSubject
-      ? quests.filter((quest) => String(quest.subject_id ?? '') === String(activeSubject))
-      : quests;
+    const filteredQuests = quests.filter((quest) => (
+      !['completed', 'archived'].includes(quest.status)
+      && (!activeSubject || String(quest.subject_id ?? '') === String(activeSubject))
+    ));
 
     select.innerHTML = '<option value="">Sem missão</option>';
     filteredQuests.forEach((quest) => {

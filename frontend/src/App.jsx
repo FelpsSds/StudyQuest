@@ -103,6 +103,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [profileEditing, setProfileEditing] = useState(false);
   const [editingQuestId, setEditingQuestId] = useState(null);
   const [questSubject, setQuestSubject] = useState('');
+  const [planDraft, setPlanDraft] = useState(null);
   const [busyKey, setBusyKey] = useState('');
   const [now, setNow] = useState(Date.now());
   const user = data.dashboard?.user;
@@ -277,6 +278,39 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     });
   }
 
+  async function generatePlan(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run('plan', async () => {
+      const subjectId = form.get('subject_id');
+      const payload = {
+        title: String(form.get('title')).trim(),
+        content: String(form.get('content') || '').trim(),
+        goal: String(form.get('goal') || '').trim() || null,
+        audience: String(form.get('audience') || '').trim() || null,
+        learning_style: String(form.get('learning_style') || 'objetivo'),
+        subject_id: subjectId ? Number(subjectId) : null,
+        preview_only: true,
+      };
+      const preview = await request('/quests/generate-plan', jsonRequest('POST', payload));
+      setPlanDraft({ ...preview, payload });
+    });
+  }
+
+  async function savePlan() {
+    if (!planDraft) return;
+    await run('plan', async () => {
+      await request('/quests/generate-plan', jsonRequest('POST', {
+        ...planDraft.payload,
+        preview_only: false,
+        learning_objectives: planDraft.learning_objectives,
+        tasks: planDraft.tasks,
+      }));
+      setPlanDraft(null);
+      await refresh();
+    });
+  }
+
   async function updateProfile(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -397,6 +431,27 @@ function Dashboard({ data, refresh, onLogout, onError }) {
               const percent = boss.hp_max ? Math.max(0, Math.min(100, boss.hp_current / boss.hp_max * 100)) : 0;
               return <div className="boss-row" key={boss.id}><div className="boss-heading"><strong>{boss.title}</strong><button className="mini-delete" type="button" disabled={busyKey === `boss-${boss.id}`} onClick={() => deleteBossFight(boss)}>Excluir</button></div><div className="boss-hp-track"><span style={{ width: `${percent}%` }} /></div><small>{boss.hp_current} / {boss.hp_max} HP · {linkedQuests.length} missões{boss.status === 'defeated' ? ' · Derrotado!' : ''}</small></div>;
             })}</div>
+          </form>
+
+          <form className="creation-card plan-card" onSubmit={generatePlan}>
+            <div><span className="kicker">PLANEJAMENTO</span><h2>Gerar plano de estudo</h2></div>
+            <p className="plan-explainer">Descreva o tema e receba uma sequência de missões para revisar antes de adicionar.</p>
+            <label className="compact-field">Tema<input name="title" placeholder="Ex.: Álgebra linear" maxLength="120" required /></label>
+            <label className="compact-field">Conteúdo<textarea name="content" rows="3" maxLength="5000" placeholder="Tópicos, capítulos ou conceitos que quer estudar" /></label>
+            <label className="compact-field">Objetivo<input name="goal" maxLength="300" placeholder="Ex.: resolver sistemas de equações" /></label>
+            <label className="compact-field">Público<input name="audience" maxLength="200" placeholder="Ex.: iniciante" /></label>
+            <label className="compact-field">Estilo<select name="learning_style"><option value="objetivo">Objetivo</option><option value="prática">Prático</option><option value="intensivo">Intensivo</option></select></label>
+            <label className="compact-field">Disciplina<select name="subject_id" defaultValue=""><option value="">Criar nova disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+            <button className="secondary-button" type="submit" disabled={busyKey === 'plan'}>{busyKey === 'plan' ? 'Gerando…' : 'Gerar prévia'} <span aria-hidden="true">→</span></button>
+            {planDraft && <div className="plan-preview" aria-live="polite">
+              <h3>{planDraft.generated_from}</h3>
+              <p className="plan-subject">Disciplina: {planDraft.subject?.name}</p>
+              <strong>Objetivos de aprendizagem</strong>
+              <ul>{planDraft.learning_objectives.map((objective, index) => <li key={index}>{objective}</li>)}</ul>
+              <strong>Missões propostas</strong>
+              <div className="plan-task-list">{planDraft.tasks.map((task, index) => <div className="plan-task" key={`${task.title}-${index}`}><strong>{task.title}</strong><small>{task.xp_reward} XP · {formatDuration(task.estimated_minutes)}</small><p>{task.description}</p></div>)}</div>
+              <div className="quest-edit-actions"><button className="secondary-button" type="button" onClick={savePlan} disabled={busyKey === 'plan'}>Adicionar plano</button><button className="text-button" type="button" onClick={() => setPlanDraft(null)}>Descartar</button></div>
+            </div>}
           </form>
 
           <section className="creation-card session-card">

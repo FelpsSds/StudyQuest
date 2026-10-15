@@ -42,6 +42,18 @@ body { min-width: 320px; }
 .boss-row small { color: var(--muted); font-size: 10px; }
 .boss-hp-track { overflow: hidden; height: 8px; border-radius: 999px; background: #f1dfdc; }
 .boss-hp-track span { display: block; height: 100%; border-radius: inherit; background: var(--coral); transition: width .25s ease; }
+.plan-card { grid-column: 1 / -1; }
+.plan-explainer, .plan-subject { margin: 0 0 4px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.plan-preview { display: grid; gap: 10px; margin-top: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcf7; }
+.plan-preview h3 { margin: 0; font-size: 18px; }
+.plan-preview > strong { margin-top: 4px; font-size: 12px; }
+.plan-preview ul { display: grid; gap: 6px; margin: 0; padding-left: 20px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.plan-task-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.plan-task { padding: 11px; border: 1px solid var(--line); border-radius: 8px; background: white; }
+.plan-task strong, .plan-task small { display: block; }
+.plan-task strong { font-size: 11px; }
+.plan-task small { margin-top: 5px; color: #52611f; font-size: 10px; }
+.plan-task p { margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
 .subject-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .subject-row-heading { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .subject-color-dot { flex: 0 0 9px; height: 28px; border-radius: 5px; background: var(--subject-color, var(--lime)); }
@@ -99,6 +111,7 @@ body { min-width: 320px; }
   .wide-creation-card > div:first-child, .wide-creation-card > button, .wide-creation-card .compact-field:nth-of-type(2) { grid-column: 1; }
   .quest-edit-form { grid-template-columns: 1fr; }
   .quest-edit-form .compact-field, .quest-edit-actions { grid-column: 1; }
+  .plan-task-list { grid-template-columns: 1fr; }
   .leaderboard-row { grid-template-columns: 24px minmax(0, 1fr); }
   .leaderboard-row small { grid-column: 2; }
   .section-heading { align-items: flex-start; flex-direction: column; }

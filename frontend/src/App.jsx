@@ -106,6 +106,7 @@ function AuthScreen({ onAuthenticated, initialError = '' }) {
 function Dashboard({ data, refresh, onLogout, onError }) {
   const [filter, setFilter] = useState(localStorage.getItem('studyquest_quest_filter') || 'all');
   const [sort, setSort] = useState(localStorage.getItem('studyquest_quest_sort') || 'priority');
+  const [questSubjectFilter, setQuestSubjectFilter] = useState(localStorage.getItem('studyquest_quest_subject_filter') || 'all');
   const [sessionMinutes, setSessionMinutes] = useState(25);
   const [sessionSubject, setSessionSubject] = useState('');
   const [sessionQuest, setSessionQuest] = useState('');
@@ -145,7 +146,10 @@ function Dashboard({ data, refresh, onLogout, onError }) {
 
   const questList = useMemo(() => {
     const today = localDateKey();
+    const effectiveSubjectFilter = ['all', 'none'].includes(questSubjectFilter) || data.subjects.some((subject) => String(subject.id) === questSubjectFilter) ? questSubjectFilter : 'all';
     const filtered = data.quests.filter((quest) => {
+      if (effectiveSubjectFilter === 'none' && quest.subject_id != null) return false;
+      if (effectiveSubjectFilter !== 'all' && effectiveSubjectFilter !== 'none' && String(quest.subject_id) !== effectiveSubjectFilter) return false;
       if (filter === 'pending') return quest.status === 'pending';
       if (filter === 'in_progress') return quest.status === 'in_progress';
       if (filter === 'completed') return quest.status === 'completed';
@@ -162,7 +166,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       const statusOrder = { in_progress: 0, pending: 1, archived: 2, completed: 3 };
       return (statusOrder[a.status] ?? 1) - (statusOrder[b.status] ?? 1);
     });
-  }, [data.quests, filter, sort]);
+  }, [data.quests, data.subjects, filter, sort, questSubjectFilter]);
 
   const nextFocusQuest = useMemo(() => data.quests
     .filter((quest) => !['completed', 'archived'].includes(quest.status))
@@ -532,6 +536,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         <section className="quests-section">
           <div className="section-heading"><div><span className="kicker">SEU MAPA</span><h2>Missões</h2></div><div className="row-actions">
             <label className="compact-field inline-filter"><span>Filtrar</span><select value={filter} onChange={(event) => { setFilter(event.target.value); localStorage.setItem('studyquest_quest_filter', event.target.value); }}><option value="all">Todas</option><option value="pending">Pendentes</option><option value="in_progress">Em andamento</option><option value="completed">Concluídas</option><option value="archived">Arquivadas</option><option value="overdue">Atrasadas</option></select></label>
+            <label className="compact-field inline-filter"><span>Disciplina</span><select value={['all', 'none'].includes(questSubjectFilter) || data.subjects.some((subject) => String(subject.id) === questSubjectFilter) ? questSubjectFilter : 'all'} onChange={(event) => { setQuestSubjectFilter(event.target.value); localStorage.setItem('studyquest_quest_subject_filter', event.target.value); }}><option value="all">Todas</option><option value="none">Sem disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
             <label className="compact-field inline-filter"><span>Ordenar</span><select value={sort} onChange={(event) => { setSort(event.target.value); localStorage.setItem('studyquest_quest_sort', event.target.value); }}><option value="priority">Prioridade</option><option value="due_date">Prazo</option><option value="xp">XP</option><option value="minutes">Tempo</option><option value="title">Título</option></select></label>
             <button className="icon-button" type="button" onClick={refresh}>Atualizar <span aria-hidden="true">↻</span></button>
           </div></div>

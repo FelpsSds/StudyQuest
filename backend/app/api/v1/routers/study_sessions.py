@@ -57,6 +57,16 @@ def create_study_session(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> StudySession:
+    active_session = db.query(StudySession).filter(
+        StudySession.user_id == current_user.id,
+        StudySession.status == "in_progress",
+    ).first()
+    if active_session:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="J\u00e1 existe uma sess\u00e3o de estudo em andamento. Conclua ou exclua a sess\u00e3o atual antes de iniciar outra.",
+        )
+
     session_subject_id = payload.subject_id
     if session_subject_id is not None:
         subject = db.query(Subject).filter(Subject.id == session_subject_id).first()

@@ -26,6 +26,8 @@ Copy-Item backend\.env.example backend\.env
 
 O Docker Compose lê as configurações de `.env` na raiz do repositório. O backend iniciado diretamente no computador lê `backend\.env`.
 
+No Docker, `POSTGRES_DB`, `POSTGRES_USER` e `POSTGRES_PASSWORD` configuram o banco local. Para usar um PostgreSQL externo, defina `DATABASE_URL` com um endereço acessível pelo container do backend. Se a senha tiver caracteres especiais, codifique-os para URL.
+
 Em desenvolvimento, o backend gera um segredo JWT aleatório se `JWT_SECRET_KEY` estiver vazio. Esse segredo muda ao reiniciar o backend, invalidando sessões existentes. Configure um valor aleatório persistente no `.env` para manter as sessões e use um segredo exclusivo em produção.
 
 No Docker, o Nginx encaminha `/api` ao backend no mesmo host do frontend. Para desenvolvimento local com Vite, o proxy envia as chamadas para `http://127.0.0.1:8000`. Se usar uma API hospedada em outro domínio, configure `CORS_ORIGINS` no `.env` e defina `VITE_API_BASE` ou ajuste `studyquest-api-base` em `frontend/index.html` para a URL da API, incluindo `/api/v1`.

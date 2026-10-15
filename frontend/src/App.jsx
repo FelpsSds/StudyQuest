@@ -116,6 +116,9 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [planProvider, setPlanProvider] = useState('server');
   const [planProviderUrl, setPlanProviderUrl] = useState('');
   const [planProviderModel, setPlanProviderModel] = useState('');
+  const [planContent, setPlanContent] = useState('');
+  const [planMaterialName, setPlanMaterialName] = useState('');
+  const [planMaterialError, setPlanMaterialError] = useState('');
   const [profileEditing, setProfileEditing] = useState(false);
   const [editingSubjectId, setEditingSubjectId] = useState(null);
   const [editingQuestId, setEditingQuestId] = useState(null);
@@ -390,6 +393,37 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     });
   }
 
+  async function loadPlanMaterial(event) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    setPlanMaterialError('');
+    if (!/\.(txt|md|markdown)$/i.test(file.name)) {
+      setPlanMaterialName('');
+      setPlanMaterialError('Escolha um arquivo de texto ou Markdown (.txt, .md ou .markdown).');
+      return;
+    }
+    if (file.size > 50_000) {
+      setPlanMaterialName('');
+      setPlanMaterialError('O arquivo deve ter no máximo 50 KB.');
+      return;
+    }
+    try {
+      const text = await file.text();
+      if (text.length > 5000) {
+        setPlanMaterialName('');
+        setPlanMaterialError('O conteúdo do arquivo deve ter no máximo 5.000 caracteres.');
+        return;
+      }
+      setPlanContent(text.trim());
+      setPlanMaterialName(file.name);
+    } catch {
+      setPlanMaterialName('');
+      setPlanMaterialError('Não foi possível ler o arquivo. Tente outro arquivo de texto.');
+    }
+  }
+
   async function savePlan() {
     if (!planDraft) return;
     await run('plan', async () => {
@@ -547,7 +581,10 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <div><span className="kicker">PLANEJAMENTO</span><h2>Gerar plano de estudo</h2></div>
             <p className="plan-explainer">Descreva o tema e receba uma sequência de missões para revisar antes de adicionar.</p>
             <label className="compact-field">Tema<input name="title" placeholder="Ex.: Álgebra linear" maxLength="120" required /></label>
-            <label className="compact-field">Conteúdo<textarea name="content" rows="3" maxLength="5000" placeholder="Tópicos, capítulos ou conceitos que quer estudar" /></label>
+            <label className="compact-field">Conteúdo<textarea name="content" value={planContent} onChange={(event) => setPlanContent(event.target.value)} rows="3" maxLength="5000" placeholder="Tópicos, capítulos ou conceitos que quer estudar" /></label>
+            <label className="compact-field">Carregar material (.txt ou Markdown)<input type="file" accept=".txt,.md,.markdown,text/plain" onChange={loadPlanMaterial} /></label>
+            {planMaterialName && <p className="provider-help">Material carregado: {planMaterialName}</p>}
+            {planMaterialError && <p className="error-message plan-file-error" role="alert">{planMaterialError}</p>}
             <label className="compact-field">Objetivo<input name="goal" maxLength="300" placeholder="Ex.: resolver sistemas de equações" /></label>
             <label className="compact-field">Público<input name="audience" maxLength="200" placeholder="Ex.: iniciante" /></label>
             <label className="compact-field">Estilo<select name="learning_style"><option value="objetivo">Objetivo</option><option value="prática">Prático</option><option value="intensivo">Intensivo</option></select></label>

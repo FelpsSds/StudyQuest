@@ -138,6 +138,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [now, setNow] = useState(Date.now());
   const user = data.dashboard?.user;
   const stats = data.dashboard?.stats;
+  const recentRewards = data.rewards?.xp_history?.slice(0, 4) || [];
   const weeklyActivity = data.analytics?.weekly_activity || [];
   const weeklyStudyMinutes = weeklyActivity.reduce((total, day) => total + (Number(day.minutes) || 0), 0);
   const weeklySessionCount = weeklyActivity.reduce((total, day) => total + (Number(day.sessions) || 0), 0);
@@ -580,7 +581,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
           <p className="profile-email">{user?.email}</p>
           {!profileEditing ? <button className="mini-edit" type="button" onClick={() => setProfileEditing(true)}>Editar nome</button> : <form className="profile-edit-form" onSubmit={updateProfile}><label className="compact-field">Nome<input name="name" defaultValue={user?.name} maxLength="120" required /></label><div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === 'profile'}>Salvar</button><button className="text-button" type="button" onClick={() => setProfileEditing(false)}>Cancelar</button></div></form>}
           <div className="side-rule" />
-          <span className="kicker">XP RECENTE</span><div className="activity-list">{data.rewards?.xp_history?.slice(0, 4).map((item) => <div className="activity-row" key={item.id}><span className="activity-badge">+{item.amount}</span><div><strong>{item.reason}</strong><small>XP conquistado</small></div></div>) || <p className="mini-empty">Conclua uma missão para ganhar XP.</p>}</div>
+          <span className="kicker">XP RECENTE</span><div className="activity-list">{recentRewards.length ? recentRewards.map((item) => <div className="activity-row" key={item.id}><span className="activity-badge">+{item.amount}</span><div><strong>{item.reason}</strong><small>{formatDateTime(item.created_at)} · XP conquistado</small></div></div>) : <p className="mini-empty">Conclua uma missão ou Boss Fight para ganhar XP.</p>}</div>
           <div className="side-rule" />
           <span className="kicker">PRÓXIMO FOCO</span>{nextFocusQuest ? <div className="next-focus-card"><strong>{nextFocusQuest.title}</strong><span>{nextFocusQuest.xp_reward} XP · {formatDuration(nextFocusQuest.estimated_minutes)}</span><button className="mini-edit" type="button" disabled={busyKey === `quest-${nextFocusQuest.id}`} onClick={() => completeQuest(nextFocusQuest.id)}>Marcar como concluída</button></div> : <p className="mini-empty">Sem missões pendentes. Crie uma nova para continuar.</p>}
           <div className="side-rule" />

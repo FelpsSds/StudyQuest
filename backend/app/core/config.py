@@ -18,6 +18,15 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     ai_generation_enabled: bool = False
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_postgresql_driver(cls, value: str) -> str:
+        if value.startswith("postgres://"):
+            return "postgresql+psycopg://" + value.removeprefix("postgres://")
+        if value.startswith("postgresql://"):
+            return "postgresql+psycopg://" + value.removeprefix("postgresql://")
+        return value
+
     @field_validator("jwt_secret_key", mode="before")
     @classmethod
     def generate_missing_jwt_secret(cls, value: str | None) -> str:

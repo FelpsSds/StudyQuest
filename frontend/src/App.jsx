@@ -747,13 +747,21 @@ export default function App() {
   const [error, setError] = useState('');
 
   const refresh = useCallback(async () => {
-    const [dashboard, streak, quests, subjects, sessions, analytics, rewards, bosses, achievements, leaderboard] = await Promise.all([
+    const labels = ['perfil', 'sequência', 'missões', 'disciplinas', 'sessões', 'análises', 'recompensas', 'desafios', 'conquistas', 'ranking'];
+    const results = await Promise.allSettled([
       request('/users/dashboard'), request('/users/streak'), request('/quests/'), request('/subjects/'),
       request('/study-sessions/'), request('/users/analytics'), request('/users/rewards'), request('/boss-fights/'),
       request('/achievements/progress'), request('/users/leaderboard'),
     ]);
-    setData({ dashboard, streak, quests, subjects, sessions, analytics, rewards, bosses, achievements, leaderboard });
-    setError('');
+    if (results[0].status === 'rejected') throw results[0].reason;
+
+    const keys = ['dashboard', 'streak', 'quests', 'subjects', 'sessions', 'analytics', 'rewards', 'bosses', 'achievements', 'leaderboard'];
+    const failed = results.flatMap((result, index) => result.status === 'rejected' ? [labels[index]] : []);
+    setData((current) => Object.fromEntries(keys.map((key, index) => [
+      key,
+      results[index].status === 'fulfilled' ? results[index].value : current[key] ?? EMPTY_DATA[key],
+    ])));
+    setError(failed.length ? `Não foi possível atualizar: ${failed.join(', ')}. Os dados anteriores foram mantidos.` : '');
   }, []);
 
   useEffect(() => {

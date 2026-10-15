@@ -1,4 +1,12 @@
+import re
+
 from pydantic import BaseModel, Field, field_validator
+
+EMAIL_PATTERN = re.compile(
+    r"^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@"
+    r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+"
+    r"[a-z]{1,63}$",
+)
 
 
 def _validate_password_length(value: str) -> str:
@@ -15,7 +23,7 @@ class LoginRequest(BaseModel):
     @classmethod
     def validate_email(cls, value: str) -> str:
         normalized = value.strip().lower()
-        if "@" not in normalized or "." not in normalized.split("@")[-1]:
+        if not EMAIL_PATTERN.fullmatch(normalized):
             raise ValueError("Invalid email format")
         return normalized
 
@@ -42,7 +50,7 @@ class RegisterRequest(BaseModel):
     @classmethod
     def validate_email(cls, value: str) -> str:
         normalized = value.strip().lower()
-        if "@" not in normalized or "." not in normalized.split("@")[-1]:
+        if not EMAIL_PATTERN.fullmatch(normalized):
             raise ValueError("Invalid email format")
         return normalized
 

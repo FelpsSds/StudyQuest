@@ -27,7 +27,7 @@ def register_user(payload: RegisterRequest, db: Session = Depends(get_db)) -> Au
         db.commit()
     except IntegrityError:
         db.rollback()
-        if db.query(User.id).filter(User.email == payload.email).first():
+        if db.query(User.id).filter(User.email == payload.email.lower()).first():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
         raise
     db.refresh(user)

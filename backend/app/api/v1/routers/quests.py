@@ -355,7 +355,12 @@ def update_quest(
         boss_fight = _validate_boss_link(db, payload.boss_fight_id, current_user, payload.subject_id or quest.subject_id)
         if payload.subject_id is None and quest.subject_id is None:
             quest.subject_id = boss_fight.subject_id
-    elif payload.subject_id is not None and quest.boss_fight_id is not None and payload.subject_id != quest.subject_id:
+    elif (
+        "boss_fight_id" not in payload.model_fields_set
+        and payload.subject_id is not None
+        and quest.boss_fight_id is not None
+        and payload.subject_id != quest.subject_id
+    ):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quest and boss fight must use the same subject")
 
     for field, value in payload.model_dump(exclude_unset=True).items():

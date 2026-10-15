@@ -122,6 +122,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [profileEditing, setProfileEditing] = useState(false);
   const [editingSubjectId, setEditingSubjectId] = useState(null);
   const [editingQuestId, setEditingQuestId] = useState(null);
+  const [editingQuestSubject, setEditingQuestSubject] = useState('');
+  const [editingQuestBossId, setEditingQuestBossId] = useState('');
   const [questSubject, setQuestSubject] = useState('');
   const [planDraft, setPlanDraft] = useState(null);
   const [busyKey, setBusyKey] = useState('');
@@ -241,6 +243,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         type: String(form.get('type') || 'study'),
         difficulty: String(form.get('difficulty') || 'medium'),
         xp_reward: Number(form.get('xp_reward') || 0),
+        boss_damage: Number(form.get('boss_damage') || 0),
         estimated_minutes: Number(form.get('estimated_minutes') || 30),
         due_date: String(form.get('due_date') || '') || null,
         subject_id: subjectId ? Number(subjectId) : null,
@@ -270,17 +273,23 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         type: String(form.get('type')),
         difficulty: String(form.get('difficulty')),
         xp_reward: Number(form.get('xp_reward')),
+        boss_damage: Number(form.get('boss_damage')),
         estimated_minutes: Number(form.get('estimated_minutes')),
         due_date: String(form.get('due_date') || '') || null,
         subject_id: form.get('subject_id') ? Number(form.get('subject_id')) : null,
+        boss_fight_id: form.get('boss_fight_id') ? Number(form.get('boss_fight_id')) : null,
       }));
       setEditingQuestId(null);
+      setEditingQuestSubject('');
+      setEditingQuestBossId('');
       await refresh();
     });
   }
 
   function editQuest(quest) {
     setEditingQuestId(quest.id);
+    setEditingQuestSubject(String(quest.subject_id || ''));
+    setEditingQuestBossId(String(quest.boss_fight_id || ''));
   }
 
   async function deleteQuest(quest) {
@@ -523,13 +532,15 @@ function Dashboard({ data, refresh, onLogout, onError }) {
                 {editingQuestId === quest.id ? <form className="quest-edit-form" onSubmit={(event) => updateQuest(event, quest.id)}>
                   <label className="compact-field">Título<input name="title" defaultValue={quest.title} maxLength="200" required /></label>
                   <label className="compact-field">Descrição<textarea name="description" rows="2" defaultValue={quest.description || ''} /></label>
-                  <label className="compact-field">Disciplina<select name="subject_id" defaultValue={quest.subject_id || ''}><option value="">Sem disciplina</option>{data.subjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-                  <label className="compact-field">Tipo<select name="type" defaultValue={quest.type}><option value="study">Estudo</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="review">Revisão</option><option value="project">Projeto</option></select></label>
-                  <label className="compact-field">Dificuldade<select name="difficulty" defaultValue={quest.difficulty}><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option></select></label>
+                  <label className="compact-field">Disciplina<select name="subject_id" value={editingQuestSubject} onChange={(event) => { const subjectId = event.target.value; setEditingQuestSubject(subjectId); const linkedBoss = data.bosses.find((boss) => String(boss.id) === editingQuestBossId); if (linkedBoss && String(linkedBoss.subject_id) !== subjectId) setEditingQuestBossId(''); }}><option value="">Sem disciplina</option>{data.subjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+                  <label className="compact-field">Boss Fight<select name="boss_fight_id" value={editingQuestBossId} onChange={(event) => setEditingQuestBossId(event.target.value)}><option value="">Sem desafio</option>{data.bosses.filter((boss) => String(boss.subject_id) === editingQuestSubject).map((boss) => <option key={boss.id} value={boss.id}>{boss.title}{boss.status === 'completed' ? ' (concluído)' : ''}</option>)}</select></label>
+                  <label className="compact-field">Tipo<select name="type" defaultValue={quest.type}><option value="study">Estudo</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="review">Revisão</option><option value="project">Projeto</option><option value="boss_fight">Boss Fight</option></select></label>
+                  <label className="compact-field">Dificuldade<select name="difficulty" defaultValue={quest.difficulty}><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option><option value="boss">Chefe</option></select></label>
                   <label className="compact-field">XP<input name="xp_reward" type="number" min="0" defaultValue={quest.xp_reward} /></label>
+                  <label className="compact-field">Dano no Boss<input name="boss_damage" type="number" min="0" defaultValue={quest.boss_damage} /></label>
                   <label className="compact-field">Minutos<input name="estimated_minutes" type="number" min="1" defaultValue={quest.estimated_minutes} /></label>
                   <label className="compact-field">Prazo<input name="due_date" type="date" defaultValue={quest.due_date || ''} /></label>
-                  <div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === `quest-${quest.id}`}>Salvar</button><button className="text-button" type="button" onClick={() => setEditingQuestId(null)}>Cancelar</button></div>
+                  <div className="quest-edit-actions"><button className="secondary-button" type="submit" disabled={busyKey === `quest-${quest.id}`}>Salvar</button><button className="text-button" type="button" onClick={() => { setEditingQuestId(null); setEditingQuestSubject(''); setEditingQuestBossId(''); }}>Cancelar</button></div>
                 </form> : <>
                   <div><div className="quest-title-line"><h3 className="quest-title">{quest.title}</h3>{quest.due_date && <span className="quest-due-badge">{formatDate(quest.due_date)}</span>}</div>
                     <div className="quest-meta">{subject?.name || 'Sem disciplina'} · {quest.xp_reward} XP · {formatDuration(quest.estimated_minutes)}</div>
@@ -602,9 +613,10 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <label className="compact-field">Descrição<textarea name="description" rows="2" placeholder="O que precisa ser feito nesta missão?" /></label>
             <label className="compact-field">Disciplina<select name="subject_id" value={questSubject} onChange={(event) => setQuestSubject(event.target.value)}><option value="">Sem disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
             <label className="compact-field">Boss Fight<select name="boss_fight_id"><option value="">Sem desafio</option>{data.bosses.filter((boss) => boss.status === 'active' && (!questSubject || String(boss.subject_id) === questSubject)).map((boss) => <option key={boss.id} value={boss.id}>{boss.title}</option>)}</select></label>
-            <label className="compact-field">Tipo<select name="type"><option value="study">Estudo</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="review">Revisão</option><option value="project">Projeto</option></select></label>
-            <label className="compact-field">Dificuldade<select name="difficulty" defaultValue="medium"><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option></select></label>
+            <label className="compact-field">Tipo<select name="type"><option value="study">Estudo</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="review">Revisão</option><option value="project">Projeto</option><option value="boss_fight">Boss Fight</option></select></label>
+            <label className="compact-field">Dificuldade<select name="difficulty" defaultValue="medium"><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option><option value="boss">Chefe</option></select></label>
             <label className="compact-field">XP<input name="xp_reward" type="number" min="0" defaultValue="40" /></label>
+            <label className="compact-field">Dano no Boss<input name="boss_damage" type="number" min="0" defaultValue="10" /></label>
             <label className="compact-field">Minutos<input name="estimated_minutes" type="number" min="1" defaultValue="30" /></label>
             <label className="compact-field">Prazo<input name="due_date" type="date" /></label>
             <button className="secondary-button" type="submit" disabled={busyKey === 'quest'}>Adicionar missão <span aria-hidden="true">→</span></button>

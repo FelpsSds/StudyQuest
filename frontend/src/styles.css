@@ -84,6 +84,14 @@ body { min-width: 320px; }
 .activity-row small { margin-top: 3px; color: #52611f; font-size: 10px; }
 .insight-row { display: flex; justify-content: space-between; gap: 10px; margin: 0; padding: 8px 0; border-bottom: 1px solid rgba(16,24,39,.1); font-size: 12px; }
 .insight-row span { color: #52611f; }
+.weekly-chart { margin: 8px 0 12px; }
+.weekly-bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: end; gap: 5px; min-height: 82px; }
+.weekly-bar-column { display: grid; grid-template-rows: 12px 1fr 14px; align-items: end; gap: 4px; min-width: 0; text-align: center; }
+.weekly-bar-value { color: #52611f; font-size: 8px; line-height: 1; }
+.weekly-bar-track { display: flex; align-items: end; height: 48px; overflow: hidden; border-radius: 4px 4px 2px 2px; background: rgba(16,24,39,.08); }
+.weekly-bar-track > span { display: block; width: 100%; border-radius: 4px 4px 0 0; background: var(--ink); transition: height .25s ease; }
+.weekly-bar-column small { color: #52611f; font-size: 9px; text-transform: capitalize; }
+.weekly-chart figcaption { margin-top: 8px; color: #52611f; font-size: 10px; }
 .session-start-form { display: grid; gap: 4px; }
 .session-row { border-radius: 8px; }
 .session-row-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px; }

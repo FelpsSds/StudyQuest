@@ -128,6 +128,11 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [now, setNow] = useState(Date.now());
   const user = data.dashboard?.user;
   const stats = data.dashboard?.stats;
+  const weeklyActivity = data.analytics?.weekly_activity || [];
+  const weeklyStudyMinutes = weeklyActivity.reduce((total, day) => total + (Number(day.minutes) || 0), 0);
+  const weeklySessionCount = weeklyActivity.reduce((total, day) => total + (Number(day.sessions) || 0), 0);
+  const weeklyAverageMinutes = weeklySessionCount ? Math.round(weeklyStudyMinutes / weeklySessionCount) : 0;
+  const weeklyPeakMinutes = Math.max(1, ...weeklyActivity.map((day) => Number(day.minutes) || 0));
   const topLeaderboard = data.leaderboard.slice(0, 5);
   const currentLeaderboard = data.leaderboard.find((item) => item.id === user?.id);
 
@@ -548,7 +553,19 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             {currentLeaderboard && currentLeaderboard.rank > topLeaderboard.length && <><p className="leaderboard-separator">Sua posição</p><div className="leaderboard-row current-user"><span className="rank-number">{currentLeaderboard.rank}</span><strong>{currentLeaderboard.name} (você)</strong><small>Nv. {currentLeaderboard.level} · {currentLeaderboard.xp} XP</small></div></>}
           </>}</div>
           <div className="side-rule" />
-          <span className="kicker">ESTA SEMANA</span><div className="insights-list"><p className="insight-row"><span>Sessões</span><strong>{data.analytics?.completed_sessions ?? 0}</strong></p><p className="insight-row"><span>Média por sessão</span><strong>{formatDuration(Math.round(data.analytics?.average_session_minutes ?? 0))}</strong></p></div>
+          <span className="kicker">ESTA SEMANA</span>
+          <figure className="weekly-chart" aria-label="Minutos de estudo por dia nos últimos sete dias">
+            <div className="weekly-bars" role="img" aria-label={weeklyActivity.map((day) => `${formatDate(day.date)}: ${day.minutes} minutos em ${day.sessions} sessões`).join('; ')}>
+              {weeklyActivity.map((day) => {
+                const date = new Date(`${day.date}T12:00:00`);
+                const label = Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+                const minutes = Number(day.minutes) || 0;
+                return <div className="weekly-bar-column" key={day.date} title={`${formatDate(day.date)} · ${minutes} min · ${day.sessions} sessões`}><span className="weekly-bar-value">{minutes || ''}</span><span className="weekly-bar-track"><span style={{ height: minutes ? `${Math.max(8, minutes / weeklyPeakMinutes * 100)}%` : '0%' }} /></span><small>{label}</small></div>;
+              })}
+            </div>
+            {weeklySessionCount === 0 && <figcaption>Conclua uma sessão para começar seu histórico semanal.</figcaption>}
+          </figure>
+          <div className="insights-list"><p className="insight-row"><span>Tempo estudado</span><strong>{formatDuration(weeklyStudyMinutes)}</strong></p><p className="insight-row"><span>Sessões concluídas</span><strong>{weeklySessionCount}</strong></p><p className="insight-row"><span>Média por sessão</span><strong>{weeklySessionCount ? formatDuration(weeklyAverageMinutes) : '—'}</strong></p></div>
         </aside>
 
         <section className="creation-grid">

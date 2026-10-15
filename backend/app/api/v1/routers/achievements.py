@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -13,7 +14,7 @@ from app.models.user_achievement import UserAchievement
 router = APIRouter(prefix="/achievements", tags=["achievements"])
 
 
-def ensure_default_achievements(db: Session) -> None:
+def ensure_default_achievements(db: Session) -> bool:
     defaults = [
         {
             "code": "first_quest",
@@ -41,11 +42,21 @@ def ensure_default_achievements(db: Session) -> None:
         },
     ]
 
+    added = False
     for payload in defaults:
         existing = db.query(Achievement).filter(Achievement.code == payload["code"]).first()
-        if not existing:
-            db.add(Achievement(**payload))
-    db.commit()
+        if existing:
+            continue
+        try:
+            with db.begin_nested():
+                db.add(Achievement(**payload))
+                db.flush()
+        except IntegrityError:
+            if db.query(Achievement.id).filter(Achievement.code == payload["code"]).first():
+                continue
+            raise
+        added = True
+    return added
 
 
 def _award_achievement_if_needed(db: Session, user: User) -> list[Achievement]:
@@ -74,7 +85,8 @@ def list_achievements(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[Achievement]:
-    ensure_default_achievements(db)
+    if ensure_default_achievements(db):
+        db.commit()
     return db.query(Achievement).order_by(Achievement.id.asc()).all()
 
 
@@ -83,7 +95,8 @@ def list_user_achievements(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[Achievement]:
-    ensure_default_achievements(db)
+    if ensure_default_achievements(db):
+        db.commit()
     unlocked_ids = [
         item.achievement_id
         for item in db.query(UserAchievement).filter(UserAchievement.user_id == current_user.id).all()

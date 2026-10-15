@@ -20,6 +20,7 @@ async def lifespan(_: FastAPI):
     db = SessionLocal()
     try:
         ensure_default_achievements(db)
+        db.commit()
     finally:
         db.close()
     yield

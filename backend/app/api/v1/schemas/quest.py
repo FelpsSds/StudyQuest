@@ -11,9 +11,9 @@ class QuestBase(BaseModel):
     description: str | None = None
     type: QuestType = QuestType.STUDY
     difficulty: QuestDifficulty = QuestDifficulty.MEDIUM
-    xp_reward: int = Field(default=0, ge=0)
-    boss_damage: int = Field(default=10, ge=0)
-    estimated_minutes: int = Field(default=30, gt=0)
+    xp_reward: int = Field(default=0, ge=0, le=2_147_483_647)
+    boss_damage: int = Field(default=10, ge=0, le=2_147_483_647)
+    estimated_minutes: int = Field(default=30, gt=0, le=2_147_483_647)
     status: QuestStatus = QuestStatus.PENDING
     due_date: date | None = None
     subject_id: int | None = None
@@ -49,9 +49,9 @@ class QuestUpdate(BaseModel):
     description: str | None = None
     type: QuestType | None = None
     difficulty: QuestDifficulty | None = None
-    xp_reward: int | None = Field(default=None, ge=0)
-    boss_damage: int | None = Field(default=None, ge=0)
-    estimated_minutes: int | None = Field(default=None, gt=0)
+    xp_reward: int | None = Field(default=None, ge=0, le=2_147_483_647)
+    boss_damage: int | None = Field(default=None, ge=0, le=2_147_483_647)
+    estimated_minutes: int | None = Field(default=None, gt=0, le=2_147_483_647)
     status: Literal["pending", "in_progress", "archived"] | None = None
     due_date: date | None = None
     subject_id: int | None = None

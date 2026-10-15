@@ -8,9 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class BossFightBase(BaseModel):
     subject_id: int
     title: str = Field(..., min_length=1, max_length=200)
-    hp_max: int = Field(default=100, gt=0)
-    hp_current: int = Field(default=100, ge=0)
-    xp_reward: int = Field(default=200, ge=0)
+    hp_max: int = Field(default=100, gt=0, le=2_147_483_647)
+    hp_current: int = Field(default=100, ge=0, le=2_147_483_647)
+    xp_reward: int = Field(default=200, ge=0, le=2_147_483_647)
     status: Literal["active", "completed"] = "active"
 
     @field_validator("title")

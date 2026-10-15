@@ -26,8 +26,8 @@ class StudyPlanTaskRequest(BaseModel):
     description: str | None = None
     type: QuestType = QuestType.STUDY
     difficulty: QuestDifficulty = QuestDifficulty.MEDIUM
-    xp_reward: int = Field(default=0, ge=0)
-    estimated_minutes: int = Field(default=30, gt=0)
+    xp_reward: int = Field(default=0, ge=0, le=2_147_483_647)
+    estimated_minutes: int = Field(default=30, gt=0, le=2_147_483_647)
 
     @field_validator("title")
     @classmethod

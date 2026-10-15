@@ -55,5 +55,5 @@ class Quest(Base):
     user: Mapped["User"] = relationship(back_populates="quests")
     subject: Mapped[Optional["Subject"]] = relationship(back_populates="quests")
     boss_fight: Mapped[Optional["BossFight"]] = relationship(back_populates="quests")
-    completions: Mapped[List["QuestCompletion"]] = relationship(back_populates="quest", cascade="all, delete-orphan")
+    completions: Mapped[List["QuestCompletion"]] = relationship(back_populates="quest")
     study_sessions: Mapped[List["StudySession"]] = relationship(back_populates="quest")

@@ -326,7 +326,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   }
 
   async function deleteQuest(quest) {
-    if (!window.confirm(`Excluir a missão “${quest.title}”?`)) return;
+    const historyNote = quest.status === 'completed' ? ' O XP e o histórico da conclusão serão mantidos.' : '';
+    if (!window.confirm(`Excluir a missão “${quest.title}”?${historyNote}`)) return;
     await run(`quest-${quest.id}`, async () => {
       await request(`/quests/${quest.id}`, { method: 'DELETE' });
       await refresh();

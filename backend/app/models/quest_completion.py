@@ -15,11 +15,11 @@ class QuestCompletion(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    quest_id: Mapped[int] = mapped_column(ForeignKey("quests.id", ondelete="CASCADE"), nullable=False, index=True)
+    quest_id: Mapped[Optional[int]] = mapped_column(ForeignKey("quests.id", ondelete="SET NULL"), nullable=True, index=True)
     completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     xp_earned: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     notes: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="completed")
 
     user: Mapped["User"] = relationship(back_populates="quest_completions")
-    quest: Mapped["Quest"] = relationship(back_populates="completions")
+    quest: Mapped[Optional["Quest"]] = relationship(back_populates="completions")

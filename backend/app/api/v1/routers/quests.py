@@ -10,7 +10,12 @@ from app.api.v1.schemas.quest import QuestCompleteRequest, QuestCreate, QuestRea
 from app.api.v1.routers.achievements import award_achievement_for_quest_completion
 from app.core.boss_fights import award_boss_defeat
 from app.core.concurrency import user_operation_lock
-from app.core.plan_generator import generate_plan_spec
+from app.core.plan_generator import (
+    MAX_GENERATED_PLAN_TASKS,
+    MAX_LEARNING_OBJECTIVES,
+    MAX_LEARNING_OBJECTIVE_LENGTH,
+    generate_plan_spec,
+)
 from app.core.progression import level_for_xp
 from app.core.security import get_current_user
 from app.models.quest import Quest, QuestDifficulty, QuestStatus, QuestType
@@ -61,8 +66,10 @@ class StudyPlanGenerateRequest(BaseModel):
     provider_base_url: str | None = Field(default=None, max_length=500)
     provider_model: str | None = Field(default=None, max_length=200)
     provider_api_key: str | None = Field(default=None, max_length=500)
-    learning_objectives: list[Annotated[str, Field(min_length=1, max_length=500)]] | None = Field(default=None, max_length=12)
-    tasks: list[StudyPlanTaskRequest] | None = Field(default=None, max_length=20)
+    learning_objectives: list[
+        Annotated[str, Field(min_length=1, max_length=MAX_LEARNING_OBJECTIVE_LENGTH)]
+    ] | None = Field(default=None, max_length=MAX_LEARNING_OBJECTIVES)
+    tasks: list[StudyPlanTaskRequest] | None = Field(default=None, max_length=MAX_GENERATED_PLAN_TASKS)
 
     @field_validator("learning_objectives")
     @classmethod

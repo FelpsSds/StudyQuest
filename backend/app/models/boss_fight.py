@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -15,6 +15,8 @@ class BossFight(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     subject_id: Mapped[int] = mapped_column(ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False, index=True)
     plan_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    plan_generated_from: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    plan_learning_objectives: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     hp_max: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
     hp_current: Mapped[int] = mapped_column(Integer, nullable=False, default=100)

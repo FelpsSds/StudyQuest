@@ -143,6 +143,9 @@ def _serialize_saved_study_plan(
     learning_objectives: list[str],
     generated_from: str,
 ) -> dict:
+    saved_objectives = boss_fight.plan_learning_objectives
+    if not isinstance(saved_objectives, list):
+        saved_objectives = learning_objectives
     subject = db.query(Subject).filter(Subject.id == boss_fight.subject_id).first()
     quests = (
         db.query(Quest)
@@ -175,8 +178,8 @@ def _serialize_saved_study_plan(
             "xp_reward": boss_fight.xp_reward,
             "status": boss_fight.status,
         },
-        "learning_objectives": learning_objectives,
-        "generated_from": generated_from,
+        "learning_objectives": saved_objectives,
+        "generated_from": boss_fight.plan_generated_from or generated_from,
         "plan_id": boss_fight.plan_id,
     }
 
@@ -346,6 +349,8 @@ def generate_study_plan(
         xp_reward=200,
         status="active",
         plan_id=plan_id,
+        plan_generated_from=title,
+        plan_learning_objectives=learning_objectives,
     )
     db.add(boss_fight)
     db.flush()

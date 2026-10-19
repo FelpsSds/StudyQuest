@@ -335,7 +335,7 @@ def _call_openai_for_plan(
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.4,
             },
-            timeout=20,
+            timeout=55,
         )
         response.raise_for_status()
         data = response.json()

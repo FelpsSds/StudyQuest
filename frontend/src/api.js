@@ -51,10 +51,12 @@ export function setAccessToken(token) {
   else localStorage.removeItem('studyquest_token');
 }
 
-export async function request(path, options = {}) {
+export async function request(path, options = {}, timeoutMs = 30_000) {
   const token = localStorage.getItem('studyquest_token');
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 30_000);
+  const timeoutSeconds = Math.ceil(timeoutMs / 1000);
+  const timeoutMessage = `A API demorou mais de ${timeoutSeconds} segundos para responder. Tente novamente.`;
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
   let response;
 
   try {
@@ -70,7 +72,7 @@ export async function request(path, options = {}) {
   } catch (error) {
     window.clearTimeout(timeoutId);
     if (error?.name === 'AbortError') {
-      throw new Error('A API demorou mais de 30 segundos para responder. Tente novamente.');
+      throw new Error(timeoutMessage);
     }
     throw new Error('Não foi possível acessar a API. Confira se o backend está ativo.');
   }
@@ -78,7 +80,7 @@ export async function request(path, options = {}) {
   const payload = response.status === 204 ? null : await response.json().catch((error) => {
     if (error?.name === 'AbortError') {
       window.clearTimeout(timeoutId);
-      throw new Error('A API demorou mais de 30 segundos para responder. Tente novamente.');
+      throw new Error(timeoutMessage);
     }
     return null;
   });

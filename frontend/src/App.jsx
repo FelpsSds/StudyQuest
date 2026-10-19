@@ -520,7 +520,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         subject_id: subjectId ? Number(subjectId) : null,
         preview_only: true,
       };
-      const preview = await request('/quests/generate-plan', jsonRequest('POST', payload));
+      const preview = await request('/quests/generate-plan', jsonRequest('POST', payload), 70_000);
       setPlanDraft({ ...preview, payload });
     });
   }

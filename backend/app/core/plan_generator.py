@@ -77,7 +77,7 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
         if not match:
             continue
         heading = re.sub(r"\[([^\]]+)\]\([^)]+\)|https?://\S+", r"\1", match.group(1))
-        heading = re.sub(r"[`*_~]", "", heading)
+        heading = re.sub(r"[`*_~]", " ", heading)
         heading_tokens = _extract_words(heading)
         topic_tokens = []
         for raw_word in heading_tokens:

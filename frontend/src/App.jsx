@@ -588,7 +588,6 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       const preview = await request('/quests/generate-plan', jsonRequest('POST', payload), 70_000);
       const { provider_api_key: _providerApiKey, ...draftPayload } = payload;
       setPlanDraft({ ...preview, payload: draftPayload });
-      setPlanProviderApiKey('');
     });
   }
 

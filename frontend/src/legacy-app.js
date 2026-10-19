@@ -1237,7 +1237,6 @@ async function generateStudyPlan(event) {
       }),
     }, 70_000);
 
-    document.querySelector('#plan-provider-api-key').value = '';
     renderPlanReview(response, false, {
       title,
       content,

@@ -54,7 +54,18 @@ def _normalize_style(style: str | None) -> str:
     return aliases.get(value, "objetivo")
 
 
-def build_learning_objectives(
+def _limit_learning_objective(objective: str) -> str:
+    normalized = objective.strip()
+    if len(normalized) <= MAX_LEARNING_OBJECTIVE_LENGTH:
+        return normalized
+
+    shortened = normalized[:MAX_LEARNING_OBJECTIVE_LENGTH - 3]
+    if " " in shortened:
+        shortened = shortened.rsplit(" ", 1)[0]
+    return f"{shortened.rstrip()}..."
+
+
+def _build_learning_objectives(
     title: str,
     content: str = "",
     goal: str | None = None,
@@ -88,6 +99,17 @@ def build_learning_objectives(
         f"Organizar as ideias principais de {title} em um resumo útil e objetivo.",
         f"Validar o progresso em {title} com uma revisão final e exercícios focados.",
     ]
+
+
+def build_learning_objectives(
+    title: str,
+    content: str = "",
+    goal: str | None = None,
+    audience: str | None = None,
+    learning_style: str | None = None,
+) -> list[str]:
+    objectives = _build_learning_objectives(title, content, goal, audience, learning_style)
+    return [_limit_learning_objective(objective) for objective in objectives]
 
 
 def build_plan_tasks(

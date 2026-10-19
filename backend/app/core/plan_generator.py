@@ -238,15 +238,23 @@ def _normalize_plan_task(item: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(item, dict):
         raise ValueError("Generated plan tasks must be objects")
 
-    title = str(item.get("title") or "").strip()
+    raw_title = item.get("title")
+    if not isinstance(raw_title, str):
+        raise ValueError("Generated plan task title is invalid")
+    title = raw_title.strip()
     if not title or len(title) > 200:
         raise ValueError("Generated plan task title is invalid")
-    description = str(item.get("description") or "").strip()
+    raw_description = item.get("description", "")
+    if raw_description is not None and not isinstance(raw_description, str):
+        raise ValueError("Generated plan task description is invalid")
+    description = (raw_description or "").strip()
     if len(description) > MAX_GENERATED_TASK_DESCRIPTION_LENGTH:
         raise ValueError("Generated plan task description is invalid")
 
-    xp_reward = int(item.get("xp_reward", 0) or 0)
-    estimated_minutes = int(item.get("estimated_minutes", 20) or 20)
+    xp_reward = item.get("xp_reward", 0)
+    estimated_minutes = item.get("estimated_minutes", 20)
+    if type(xp_reward) is not int or type(estimated_minutes) is not int:
+        raise ValueError("Generated plan task values are invalid")
     if not 0 <= xp_reward <= 2_147_483_647 or not 0 < estimated_minutes <= 2_147_483_647:
         raise ValueError("Generated plan task values are invalid")
 

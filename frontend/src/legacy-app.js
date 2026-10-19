@@ -1097,6 +1097,7 @@ async function saveReviewedPlan() {
   }
 
   const reviewControls = Array.from(preview.querySelectorAll('input, select, textarea, button'));
+  const reviewControlDisabledStates = reviewControls.map((control) => control.disabled);
   reviewControls.forEach((control) => { control.disabled = true; });
   try {
     const payload = {
@@ -1124,7 +1125,9 @@ async function saveReviewedPlan() {
     document.querySelector('#plan-style').value = 'objetivo';
     await showDashboard();
   } catch (error) {
-    reviewControls.forEach((control) => { control.disabled = false; });
+    reviewControls.forEach((control, index) => {
+      control.disabled = reviewControlDisabledStates[index];
+    });
     window.alert(error.message);
   }
 }

@@ -14,6 +14,21 @@ const EMPTY_DATA = {
   rewards: null,
 };
 
+const PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_plan_provider_settings';
+
+function readPlanProviderSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PLAN_PROVIDER_SETTINGS_KEY) || '{}') || {};
+    return {
+      provider: ['server', 'ollama', 'custom'].includes(saved.provider) ? saved.provider : 'server',
+      baseUrl: typeof saved.baseUrl === 'string' ? saved.baseUrl : '',
+      model: typeof saved.model === 'string' ? saved.model : '',
+    };
+  } catch {
+    return { provider: 'server', baseUrl: '', model: '' };
+  }
+}
+
 function formatDuration(minutes = 0) {
   const value = Math.max(0, Number(minutes) || 0);
   const hours = Math.floor(value / 60);
@@ -117,6 +132,7 @@ function AuthScreen({ onAuthenticated, initialError = '' }) {
 }
 
 function Dashboard({ data, refresh, onLogout, onError }) {
+  const [savedPlanProviderSettings] = useState(readPlanProviderSettings);
   const [filter, setFilter] = useState(localStorage.getItem('studyquest_quest_filter') || 'all');
   const [sort, setSort] = useState(localStorage.getItem('studyquest_quest_sort') || 'priority');
   const [questSubjectFilter, setQuestSubjectFilter] = useState(localStorage.getItem('studyquest_quest_subject_filter') || 'all');
@@ -127,9 +143,9 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const [sessionSubjectFilter, setSessionSubjectFilter] = useState('all');
   const [sessionPeriodFilter, setSessionPeriodFilter] = useState('all');
   const [sessionSearch, setSessionSearch] = useState('');
-  const [planProvider, setPlanProvider] = useState('server');
-  const [planProviderUrl, setPlanProviderUrl] = useState('');
-  const [planProviderModel, setPlanProviderModel] = useState('');
+  const [planProvider, setPlanProvider] = useState(savedPlanProviderSettings.provider);
+  const [planProviderUrl, setPlanProviderUrl] = useState(savedPlanProviderSettings.baseUrl);
+  const [planProviderModel, setPlanProviderModel] = useState(savedPlanProviderSettings.model);
   const [planProviderApiKey, setPlanProviderApiKey] = useState('');
   const [planContent, setPlanContent] = useState('');
   const [planMaterialName, setPlanMaterialName] = useState('');
@@ -148,6 +164,18 @@ function Dashboard({ data, refresh, onLogout, onError }) {
   const stats = data.dashboard?.stats;
   const recentRewards = data.rewards?.xp_history?.slice(0, 4) || [];
   const weeklyActivity = data.analytics?.weekly_activity || [];
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PLAN_PROVIDER_SETTINGS_KEY, JSON.stringify({
+        provider: planProvider,
+        baseUrl: planProviderUrl,
+        model: planProviderModel,
+      }));
+    } catch {
+      // Provider preferences are optional when browser storage is unavailable.
+    }
+  }, [planProvider, planProviderUrl, planProviderModel]);
   const weeklyStudyMinutes = weeklyActivity.reduce((total, day) => total + (Number(day.minutes) || 0), 0);
   const weeklySessionCount = weeklyActivity.reduce((total, day) => total + (Number(day.sessions) || 0), 0);
   const weeklyAverageMinutes = weeklySessionCount ? Math.round(weeklyStudyMinutes / weeklySessionCount) : 0;

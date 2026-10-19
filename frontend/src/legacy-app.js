@@ -11,6 +11,7 @@ const SESSION_SUBJECT_KEY = 'studyquest_session_subject';
 const SESSION_QUEST_KEY = 'studyquest_session_quest';
 const SESSION_DURATION_KEY = 'studyquest_session_duration';
 const PLAN_PROVIDER_KEY = 'studyquest_plan_provider';
+const PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_legacy_plan_provider_settings';
 const PLAN_PROVIDER_PRESETS = {
   openai: { base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
   ollama: { base_url: 'http://localhost:11434/v1', model: 'llama3.1' },
@@ -1605,13 +1606,31 @@ function applyAiProviderPreset(type = 'openai') {
   model.value = preset.model;
 }
 
+function persistPlanProviderSettings() {
+  const provider = document.querySelector('#plan-provider-type')?.value;
+  const baseUrl = document.querySelector('#plan-provider-base-url')?.value || '';
+  const model = document.querySelector('#plan-provider-model')?.value || '';
+  if (!provider) return;
+
+  localStorage.setItem(PLAN_PROVIDER_KEY, provider);
+  localStorage.setItem(PLAN_PROVIDER_SETTINGS_KEY, JSON.stringify({ provider, baseUrl, model }));
+}
+
 function restorePlanProviderSettings() {
   const providerType = document.querySelector('#plan-provider-type');
   if (!providerType) return;
 
-  const savedType = localStorage.getItem(PLAN_PROVIDER_KEY) || 'openai';
+  let savedSettings = {};
+  try {
+    savedSettings = JSON.parse(localStorage.getItem(PLAN_PROVIDER_SETTINGS_KEY) || '{}') || {};
+  } catch (error) {
+    savedSettings = {};
+  }
+  const savedType = savedSettings.provider || localStorage.getItem(PLAN_PROVIDER_KEY) || 'openai';
   const selected = Object.prototype.hasOwnProperty.call(PLAN_PROVIDER_PRESETS, savedType) ? savedType : 'openai';
   applyAiProviderPreset(selected);
+  if (typeof savedSettings.baseUrl === 'string') document.querySelector('#plan-provider-base-url').value = savedSettings.baseUrl;
+  if (typeof savedSettings.model === 'string') document.querySelector('#plan-provider-model').value = savedSettings.model;
 }
 
 async function handlePlanMaterialFileUpload(event) {
@@ -1658,23 +1677,23 @@ document.querySelector('#refresh-button').addEventListener('click', showDashboar
 document.querySelector('#plan-provider-type').addEventListener('change', () => {
   const providerType = document.querySelector('#plan-provider-type');
   if (!providerType) return;
-  localStorage.setItem(PLAN_PROVIDER_KEY, providerType.value);
   applyAiProviderPreset(providerType.value);
+  persistPlanProviderSettings();
 });
 document.querySelector('#plan-material-file').addEventListener('change', handlePlanMaterialFileUpload);
 document.querySelector('#plan-provider-base-url').addEventListener('input', () => {
   const providerType = document.querySelector('#plan-provider-type');
   if (providerType && providerType.value !== 'custom') {
     providerType.value = 'custom';
-    localStorage.setItem(PLAN_PROVIDER_KEY, 'custom');
   }
+  persistPlanProviderSettings();
 });
 document.querySelector('#plan-provider-model').addEventListener('input', () => {
   const providerType = document.querySelector('#plan-provider-type');
   if (providerType && providerType.value !== 'custom') {
     providerType.value = 'custom';
-    localStorage.setItem(PLAN_PROVIDER_KEY, 'custom');
   }
+  persistPlanProviderSettings();
 });
 document.querySelectorAll('.preset-button').forEach((button) => {
   button.addEventListener('click', () => {

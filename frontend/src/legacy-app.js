@@ -1121,8 +1121,10 @@ async function saveReviewedPlan() {
     const description = row.querySelector('[data-plan-task-field="description"]').value.trim();
     const type = row.querySelector('[data-plan-task-field="type"]').value;
     const difficulty = row.querySelector('[data-plan-task-field="difficulty"]').value;
-    const xp_reward = Number(row.querySelector('[data-plan-task-field="xp"]').value || 0);
-    const estimated_minutes = Number(row.querySelector('[data-plan-task-field="minutes"]').value || 30);
+    const rawXp = row.querySelector('[data-plan-task-field="xp"]').value.trim();
+    const rawMinutes = row.querySelector('[data-plan-task-field="minutes"]').value.trim();
+    const xp_reward = rawXp ? Number(rawXp) : Number.NaN;
+    const estimated_minutes = rawMinutes ? Number(rawMinutes) : Number.NaN;
 
     return {
       title,
@@ -1148,7 +1150,7 @@ async function saveReviewedPlan() {
     || task.estimated_minutes < 1
     || task.estimated_minutes > 240
   ))) {
-    window.alert('XP e minutos: máximo 200 XP e 240 minutos por missão.');
+    window.alert('Informe XP e minutos com números inteiros: XP deve ser zero ou maior e duração de 1 a 240 minutos.');
     return;
   }
 

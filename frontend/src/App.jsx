@@ -628,8 +628,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       ...task,
       title: String(task.title || '').trim(),
       description: String(task.description || '').trim() || null,
-      xp_reward: Number(task.xp_reward),
-      estimated_minutes: Number(task.estimated_minutes),
+      xp_reward: String(task.xp_reward ?? '').trim() === '' ? Number.NaN : Number(task.xp_reward),
+      estimated_minutes: String(task.estimated_minutes ?? '').trim() === '' ? Number.NaN : Number(task.estimated_minutes),
     }));
     if (!tasks.length) {
       onError('Mantenha ao menos uma missão no plano.');

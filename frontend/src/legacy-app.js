@@ -21,6 +21,16 @@ const PLAN_PROVIDER_PRESETS = {
   custom: { base_url: '', model: '' },
 };
 
+function normalizePlanTaskTitle(value) {
+  return String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/ß/g, 'ss')
+    .replace(/ς/g, 'σ')
+    .replace(/[^\p{L}\p{N}]/gu, '');
+}
+
 function persistedProviderUrl(value) {
   try {
     const url = new URL(value);
@@ -942,6 +952,7 @@ function renderPlanReview(response, saved = false, planInputs = null) {
           <div class="plan-review-row">
             <label class="plan-review-field">Tipo
               <select data-plan-task-field="type" data-plan-task-index="${index}">
+                <option value="study" ${task.type === 'study' ? 'selected' : ''}>Estudo</option>
                 <option value="review" ${task.type === 'review' ? 'selected' : ''}>Revisão</option>
                 <option value="exercises" ${task.type === 'exercises' ? 'selected' : ''}>Exercícios</option>
                 <option value="practice" ${task.type === 'practice' ? 'selected' : ''}>Prática</option>
@@ -1019,6 +1030,12 @@ async function saveReviewedPlan() {
       estimated_minutes,
     };
   });
+
+  const normalizedTitles = tasks.map((task) => normalizePlanTaskTitle(task.title));
+  if (normalizedTitles.some((title) => !title) || new Set(normalizedTitles).size !== normalizedTitles.length) {
+    window.alert('Cada missão precisa ter um título diferente, com letras ou números.');
+    return;
+  }
 
   if (tasks.some((task) => (
     !Number.isInteger(task.xp_reward)

@@ -15,7 +15,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    level: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    level: Mapped[int] = mapped_column(BigInteger, default=1, nullable=False)
     xp: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     streak_current: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     streak_best: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

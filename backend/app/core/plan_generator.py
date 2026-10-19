@@ -560,7 +560,7 @@ def generate_plan_spec(
             normalized_tasks = None
 
         if normalized_tasks is not None and _normalize_style(learning_style) == "leve":
-            style_is_respected = all(
+            style_is_respected = len(normalized_tasks) <= 4 and all(
                 task["difficulty"] == QuestDifficulty.EASY.value
                 and task["estimated_minutes"] <= 25
                 and task["xp_reward"] <= 35

@@ -590,6 +590,16 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         tasks,
       }));
       setPlanDraft(null);
+      const planForm = document.querySelector('.plan-card');
+      if (planForm) {
+        planForm.querySelector('input[name="title"]').value = '';
+        planForm.querySelector('input[name="goal"]').value = '';
+        planForm.querySelector('input[name="audience"]').value = '';
+        planForm.querySelector('input[type="file"]').value = '';
+      }
+      setPlanContent('');
+      setPlanMaterialName('');
+      setPlanMaterialError('');
       await refresh();
     });
   }

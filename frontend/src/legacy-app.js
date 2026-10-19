@@ -910,6 +910,7 @@ function renderPlanReview(response, saved = false) {
           <label class="plan-review-field">Descrição
             <textarea data-plan-task-field="description" data-plan-task-index="${index}" rows="2">${escapeHtml(task.description || '')}</textarea>
           </label>
+          <button class="text-button" type="button" data-remove-plan-task="${index}">Remover tarefa</button>
         </div>
       `).join('')}
     </div>
@@ -922,6 +923,9 @@ function renderPlanReview(response, saved = false) {
   if (saveButton) {
     saveButton.addEventListener('click', saveReviewedPlan);
   }
+  preview.querySelectorAll('[data-remove-plan-task]').forEach((button) => {
+    button.addEventListener('click', () => button.closest('.plan-review-task')?.remove());
+  });
 }
 
 async function saveReviewedPlan() {

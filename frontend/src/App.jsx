@@ -565,6 +565,10 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       xp_reward: Number(task.xp_reward),
       estimated_minutes: Number(task.estimated_minutes),
     }));
+    if (!tasks.length) {
+      onError('Mantenha ao menos uma missão no plano.');
+      return;
+    }
     if (tasks.some((task) => !task.title)) {
       onError('Cada missão do plano precisa ter um título.');
       return;
@@ -594,6 +598,13 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     setPlanDraft((current) => current ? {
       ...current,
       tasks: current.tasks.map((task, taskIndex) => taskIndex === index ? { ...task, [field]: value } : task),
+    } : current);
+  }
+
+  function removePlanTask(index) {
+    setPlanDraft((current) => current ? {
+      ...current,
+      tasks: current.tasks.filter((_, taskIndex) => taskIndex !== index),
     } : current);
   }
 
@@ -798,6 +809,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
                 <label className="compact-field">Dificuldade<select value={task.difficulty} onChange={(event) => updatePlanTask(index, 'difficulty', event.target.value)}><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option></select></label>
                 <div className="plan-task-numbers"><label className="compact-field">XP<input type="number" min="0" max="2147483647" step="1" value={task.xp_reward} onChange={(event) => updatePlanTask(index, 'xp_reward', event.target.value)} /></label><label className="compact-field">Minutos<input type="number" min="1" max="2147483647" step="1" value={task.estimated_minutes} onChange={(event) => updatePlanTask(index, 'estimated_minutes', event.target.value)} /></label></div>
                 <label className="compact-field">Descrição<textarea rows="2" value={task.description || ''} onChange={(event) => updatePlanTask(index, 'description', event.target.value)} /></label>
+                <button className="text-button" type="button" onClick={() => removePlanTask(index)}>Remover missão</button>
               </div>)}</div>
               <div className="quest-edit-actions"><button className="secondary-button" type="button" onClick={savePlan} disabled={busyKeys.has('plan')}>Adicionar plano</button><button className="text-button" type="button" onClick={() => setPlanDraft(null)}>Descartar</button></div>
             </div>}

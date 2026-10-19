@@ -35,6 +35,7 @@ STOP_WORDS = {
     "lesson", "unit", "part", "appendix", "introduccion", "introducción", "capitulo",
     "capítulo", "seccion", "sección", "resumen", "resumo", "conclusion", "conclusión",
     "unidad", "leccion", "lección", "parte", "apendice", "apéndice", "anexo",
+    "conclusao", "conclusão", "sumario", "sumário", "seccao", "secção",
 }
 SHORT_TOPIC_LABELS = {
     "c": "C", "r": "R", "go": "Go", "sql": "SQL", "api": "API", "ia": "IA", "ai": "AI",

@@ -874,19 +874,21 @@ async function createQuest(event) {
   } catch (error) { window.alert(error.message); }
 }
 
-function renderPlanReview(response, saved = false) {
+function renderPlanReview(response, saved = false, planInputs = null) {
   const preview = document.querySelector('#plan-preview');
   if (!preview || !response) return;
 
   const tasks = Array.isArray(response.tasks) ? response.tasks : Array.isArray(response.quests) ? response.quests : [];
   const objectives = Array.isArray(response.learning_objectives) ? response.learning_objectives : [];
   state.generatedPlan = saved ? null : {
-    title: response.generated_from || '',
-    content: document.querySelector('#plan-content').value.trim(),
-    goal: document.querySelector('#plan-goal').value.trim(),
-    audience: document.querySelector('#plan-audience').value.trim(),
-    learning_style: document.querySelector('#plan-style').value,
-    subject_id: response.subject?.id ?? (document.querySelector('#plan-subject').value ? Number(document.querySelector('#plan-subject').value) : null),
+    title: planInputs?.title ?? response.generated_from ?? '',
+    content: planInputs?.content ?? document.querySelector('#plan-content').value.trim(),
+    goal: planInputs?.goal ?? document.querySelector('#plan-goal').value.trim(),
+    audience: planInputs?.audience ?? document.querySelector('#plan-audience').value.trim(),
+    learning_style: planInputs?.learning_style ?? document.querySelector('#plan-style').value,
+    subject_id: planInputs?.subject_id !== undefined
+      ? planInputs.subject_id
+      : response.subject?.id ?? (document.querySelector('#plan-subject').value ? Number(document.querySelector('#plan-subject').value) : null),
     tasks,
     objectives,
   };
@@ -1000,14 +1002,14 @@ async function saveReviewedPlan() {
   if (saveButton) saveButton.disabled = true;
   try {
     const payload = {
-      title: state.generatedPlan.title || document.querySelector('#plan-title').value.trim(),
-      content: state.generatedPlan.content || document.querySelector('#plan-content').value.trim(),
-      goal: state.generatedPlan.goal || document.querySelector('#plan-goal').value.trim(),
-      audience: state.generatedPlan.audience || document.querySelector('#plan-audience').value.trim(),
-      learning_style: state.generatedPlan.learning_style || document.querySelector('#plan-style').value,
+      title: state.generatedPlan.title,
+      content: state.generatedPlan.content,
+      goal: state.generatedPlan.goal,
+      audience: state.generatedPlan.audience,
+      learning_style: state.generatedPlan.learning_style,
       provider_base_url: document.querySelector('#plan-provider-base-url')?.value?.trim() || null,
       provider_model: document.querySelector('#plan-provider-model')?.value?.trim() || null,
-      subject_id: state.generatedPlan.subject_id ?? (document.querySelector('#plan-subject').value ? Number(document.querySelector('#plan-subject').value) : null),
+      subject_id: state.generatedPlan.subject_id,
       learning_objectives: state.generatedPlan.objectives || [],
       tasks,
     };
@@ -1077,7 +1079,14 @@ async function generateStudyPlan(event) {
       }),
     }, 70_000);
 
-    renderPlanReview(response);
+    renderPlanReview(response, false, {
+      title,
+      content,
+      goal,
+      audience,
+      learning_style: style,
+      subject_id: subjectId ? Number(subjectId) : null,
+    });
   } catch (error) {
     preview.textContent = error.message;
     window.alert(error.message);

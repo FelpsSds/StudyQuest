@@ -1,6 +1,7 @@
 ﻿import json
 import logging
 import re
+import unicodedata
 from typing import Any
 
 import httpx
@@ -56,16 +57,27 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
 
 
 def _normalize_style(style: str | None) -> str:
-    value = (style or "objetivo").strip().lower()
+    value = (style or "objetivo").strip().casefold()
+    value = "".join(
+        character
+        for character in unicodedata.normalize("NFKD", value)
+        if not unicodedata.combining(character)
+    )
     aliases = {
         "pratica": "prática",
         "praticas": "prática",
-        "prático": "prática",
+        "pratico": "prática",
+        "practico": "prática",
+        "practice": "prática",
+        "practical": "prática",
         "intensivo": "intensivo",
+        "intensive": "intensivo",
         "leve": "leve",
+        "light": "leve",
         "objetivo": "objetivo",
+        "objective": "objetivo",
         "basico": "objetivo",
-        "básico": "objetivo",
+        "basic": "objetivo",
     }
     return aliases.get(value, "objetivo")
 

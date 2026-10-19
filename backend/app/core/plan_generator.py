@@ -31,6 +31,10 @@ STOP_WORDS = {
     "el", "la", "los", "las", "un", "una", "unos", "unas", "y", "en", "por", "con",
     "del", "al", "que", "como", "es", "son", "se", "su", "sus", "este", "esta", "estos",
     "estas", "para", "pero", "sobre", "entre", "desde", "hasta", "muy", "también", "tambien",
+    "chapter", "section", "introduction", "overview", "conclusion", "summary", "contents",
+    "lesson", "unit", "part", "appendix", "introduccion", "introducción", "capitulo",
+    "capítulo", "seccion", "sección", "resumen", "resumo", "conclusion", "conclusión",
+    "unidad", "leccion", "lección", "parte", "apendice", "apéndice", "anexo",
 }
 SHORT_TOPIC_LABELS = {
     "c": "C", "r": "R", "go": "Go", "sql": "SQL", "api": "API", "ia": "IA", "ai": "AI",

@@ -408,7 +408,6 @@ def generate_plan_spec(
         api_key=api_key,
     )
     if ai_payload:
-        generation_source = "ai"
         learning_objectives = ai_payload.get("learning_objectives")
         objectives_are_valid = (
             isinstance(learning_objectives, list)
@@ -422,8 +421,7 @@ def generate_plan_spec(
         if objectives_are_valid:
             learning_objectives = [item.strip() for item in learning_objectives]
         else:
-            learning_objectives = build_learning_objectives(title, content, goal, audience, learning_style)
-            generation_source = "local"
+            logger.warning("AI study plan objectives were invalid; using the built-in plan")
 
         tasks = ai_payload.get("tasks")
         try:
@@ -431,15 +429,15 @@ def generate_plan_spec(
                 raise ValueError("Generated plan tasks are missing or exceed the supported limit")
             normalized_tasks = [_normalize_plan_task(task) for task in tasks]
         except (TypeError, ValueError, OverflowError):
-            logger.warning("AI study plan tasks were invalid; using the built-in tasks")
-            normalized_tasks = build_plan_tasks(title, content, goal, audience, learning_style)
-            generation_source = "local"
+            logger.warning("AI study plan tasks were invalid; using the built-in plan")
+            normalized_tasks = None
 
-        return {
-            "learning_objectives": learning_objectives,
-            "tasks": normalized_tasks,
-            "generation_source": generation_source,
-        }
+        if objectives_are_valid and normalized_tasks is not None:
+            return {
+                "learning_objectives": learning_objectives,
+                "tasks": normalized_tasks,
+                "generation_source": "ai",
+            }
 
     return {
         "learning_objectives": build_learning_objectives(title, content, goal, audience, learning_style),

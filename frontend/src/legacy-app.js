@@ -1624,9 +1624,11 @@ function syncPlanProviderKeyVisibility() {
   const providerType = document.querySelector('#plan-provider-type');
   const keyField = document.querySelector('#plan-provider-key-field');
   const apiKey = document.querySelector('#plan-provider-api-key');
-  if (!providerType || !keyField || !apiKey) return;
+  const baseUrl = document.querySelector('#plan-provider-base-url');
+  if (!providerType || !keyField || !apiKey || !baseUrl) return;
 
   keyField.hidden = providerType.value !== 'custom';
+  baseUrl.required = providerType.value === 'custom';
   if (keyField.hidden) apiKey.value = '';
 }
 

@@ -61,6 +61,33 @@ GENERATION_FALLBACK_NOTES = {
 
 
 def _extract_keywords(text: str, limit: int = 4) -> list[str]:
+    heading_topics: list[str] = []
+    heading_keys: set[str] = set()
+    heading_words: set[str] = set()
+    for line in text.splitlines():
+        match = re.match(r"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$", line)
+        if not match:
+            continue
+        heading = re.sub(r"\[([^\]]+)\]\([^)]+\)|https?://\S+", r"\1", match.group(1))
+        heading = re.sub(r"[`*_~]", "", heading)
+        heading_tokens = re.sub(r"[^A-Za-zÀ-ÿ0-9\s]", " ", heading).split()
+        topic_tokens = []
+        for raw_word in heading_tokens:
+            word = raw_word.casefold()
+            topic_label = SHORT_TOPIC_LABELS.get(word)
+            is_canonical_short_topic = topic_label is not None and (
+                raw_word.isupper() or raw_word == topic_label
+            )
+            if (len(word) <= 3 and not is_canonical_short_topic) or word in STOP_WORDS:
+                continue
+            topic_tokens.append(topic_label or raw_word)
+        topic = " ".join(topic_tokens)
+        topic_key = _normalized_text_key(topic)
+        if topic and len(topic) <= MAX_PLAN_KEYWORD_LENGTH and topic_key not in heading_keys:
+            heading_topics.append(topic)
+            heading_keys.add(topic_key)
+            heading_words.update(_normalized_text_key(token) for token in topic_tokens)
+
     normalized = re.sub(r"[^A-Za-zÀ-ÿ0-9\s]", " ", text)
     words = [word.strip() for word in normalized.split() if word.strip()]
     counts: dict[str, int] = {}
@@ -79,7 +106,17 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
             counts[word] = 0
         counts[word] += 1
     ranked = sorted(counts, key=lambda word: (-counts[word], first_positions[word]))
-    topics = [SHORT_TOPIC_LABELS.get(word, word) for word in ranked[:limit]]
+    topics = heading_topics[:limit]
+    selected_keys = {_normalized_text_key(topic) for topic in topics}
+    for word in ranked:
+        if len(topics) >= limit:
+            break
+        topic = SHORT_TOPIC_LABELS.get(word, word)
+        topic_key = _normalized_text_key(topic)
+        if topic_key in selected_keys or _normalized_text_key(word) in heading_words:
+            continue
+        topics.append(topic)
+        selected_keys.add(topic_key)
     return topics or ["estudo", "prática", "revisão", "aplicação"]
 
 

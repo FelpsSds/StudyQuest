@@ -1006,6 +1006,11 @@ async function generateStudyPlan(event) {
     return;
   }
 
+  if (content.length > 5000) {
+    window.alert('O conteudo deve ter no maximo 5.000 caracteres.');
+    return;
+  }
+
   preview.textContent = 'Gerando plano...';
 
   try {
@@ -1620,8 +1625,18 @@ async function handlePlanMaterialFileUpload(event) {
     return;
   }
 
+  if (file.size > 50_000) {
+    window.alert('O arquivo deve ter no maximo 50 KB.');
+    event.target.value = '';
+    return;
+  }
+
   try {
     const text = await file.text();
+    if (text.length > 5000) {
+      window.alert('O conteudo do arquivo deve ter no maximo 5.000 caracteres.');
+      return;
+    }
     contentField.value = (text || '').trim();
     contentField.focus();
   } catch (error) {

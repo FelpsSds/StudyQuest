@@ -11,8 +11,10 @@ const SESSION_SUBJECT_KEY = 'studyquest_session_subject';
 const SESSION_QUEST_KEY = 'studyquest_session_quest';
 const SESSION_DURATION_KEY = 'studyquest_session_duration';
 const PLAN_PROVIDER_KEY = 'studyquest_plan_provider';
-const PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_legacy_plan_provider_settings';
+const PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_plan_provider_settings';
+const LEGACY_PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_legacy_plan_provider_settings';
 const PLAN_PROVIDER_PRESETS = {
+  server: { base_url: '', model: '' },
   openai: { base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
   ollama: { base_url: 'http://localhost:11434/v1', model: 'llama3.1' },
   'ollama-docker': { base_url: 'http://host.docker.internal:11434/v1', model: 'llama3.1' },
@@ -1633,7 +1635,7 @@ function syncPlanProviderKeyVisibility() {
   if (!providerType || !keyField || !apiKey || !baseUrl) return;
 
   keyField.hidden = providerType.value !== 'custom';
-  baseUrl.required = providerType.value !== 'openai';
+  baseUrl.required = !['openai', 'server'].includes(providerType.value);
   if (keyField.hidden) apiKey.value = '';
 }
 
@@ -1653,7 +1655,10 @@ function restorePlanProviderSettings() {
 
   let savedSettings = {};
   try {
-    savedSettings = JSON.parse(localStorage.getItem(PLAN_PROVIDER_SETTINGS_KEY) || '{}') || {};
+    const serializedSettings = localStorage.getItem(PLAN_PROVIDER_SETTINGS_KEY)
+      || localStorage.getItem(LEGACY_PLAN_PROVIDER_SETTINGS_KEY)
+      || '{}';
+    savedSettings = JSON.parse(serializedSettings) || {};
   } catch (error) {
     savedSettings = {};
   }
@@ -1663,6 +1668,7 @@ function restorePlanProviderSettings() {
   if (typeof savedSettings.baseUrl === 'string') document.querySelector('#plan-provider-base-url').value = savedSettings.baseUrl;
   if (typeof savedSettings.model === 'string') document.querySelector('#plan-provider-model').value = savedSettings.model;
   syncPlanProviderKeyVisibility();
+  persistPlanProviderSettings();
 }
 
 async function handlePlanMaterialFileUpload(event) {

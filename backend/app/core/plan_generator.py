@@ -60,8 +60,11 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
     for position, raw_word in enumerate(words):
         word = raw_word.casefold()
         word = word[:MAX_PLAN_KEYWORD_LENGTH]
-        is_uppercase_topic = raw_word.isupper() and word in SHORT_TOPIC_LABELS
-        if (len(word) <= 3 and not is_uppercase_topic) or word in STOP_WORDS:
+        topic_label = SHORT_TOPIC_LABELS.get(word)
+        is_canonical_short_topic = topic_label is not None and (
+            raw_word.isupper() or raw_word == topic_label
+        )
+        if (len(word) <= 3 and not is_canonical_short_topic) or word in STOP_WORDS:
             continue
         if word not in counts:
             first_positions[word] = position

@@ -338,6 +338,7 @@ def generate_plan_spec(
         api_key=api_key,
     )
     if ai_payload:
+        generation_source = "ai"
         learning_objectives = ai_payload.get("learning_objectives")
         if not isinstance(learning_objectives, list) or not learning_objectives or not all(
             isinstance(item, str) and item.strip() for item in learning_objectives
@@ -352,10 +353,16 @@ def generate_plan_spec(
         except (TypeError, ValueError, OverflowError):
             logger.warning("AI study plan tasks were invalid; using the built-in tasks")
             normalized_tasks = build_plan_tasks(title, content, goal, audience, learning_style)
+            generation_source = "local"
 
-        return {"learning_objectives": learning_objectives, "tasks": normalized_tasks}
+        return {
+            "learning_objectives": learning_objectives,
+            "tasks": normalized_tasks,
+            "generation_source": generation_source,
+        }
 
     return {
         "learning_objectives": build_learning_objectives(title, content, goal, audience, learning_style),
         "tasks": build_plan_tasks(title, content, goal, audience, learning_style),
+        "generation_source": "local",
     }

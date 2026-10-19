@@ -753,6 +753,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             <button className="secondary-button" type="submit" disabled={busyKeys.has('plan')}>{busyKeys.has('plan') ? 'Gerando…' : 'Gerar prévia'} <span aria-hidden="true">→</span></button>
             {planDraft && <div className="plan-preview" aria-live="polite">
               <h3>{planDraft.generated_from}</h3>
+              <p className="provider-help" role="status">{planDraft.generation_source === 'ai' ? 'Plano gerado por IA.' : 'Plano gerado localmente; a IA está desativada, indisponível ou retornou uma resposta inválida.'}</p>
               <p className="plan-subject">Disciplina: {planDraft.subject?.name}</p>
               <strong>Objetivos de aprendizagem</strong>
               <ul>{planDraft.learning_objectives.map((objective, index) => <li key={index}>{objective}</li>)}</ul>

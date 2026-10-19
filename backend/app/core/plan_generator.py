@@ -23,6 +23,14 @@ STOP_WORDS = {
     "secao", "seção", "introducao", "introdução", "aprender", "aprenda", "aprenda-se",
     "estudar", "estude", "compreender", "compreenda", "entender", "entenda", "conceito",
     "conceitos", "fundamento", "fundamentos", "principal", "principais",
+    "the", "and", "of", "to", "in", "is", "it", "that", "this", "for", "on", "with",
+    "as", "by", "from", "at", "be", "are", "was", "were", "an", "or", "not", "have",
+    "has", "had", "can", "will", "would", "should", "into", "about", "which", "their",
+    "its", "than", "then", "also", "these", "those", "them", "they", "he", "she", "we",
+    "you", "your", "our", "all", "each", "more", "most", "other", "some", "such", "own",
+    "el", "la", "los", "las", "un", "una", "unos", "unas", "y", "en", "por", "con",
+    "del", "al", "que", "como", "es", "son", "se", "su", "sus", "este", "esta", "estos",
+    "estas", "para", "pero", "sobre", "entre", "desde", "hasta", "muy", "también", "tambien",
 }
 SHORT_TOPIC_LABELS = {
     "c": "C", "r": "R", "go": "Go", "sql": "SQL", "api": "API", "ia": "IA", "ai": "AI",

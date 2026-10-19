@@ -17,7 +17,9 @@ STOP_WORDS = {
     "qual", "como", "quando", "onde", "esse", "essa", "este", "esta", "nos", "nas",
     "se", "sua", "seu", "pela", "pelo", "na", "no", "tem", "alguns", "algumas", "ser",
     "sao", "são", "partir", "dentro", "fora", "apenas", "muito", "muita", "muitos",
-    "muitas", "tudo", "todos", "todas",
+    "muitas", "tudo", "todos", "todas", "capitulo", "capítulo", "capitulos", "capítulos",
+    "conteudo", "conteúdo", "topico", "tópico", "topicos", "tópicos", "material", "unidade",
+    "secao", "seção", "introducao", "introdução",
 }
 MAX_GENERATED_PLAN_TASKS = 20
 MAX_GENERATED_TASK_DESCRIPTION_LENGTH = 2_000

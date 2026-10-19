@@ -20,7 +20,9 @@ STOP_WORDS = {
     "sao", "são", "partir", "dentro", "fora", "apenas", "muito", "muita", "muitos",
     "muitas", "tudo", "todos", "todas", "capitulo", "capítulo", "capitulos", "capítulos",
     "conteudo", "conteúdo", "topico", "tópico", "topicos", "tópicos", "material", "unidade",
-    "secao", "seção", "introducao", "introdução",
+    "secao", "seção", "introducao", "introdução", "aprender", "aprenda", "aprenda-se",
+    "estudar", "estude", "compreender", "compreenda", "entender", "entenda", "conceito",
+    "conceitos", "fundamento", "fundamentos", "principal", "principais",
 }
 MAX_GENERATED_PLAN_TASKS = 20
 MAX_GENERATED_TASK_DESCRIPTION_LENGTH = 2_000
@@ -45,18 +47,18 @@ GENERATION_FALLBACK_NOTES = {
 def _extract_keywords(text: str, limit: int = 4) -> list[str]:
     normalized = re.sub(r"[^A-Za-zÀ-ÿ0-9\s]", " ", text.lower())
     words = [word.strip() for word in normalized.split() if word.strip()]
-    unique: list[str] = []
-    seen: set[str] = set()
-    for word in words:
+    counts: dict[str, int] = {}
+    first_positions: dict[str, int] = {}
+    for position, word in enumerate(words):
         word = word[:MAX_PLAN_KEYWORD_LENGTH]
         if len(word) <= 3 or word in STOP_WORDS:
             continue
-        if word not in seen:
-            unique.append(word)
-            seen.add(word)
-        if len(unique) >= limit:
-            break
-    return unique or ["estudo", "prática", "revisão", "aplicação"]
+        if word not in counts:
+            first_positions[word] = position
+            counts[word] = 0
+        counts[word] += 1
+    ranked = sorted(counts, key=lambda word: (-counts[word], first_positions[word]))
+    return ranked[:limit] or ["estudo", "prática", "revisão", "aplicação"]
 
 
 def _normalize_style(style: str | None) -> str:

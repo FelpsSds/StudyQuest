@@ -999,6 +999,7 @@ async function generateStudyPlan(event) {
   const style = document.querySelector('#plan-style').value;
   const providerBaseUrl = document.querySelector('#plan-provider-base-url').value.trim();
   const providerModel = document.querySelector('#plan-provider-model').value.trim();
+  const providerApiKey = document.querySelector('#plan-provider-api-key').value.trim();
   const subjectId = document.querySelector('#plan-subject').value;
   const preview = document.querySelector('#plan-preview');
 
@@ -1026,6 +1027,7 @@ async function generateStudyPlan(event) {
         learning_style: style,
         provider_base_url: providerBaseUrl || null,
         provider_model: providerModel || null,
+        provider_api_key: providerApiKey || null,
         subject_id: subjectId ? Number(subjectId) : null,
       }),
     });
@@ -1606,6 +1608,16 @@ function applyAiProviderPreset(type = 'openai') {
   model.value = preset.model;
 }
 
+function syncPlanProviderKeyVisibility() {
+  const providerType = document.querySelector('#plan-provider-type');
+  const keyField = document.querySelector('#plan-provider-key-field');
+  const apiKey = document.querySelector('#plan-provider-api-key');
+  if (!providerType || !keyField || !apiKey) return;
+
+  keyField.hidden = providerType.value !== 'custom';
+  if (keyField.hidden) apiKey.value = '';
+}
+
 function persistPlanProviderSettings() {
   const provider = document.querySelector('#plan-provider-type')?.value;
   const baseUrl = document.querySelector('#plan-provider-base-url')?.value || '';
@@ -1631,6 +1643,7 @@ function restorePlanProviderSettings() {
   applyAiProviderPreset(selected);
   if (typeof savedSettings.baseUrl === 'string') document.querySelector('#plan-provider-base-url').value = savedSettings.baseUrl;
   if (typeof savedSettings.model === 'string') document.querySelector('#plan-provider-model').value = savedSettings.model;
+  syncPlanProviderKeyVisibility();
 }
 
 async function handlePlanMaterialFileUpload(event) {
@@ -1678,6 +1691,7 @@ document.querySelector('#plan-provider-type').addEventListener('change', () => {
   const providerType = document.querySelector('#plan-provider-type');
   if (!providerType) return;
   applyAiProviderPreset(providerType.value);
+  syncPlanProviderKeyVisibility();
   persistPlanProviderSettings();
 });
 document.querySelector('#plan-material-file').addEventListener('change', handlePlanMaterialFileUpload);
@@ -1686,6 +1700,7 @@ document.querySelector('#plan-provider-base-url').addEventListener('input', () =
   if (providerType && providerType.value !== 'custom') {
     providerType.value = 'custom';
   }
+  syncPlanProviderKeyVisibility();
   persistPlanProviderSettings();
 });
 document.querySelector('#plan-provider-model').addEventListener('input', () => {
@@ -1693,6 +1708,7 @@ document.querySelector('#plan-provider-model').addEventListener('input', () => {
   if (providerType && providerType.value !== 'custom') {
     providerType.value = 'custom';
   }
+  syncPlanProviderKeyVisibility();
   persistPlanProviderSettings();
 });
 document.querySelectorAll('.preset-button').forEach((button) => {

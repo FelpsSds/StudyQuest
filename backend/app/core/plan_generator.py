@@ -271,11 +271,11 @@ def _call_openai_for_plan(
 
     effective_base_url = (base_url or settings.openai_base_url or "https://api.openai.com/v1").rstrip("/")
     effective_model = model or settings.openai_model or "gpt-4o-mini"
-    is_local_provider = any(
-        marker in effective_base_url.lower()
-        for marker in ("localhost", "127.0.0.1", "host.docker.internal", "ollama", "lmstudio")
-    )
-    if not settings.openai_api_key and not api_key and not is_local_provider:
+    if (
+        not settings.openai_api_key
+        and not api_key
+        and effective_base_url == "https://api.openai.com/v1"
+    ):
         return {}
 
     prompt = (

@@ -969,10 +969,10 @@ function renderPlanReview(response, saved = false, planInputs = null) {
           </div>
           <div class="plan-review-row">
             <label class="plan-review-field">XP
-              <input type="number" min="0" max="2147483647" data-plan-task-field="xp" data-plan-task-index="${index}" value="${Number(task.xp_reward ?? 0)}" />
+              <input type="number" min="0" max="200" data-plan-task-field="xp" data-plan-task-index="${index}" value="${Number(task.xp_reward ?? 0)}" />
             </label>
             <label class="plan-review-field">Minutos
-              <input type="number" min="1" max="2147483647" data-plan-task-field="minutes" data-plan-task-index="${index}" value="${Number(task.estimated_minutes ?? 30)}" />
+              <input type="number" min="1" max="240" data-plan-task-field="minutes" data-plan-task-index="${index}" value="${Number(task.estimated_minutes ?? 30)}" />
             </label>
           </div>
           <label class="plan-review-field">Descrição
@@ -1040,12 +1040,12 @@ async function saveReviewedPlan() {
   if (tasks.some((task) => (
     !Number.isInteger(task.xp_reward)
     || task.xp_reward < 0
-    || task.xp_reward > 2_147_483_647
+    || task.xp_reward > 200
     || !Number.isInteger(task.estimated_minutes)
     || task.estimated_minutes < 1
-    || task.estimated_minutes > 2_147_483_647
+    || task.estimated_minutes > 240
   ))) {
-    window.alert('Revise XP e minutos: XP deve ficar entre 0 e 2.147.483.647, e minutos entre 1 e 2.147.483.647.');
+    window.alert('XP e minutos: máximo 200 XP e 240 minutos por missão.');
     return;
   }
 

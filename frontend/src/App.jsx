@@ -639,8 +639,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       onError('Revise os valores de XP e duração: XP deve ser zero ou maior e os minutos devem ser pelo menos 1.');
       return;
     }
-    if (tasks.some((task) => task.xp_reward > 2_147_483_647 || task.estimated_minutes > 2_147_483_647)) {
-      onError('XP e minutos não podem ultrapassar 2.147.483.647.');
+    if (tasks.some((task) => task.xp_reward > 200 || task.estimated_minutes > 240)) {
+      onError('Cada missão pode ter no máximo 200 XP e 240 minutos.');
       return;
     }
     await run('plan', async () => {
@@ -879,7 +879,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
                 <label className="compact-field">Título<input value={task.title} maxLength="200" onChange={(event) => updatePlanTask(index, 'title', event.target.value)} /></label>
                 <label className="compact-field">Tipo<select value={task.type} onChange={(event) => updatePlanTask(index, 'type', event.target.value)}><option value="review">Revisão</option><option value="exercises">Exercícios</option><option value="practice">Prática</option><option value="project">Projeto</option><option value="study">Estudo</option></select></label>
                 <label className="compact-field">Dificuldade<select value={task.difficulty} onChange={(event) => updatePlanTask(index, 'difficulty', event.target.value)}><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option></select></label>
-                <div className="plan-task-numbers"><label className="compact-field">XP<input type="number" min="0" max="2147483647" step="1" value={task.xp_reward} onChange={(event) => updatePlanTask(index, 'xp_reward', event.target.value)} /></label><label className="compact-field">Minutos<input type="number" min="1" max="2147483647" step="1" value={task.estimated_minutes} onChange={(event) => updatePlanTask(index, 'estimated_minutes', event.target.value)} /></label></div>
+                <div className="plan-task-numbers"><label className="compact-field">XP<input type="number" min="0" max="200" step="1" value={task.xp_reward} onChange={(event) => updatePlanTask(index, 'xp_reward', event.target.value)} /></label><label className="compact-field">Minutos<input type="number" min="1" max="240" step="1" value={task.estimated_minutes} onChange={(event) => updatePlanTask(index, 'estimated_minutes', event.target.value)} /></label></div>
                 <label className="compact-field">Descrição<textarea rows="2" maxLength="2000" value={task.description || ''} onChange={(event) => updatePlanTask(index, 'description', event.target.value)} /></label>
                 <button className="text-button" type="button" onClick={() => removePlanTask(index)}>Remover missão</button>
               </div>)}</div>

@@ -14,6 +14,8 @@ from app.api.v1.routers.achievements import award_achievement_for_quest_completi
 from app.core.boss_fights import award_boss_defeat
 from app.core.concurrency import user_operation_lock
 from app.core.plan_generator import (
+    MAX_GENERATED_TASK_MINUTES,
+    MAX_GENERATED_TASK_XP_REWARD,
     MAX_GENERATED_PLAN_TASKS,
     MAX_LEARNING_OBJECTIVES,
     MAX_LEARNING_OBJECTIVE_LENGTH,
@@ -37,8 +39,8 @@ class StudyPlanTaskRequest(BaseModel):
     description: str | None = Field(default=None, max_length=2_000)
     type: QuestType = QuestType.STUDY
     difficulty: QuestDifficulty = QuestDifficulty.MEDIUM
-    xp_reward: int = Field(default=0, ge=0, le=2_147_483_647)
-    estimated_minutes: int = Field(default=30, gt=0, le=2_147_483_647)
+    xp_reward: int = Field(default=0, ge=0, le=MAX_GENERATED_TASK_XP_REWARD)
+    estimated_minutes: int = Field(default=30, gt=0, le=MAX_GENERATED_TASK_MINUTES)
 
     @field_validator("title")
     @classmethod

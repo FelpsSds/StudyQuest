@@ -31,6 +31,7 @@ GENERATION_FALLBACK_NOTES = {
     "provider_auth_error": "O provedor recusou a chave de acesso; confira a chave e tente novamente. O plano foi gerado localmente.",
     "provider_configuration_error": "O provedor rejeitou o endpoint ou o modelo configurado; revise essas opções. O plano foi gerado localmente.",
     "provider_rate_limited": "O provedor limitou as solicitações; aguarde e tente novamente. O plano foi gerado localmente.",
+    "ai_style_mismatch": "A IA não respeitou o estilo leve; foi usado um plano local com tarefas curtas.",
     "invalid_ai_output": "A resposta da IA não seguiu os limites esperados; o plano foi gerado localmente.",
 }
 
@@ -521,13 +522,26 @@ def generate_plan_spec(
             logger.warning("AI study plan tasks were invalid; using the built-in plan")
             normalized_tasks = None
 
+        if normalized_tasks is not None and _normalize_style(learning_style) == "leve":
+            style_is_respected = all(
+                task["difficulty"] == QuestDifficulty.EASY.value
+                and task["estimated_minutes"] <= 25
+                and task["xp_reward"] <= 35
+                for task in normalized_tasks
+            )
+            if not style_is_respected:
+                logger.warning("AI study plan did not respect the light style; using the built-in plan")
+                normalized_tasks = None
+                fallback_reason = "ai_style_mismatch"
+
         if objectives_are_valid and normalized_tasks is not None:
             return {
                 "learning_objectives": learning_objectives,
                 "tasks": normalized_tasks,
                 "generation_source": "ai",
             }
-        fallback_reason = "invalid_ai_output"
+        if fallback_reason is None:
+            fallback_reason = "invalid_ai_output"
 
     local_plan = {
         "learning_objectives": build_learning_objectives(title, content, goal, audience, learning_style),

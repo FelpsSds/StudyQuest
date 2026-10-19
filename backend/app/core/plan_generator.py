@@ -73,11 +73,20 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
     heading_topics: list[str] = []
     heading_keys: set[str] = set()
     heading_words: set[str] = set()
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
         match = re.match(r"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$", line)
-        if not match:
+        if match:
+            heading = match.group(1)
+        elif (
+            line.strip()
+            and index + 1 < len(lines)
+            and re.match(r"^\s{0,3}(?:=+|-+)\s*$", lines[index + 1])
+        ):
+            heading = line.strip()
+        else:
             continue
-        heading = re.sub(r"\[([^\]]+)\]\([^)]+\)|https?://\S+", r"\1", match.group(1))
+        heading = re.sub(r"\[([^\]]+)\]\([^)]+\)|https?://\S+", r"\1", heading)
         heading = re.sub(r"[`*_~]", " ", heading)
         heading_tokens = _extract_words(heading)
         topic_tokens = []

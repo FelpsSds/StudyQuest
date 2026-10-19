@@ -512,6 +512,14 @@ async function loadSubjects() {
       });
     });
 
+    if (state.generatedPlan?.subject_id && !subjects.some((subject) => subject.id === state.generatedPlan.subject_id)) {
+      state.generatedPlan.subject_id = null;
+      const reviewSubject = document.querySelector('#plan-preview [data-plan-review-subject]');
+      if (reviewSubject) reviewSubject.value = '';
+      const reviewSubjectName = document.querySelector('#plan-preview [data-plan-review-subject-name]');
+      if (reviewSubjectName) reviewSubjectName.textContent = `Nova disciplina: ${state.generatedPlan.title}`;
+    }
+
     if (sessionSelect) {
       const saved = localStorage.getItem(SESSION_SUBJECT_KEY);
       if (saved && Array.from(sessionSelect.options).some((option) => option.value === saved)) {

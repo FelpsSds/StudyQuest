@@ -246,6 +246,15 @@ function Dashboard({ data, refresh, onLogout, onError }) {
 
   useEffect(() => {
     const subjectIds = new Set(data.subjects.map((subject) => String(subject.id)));
+    if (planDraft?.payload.subject_id && !subjectIds.has(String(planDraft.payload.subject_id))) {
+      setPlanDraft((current) => current?.payload.subject_id && !subjectIds.has(String(current.payload.subject_id))
+        ? {
+          ...current,
+          subject: { ...current.subject, id: null },
+          payload: { ...current.payload, subject_id: null },
+        }
+        : current);
+    }
     const validQuestFilter = ['all', 'none'].includes(questSubjectFilter) || subjectIds.has(questSubjectFilter);
     if (!validQuestFilter) {
       setQuestSubjectFilter('all');
@@ -282,7 +291,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     ))) {
       setEditingQuestBossId('');
     }
-  }, [data.subjects, data.quests, data.bosses, data.sessions, questSubjectFilter, sessionSubjectFilter, sessionSubject, sessionQuest, questSubject, editingQuestId, editingQuestSubject, editingQuestBossId]);
+  }, [data.subjects, data.quests, data.bosses, data.sessions, questSubjectFilter, sessionSubjectFilter, sessionSubject, sessionQuest, questSubject, editingQuestId, editingQuestSubject, editingQuestBossId, planDraft]);
 
   const questList = useMemo(() => {
     const today = localDateKey();

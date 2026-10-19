@@ -536,6 +536,9 @@ def _call_openai_for_plan(
             return parsed
         logger.warning("AI study plan response was not a JSON object; using the built-in plan")
         return {"_fallback_reason": "provider_response_invalid"}
+    except httpx.InvalidURL:
+        logger.warning("AI study plan provider URL is invalid; using the built-in plan")
+        return {"_fallback_reason": "provider_configuration_error"}
     except httpx.HTTPStatusError as error:
         if error.response.status_code in (401, 403):
             fallback_reason = "provider_auth_error"

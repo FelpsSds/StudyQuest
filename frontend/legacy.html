@@ -82,8 +82,8 @@
               <label class="compact-field">URL base ou endpoint de IA<input id="plan-provider-base-url" type="url" maxlength="500" placeholder="Ex.: http://localhost:11434/v1" /></label>
               <label class="compact-field">Modelo IA (opcional)<input id="plan-provider-model" type="text" maxlength="200" placeholder="Ex.: llama3.1" /></label>
               <label id="plan-provider-key-field" class="compact-field" hidden>Chave da API<input id="plan-provider-api-key" type="password" maxlength="500" autocomplete="new-password" /></label>
-              <p id="plan-provider-key-help" class="provider-help" hidden>A chave é usada apenas para gerar a prévia; ela não fica salva no navegador nem é incluída nas missões. Chaves e tokens em parâmetros da URL também não são salvos; use este campo. Informe a chave novamente depois de recarregar a página.</p>
-              <p class="provider-help">Configure AI_GENERATION_ENABLED=true no backend para usar IA. O endpoint deve estar acessivel pelo backend; no Docker Desktop, use host.docker.internal. Se a IA estiver desativada ou indisponivel, o plano sera gerado localmente.</p>
+              <p id="plan-provider-key-help" class="provider-help" hidden>A chave é usada apenas para gerar a prévia; ela não fica salva no navegador nem é incluída nas missões. Informe a chave novamente depois de recarregar a página.</p>
+              <p class="provider-help">Credenciais na URL não são guardadas nas preferências; parâmetros de configuração, como api-version, são preservados. Use o campo de chave no modo Personalizado. Configure AI_GENERATION_ENABLED=true no backend para usar IA. O endpoint deve estar acessivel pelo backend; no Docker Desktop, use host.docker.internal. Se a IA estiver desativada ou indisponivel, o plano sera gerado localmente.</p>
               <label class="compact-field">Disciplina<select id="plan-subject"><option value="">Criar nova disciplina</option></select></label>
               <button class="secondary-button" type="submit">Gerar plano <span aria-hidden="true">&#8594;</span></button>
               <div id="plan-preview" class="small-empty">Ainda não há plano gerado.</div>

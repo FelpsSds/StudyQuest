@@ -20,6 +20,7 @@ STOP_WORDS = {
 }
 MAX_GENERATED_PLAN_TASKS = 20
 MAX_GENERATED_TASK_DESCRIPTION_LENGTH = 2_000
+MAX_PLAN_KEYWORD_LENGTH = 80
 MAX_LEARNING_OBJECTIVES = 12
 MAX_LEARNING_OBJECTIVE_LENGTH = 500
 
@@ -30,6 +31,7 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
     unique: list[str] = []
     seen: set[str] = set()
     for word in words:
+        word = word[:MAX_PLAN_KEYWORD_LENGTH]
         if len(word) <= 3 or word in STOP_WORDS:
             continue
         if word not in seen:

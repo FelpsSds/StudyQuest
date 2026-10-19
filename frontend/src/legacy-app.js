@@ -1030,6 +1030,8 @@ async function saveReviewedPlan() {
 
 async function generateStudyPlan(event) {
   event.preventDefault();
+  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+  if (submitButton?.disabled) return;
   const title = document.querySelector('#plan-title').value.trim();
   const content = document.querySelector('#plan-content').value.trim();
   const goal = document.querySelector('#plan-goal').value.trim();
@@ -1051,6 +1053,11 @@ async function generateStudyPlan(event) {
     return;
   }
 
+  const submitButtonText = submitButton?.textContent;
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = 'Gerando prévia...';
+  }
   preview.textContent = 'Gerando plano...';
 
   try {
@@ -1074,6 +1081,11 @@ async function generateStudyPlan(event) {
   } catch (error) {
     preview.textContent = error.message;
     window.alert(error.message);
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = submitButtonText;
+    }
   }
 }
 

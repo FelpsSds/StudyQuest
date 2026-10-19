@@ -3,6 +3,7 @@ import logging
 import re
 import unicodedata
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
@@ -389,10 +390,11 @@ def _parse_json_response(raw_message: str) -> dict[str, Any] | None:
 
 
 def _normalize_provider_base_url(value: str) -> str:
-    normalized = value.strip().rstrip("/")
-    if normalized.endswith("/chat/completions"):
-        normalized = normalized.removesuffix("/chat/completions")
-    return normalized
+    parts = urlsplit(value.strip())
+    path = parts.path.rstrip("/")
+    if path.endswith("/chat/completions"):
+        path = path.removesuffix("/chat/completions")
+    return urlunsplit((parts.scheme, parts.netloc, path, parts.query, ""))
 
 
 def _call_openai_for_plan(
@@ -453,7 +455,16 @@ def _call_openai_for_plan(
         ensure_ascii=False,
     )
 
-    endpoint = f"{effective_base_url}/chat/completions"
+    base_url_parts = urlsplit(effective_base_url)
+    endpoint = urlunsplit(
+        (
+            base_url_parts.scheme,
+            base_url_parts.netloc,
+            f"{base_url_parts.path.rstrip('/')}/chat/completions",
+            base_url_parts.query,
+            "",
+        )
+    )
     headers = {"Content-Type": "application/json"}
     configured_base_url = _normalize_provider_base_url(configured_base_url)
     if effective_api_key:

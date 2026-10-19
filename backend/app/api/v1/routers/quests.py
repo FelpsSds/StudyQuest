@@ -31,7 +31,7 @@ PLAN_BOSS_TARGET_HP = 120
 
 class StudyPlanTaskRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2_000)
     type: QuestType = QuestType.STUDY
     difficulty: QuestDifficulty = QuestDifficulty.MEDIUM
     xp_reward: int = Field(default=0, ge=0, le=2_147_483_647)

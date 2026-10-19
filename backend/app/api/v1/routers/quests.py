@@ -170,6 +170,10 @@ def generate_study_plan(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Title cannot be blank")
 
     subject = _get_subject_for_plan(db, current_user, payload.subject_id)
+    subject_preview = {
+        "id": subject.id if subject else None,
+        "name": subject.name if subject else _build_subject_name(title),
+    }
 
     if not content:
         content = title
@@ -180,6 +184,9 @@ def generate_study_plan(
     provider_base_url = (payload.provider_base_url or "").strip() or None
     provider_model = (payload.provider_model or "").strip() or None
     provider_api_key = (payload.provider_api_key or "").strip() or None
+
+    # Release the auth and subject read transaction before waiting on an external provider.
+    db.commit()
 
     if payload.tasks is not None:
         generation_source = "revised"
@@ -222,10 +229,7 @@ def generate_study_plan(
 
     if payload.preview_only:
         return {
-            "subject": {
-                "id": subject.id if subject else None,
-                "name": subject.name if subject else _build_subject_name(title),
-            },
+            "subject": subject_preview,
             "tasks": [
                 {
                     "title": item["title"],

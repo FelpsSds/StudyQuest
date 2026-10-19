@@ -908,7 +908,7 @@ function renderPlanReview(response, saved = false) {
             </label>
           </div>
           <label class="plan-review-field">Descrição
-            <textarea data-plan-task-field="description" data-plan-task-index="${index}" rows="2">${escapeHtml(task.description || '')}</textarea>
+            <textarea data-plan-task-field="description" data-plan-task-index="${index}" maxlength="2000" rows="2">${escapeHtml(task.description || '')}</textarea>
           </label>
           <button class="text-button" type="button" data-remove-plan-task="${index}">Remover tarefa</button>
         </div>

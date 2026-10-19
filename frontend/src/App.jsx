@@ -652,6 +652,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         learning_objectives: planDraft.learning_objectives,
         tasks,
       }));
+      await refresh();
       setPlanDraft(null);
       const planForm = document.querySelector('.plan-card');
       if (planForm) {
@@ -663,7 +664,6 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       setPlanContent('');
       setPlanMaterialName('');
       setPlanMaterialError('');
-      await refresh();
     });
   }
 

@@ -16,6 +16,7 @@ const EMPTY_DATA = {
 
 const PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_plan_provider_settings';
 const LEGACY_PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_legacy_plan_provider_settings';
+const MAX_PLAN_REVIEW_TASKS = 20;
 
 function normalizePlanTaskTitle(value) {
   return String(value || '')
@@ -680,6 +681,23 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     } : current);
   }
 
+  function addPlanTask() {
+    setPlanDraft((current) => {
+      if (!current || current.tasks.length >= MAX_PLAN_REVIEW_TASKS) return current;
+      return {
+        ...current,
+        tasks: [...current.tasks, {
+          title: '',
+          description: '',
+          type: 'study',
+          difficulty: 'easy',
+          xp_reward: 25,
+          estimated_minutes: 15,
+        }],
+      };
+    });
+  }
+
   async function updateProfile(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -883,6 +901,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
                 <label className="compact-field">Descrição<textarea rows="2" maxLength="2000" value={task.description || ''} onChange={(event) => updatePlanTask(index, 'description', event.target.value)} /></label>
                 <button className="text-button" type="button" onClick={() => removePlanTask(index)}>Remover missão</button>
               </div>)}</div>
+              <button className="text-button" type="button" onClick={addPlanTask} disabled={planDraft.tasks.length >= MAX_PLAN_REVIEW_TASKS}>Adicionar missão ({planDraft.tasks.length}/{MAX_PLAN_REVIEW_TASKS})</button>
               <div className="quest-edit-actions"><button className="secondary-button" type="button" onClick={savePlan} disabled={busyKeys.has('plan')}>Adicionar plano</button><button className="text-button" type="button" onClick={() => setPlanDraft(null)}>Descartar</button></div>
             </div>}
           </form>

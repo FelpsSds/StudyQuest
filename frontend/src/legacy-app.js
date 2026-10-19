@@ -13,6 +13,7 @@ const SESSION_DURATION_KEY = 'studyquest_session_duration';
 const PLAN_PROVIDER_KEY = 'studyquest_plan_provider';
 const PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_plan_provider_settings';
 const LEGACY_PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_legacy_plan_provider_settings';
+const MAX_PLAN_REVIEW_TASKS = 20;
 const PLAN_PROVIDER_PRESETS = {
   server: { base_url: '', model: '' },
   openai: { base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
@@ -935,6 +936,8 @@ function renderPlanReview(response, saved = false, planInputs = null) {
       : response.subject?.id ?? (document.querySelector('#plan-subject').value ? Number(document.querySelector('#plan-subject').value) : null),
     tasks,
     objectives,
+    generation_source: response.generation_source ?? planInputs?.generation_source,
+    generation_note: response.generation_note ?? planInputs?.generation_note,
   };
 
   preview.innerHTML = `
@@ -969,10 +972,10 @@ function renderPlanReview(response, saved = false, planInputs = null) {
           </div>
           <div class="plan-review-row">
             <label class="plan-review-field">XP
-              <input type="number" min="0" max="200" data-plan-task-field="xp" data-plan-task-index="${index}" value="${Number(task.xp_reward ?? 0)}" />
+              <input type="number" min="0" max="200" data-plan-task-field="xp" data-plan-task-index="${index}" value="${escapeAttribute(task.xp_reward ?? 0)}" />
             </label>
             <label class="plan-review-field">Minutos
-              <input type="number" min="1" max="240" data-plan-task-field="minutes" data-plan-task-index="${index}" value="${Number(task.estimated_minutes ?? 30)}" />
+              <input type="number" min="1" max="240" data-plan-task-field="minutes" data-plan-task-index="${index}" value="${escapeAttribute(task.estimated_minutes ?? 30)}" />
             </label>
           </div>
           <label class="plan-review-field">Descrição
@@ -984,15 +987,59 @@ function renderPlanReview(response, saved = false, planInputs = null) {
     </div>
     ${saved
       ? '<p role="status">Plano salvo com sucesso.</p>'
-      : '<button class="secondary-button review-submit" type="button">Salvar plano revisado</button>'}
+      : `<div class="quest-edit-actions"><button class="text-button" type="button" data-add-plan-task ${tasks.length >= MAX_PLAN_REVIEW_TASKS ? 'disabled' : ''}>Adicionar missão (${tasks.length}/${MAX_PLAN_REVIEW_TASKS})</button><button class="secondary-button review-submit" type="button">Salvar plano revisado</button></div>`}
   `;
+
+  const addTaskButton = preview.querySelector('[data-add-plan-task]');
+  if (addTaskButton) {
+    addTaskButton.addEventListener('click', () => {
+      const currentPlan = state.generatedPlan;
+      const rows = Array.from(preview.querySelectorAll('.plan-review-task'));
+      if (!currentPlan || rows.length >= MAX_PLAN_REVIEW_TASKS) return;
+      const currentTasks = rows.map((row) => ({
+        title: row.querySelector('[data-plan-task-field="title"]').value,
+        description: row.querySelector('[data-plan-task-field="description"]').value,
+        type: row.querySelector('[data-plan-task-field="type"]').value,
+        difficulty: row.querySelector('[data-plan-task-field="difficulty"]').value,
+        xp_reward: row.querySelector('[data-plan-task-field="xp"]').value,
+        estimated_minutes: row.querySelector('[data-plan-task-field="minutes"]').value,
+      }));
+      currentTasks.push({
+        title: '',
+        description: '',
+        type: 'study',
+        difficulty: 'easy',
+        xp_reward: 25,
+        estimated_minutes: 15,
+      });
+      const subjectName = preview.querySelector('.plan-review-header strong')?.textContent || 'Plano gerado';
+      renderPlanReview({
+        subject: { name: subjectName },
+        tasks: currentTasks,
+        learning_objectives: currentPlan.objectives,
+        generated_from: currentPlan.title,
+        plan_id: currentPlan.plan_id,
+        generation_source: currentPlan.generation_source,
+        generation_note: currentPlan.generation_note,
+      }, false, currentPlan);
+      preview.querySelector('.plan-review-task:last-child [data-plan-task-field="title"]')?.focus();
+    });
+  }
 
   const saveButton = preview.querySelector('.review-submit');
   if (saveButton) {
     saveButton.addEventListener('click', saveReviewedPlan);
   }
   preview.querySelectorAll('[data-remove-plan-task]').forEach((button) => {
-    button.addEventListener('click', () => button.closest('.plan-review-task')?.remove());
+    button.addEventListener('click', () => {
+      button.closest('.plan-review-task')?.remove();
+      const taskCount = preview.querySelectorAll('.plan-review-task').length;
+      const addButton = preview.querySelector('[data-add-plan-task]');
+      if (addButton) {
+        addButton.disabled = taskCount >= MAX_PLAN_REVIEW_TASKS;
+        addButton.textContent = `Adicionar missão (${taskCount}/${MAX_PLAN_REVIEW_TASKS})`;
+      }
+    });
   });
 }
 

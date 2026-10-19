@@ -161,8 +161,9 @@ def build_plan_tasks(
     learning_style: str | None = None,
 ) -> list[dict[str, Any]]:
     focus_keywords = _extract_keywords(f"{content} {title} {goal or ''}", limit=6)
+    source_keywords = focus_keywords.copy()
     while len(focus_keywords) < 4:
-        focus_keywords.append("estudo")
+        focus_keywords.append(source_keywords[len(focus_keywords) % len(source_keywords)])
 
     style = _normalize_style(learning_style)
     if style == "prática":

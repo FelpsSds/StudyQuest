@@ -65,11 +65,18 @@ function readPlanProviderSettings() {
       || localStorage.getItem(LEGACY_PLAN_PROVIDER_SETTINGS_KEY)
       || '{}';
     const saved = JSON.parse(serializedSettings) || {};
-    const provider = saved.provider === 'openai' ? 'custom' : saved.provider;
+    const savedProvider = saved.provider || localStorage.getItem('studyquest_plan_provider') || 'server';
+    const provider = savedProvider === 'openai' ? 'custom' : savedProvider;
+    const oldProviderDefaults = {
+      openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+      ollama: { baseUrl: 'http://localhost:11434/v1', model: 'llama3.1' },
+      'ollama-docker': { baseUrl: 'http://host.docker.internal:11434/v1', model: 'llama3.1' },
+    };
+    const defaults = oldProviderDefaults[savedProvider] || {};
     return {
       provider: ['server', 'ollama', 'ollama-docker', 'custom'].includes(provider) ? provider : 'server',
-      baseUrl: typeof saved.baseUrl === 'string' ? saved.baseUrl : '',
-      model: typeof saved.model === 'string' ? saved.model : '',
+      baseUrl: typeof saved.baseUrl === 'string' ? saved.baseUrl : defaults.baseUrl || '',
+      model: typeof saved.model === 'string' ? saved.model : defaults.model || '',
     };
   } catch {
     return { provider: 'server', baseUrl: '', model: '' };

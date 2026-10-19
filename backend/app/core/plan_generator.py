@@ -316,6 +316,16 @@ def build_plan_tasks(
     return tasks
 
 
+def _normalize_ai_integer(value: Any) -> int:
+    if type(value) is int:
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str) and re.fullmatch(r"[+-]?\d+", value.strip()):
+        return int(value.strip())
+    raise ValueError("Generated plan task values are invalid")
+
+
 def _normalize_plan_task(item: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(item, dict):
         raise ValueError("Generated plan tasks must be objects")
@@ -335,10 +345,8 @@ def _normalize_plan_task(item: dict[str, Any]) -> dict[str, Any]:
 
     if "xp_reward" not in item or "estimated_minutes" not in item:
         raise ValueError("Generated plan task values are missing")
-    xp_reward = item["xp_reward"]
-    estimated_minutes = item["estimated_minutes"]
-    if type(xp_reward) is not int or type(estimated_minutes) is not int:
-        raise ValueError("Generated plan task values are invalid")
+    xp_reward = _normalize_ai_integer(item["xp_reward"])
+    estimated_minutes = _normalize_ai_integer(item["estimated_minutes"])
     if (
         not 0 <= xp_reward <= MAX_GENERATED_TASK_XP_REWARD
         or not 0 < estimated_minutes <= MAX_GENERATED_TASK_MINUTES

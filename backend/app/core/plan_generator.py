@@ -390,7 +390,10 @@ def _parse_json_response(raw_message: str) -> dict[str, Any] | None:
 
 
 def _normalize_provider_base_url(value: str) -> str:
-    parts = urlsplit(value.strip())
+    try:
+        parts = urlsplit(value.strip())
+    except ValueError:
+        return ""
     path = parts.path.rstrip("/")
     if path.endswith("/chat/completions"):
         path = path.removesuffix("/chat/completions")
@@ -415,6 +418,15 @@ def _call_openai_for_plan(
     effective_base_url = _normalize_provider_base_url(
         (base_url or "").strip() or configured_base_url
     )
+    try:
+        provider_url = httpx.URL(effective_base_url)
+    except (httpx.InvalidURL, ValueError):
+        logger.warning("AI study plan provider URL is invalid; using the built-in plan")
+        return {"_fallback_reason": "provider_configuration_error"}
+    if provider_url.scheme not in {"http", "https"} or not provider_url.host:
+        logger.warning("AI study plan provider URL is invalid; using the built-in plan")
+        return {"_fallback_reason": "provider_configuration_error"}
+
     effective_model = (
         (model or "").strip()
         or (settings.openai_model or "").strip()

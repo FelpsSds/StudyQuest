@@ -208,6 +208,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         baseUrl: persistedProviderUrl(planProviderUrl),
         model: planProviderModel,
       }));
+      localStorage.removeItem(LEGACY_PLAN_PROVIDER_SETTINGS_KEY);
     } catch {
       // Provider preferences are optional when browser storage is unavailable.
     }

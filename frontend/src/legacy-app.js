@@ -1728,6 +1728,7 @@ function persistPlanProviderSettings() {
     baseUrl: persistedProviderUrl(baseUrl),
     model,
   }));
+  localStorage.removeItem(LEGACY_PLAN_PROVIDER_SETTINGS_KEY);
 }
 
 function restorePlanProviderSettings() {

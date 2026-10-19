@@ -1,5 +1,5 @@
 const configuredApiBase = document.querySelector('meta[name="studyquest-api-base"]')?.content.trim();
-const API_BASE = window.STUDYQUEST_API_BASE || configuredApiBase || `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
+const API_BASE = window.STUDYQUEST_API_BASE || configuredApiBase || '/api/v1';
 const state = { token: localStorage.getItem('studyquest_token'), registerMode: false, generatedPlan: null, sessionTimerInterval: null };
 const QUEST_FILTER_KEY = 'studyquest_quest_filter';
 const QUEST_SORT_KEY = 'studyquest_quest_sort';

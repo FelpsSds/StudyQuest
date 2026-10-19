@@ -1024,12 +1024,6 @@ async function generateStudyPlan(event) {
     });
 
     renderPlanReview(response);
-    document.querySelector('#plan-title').value = '';
-    document.querySelector('#plan-content').value = '';
-    document.querySelector('#plan-goal').value = '';
-    document.querySelector('#plan-audience').value = '';
-    document.querySelector('#plan-style').value = 'objetivo';
-    await showDashboard();
   } catch (error) {
     preview.textContent = error.message;
     window.alert(error.message);
@@ -1588,7 +1582,8 @@ async function showDashboard() {
     const analytics = await request('/users/analytics');
     document.querySelector('#study-minutes').textContent = analytics.total_study_minutes;
     showAppView();
-    await Promise.all([loadQuests(), loadSubjects(), loadSubjectsList(), loadSessionQuestOptions(), loadSessions(), loadBosses(), loadRewards(), loadNextFocus(), loadLeaderboard(), loadAchievements(), loadInsights(), loadMomentum()]);
+    await Promise.all([loadQuests(), loadSubjects(), loadSubjectsList(), loadSessions(), loadBosses(), loadRewards(), loadNextFocus(), loadLeaderboard(), loadAchievements(), loadInsights(), loadMomentum()]);
+    await loadSessionQuestOptions();
   } catch (error) { clearSession(); showAuthError(error.message); }
 }
 

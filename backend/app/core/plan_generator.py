@@ -378,6 +378,13 @@ def _parse_json_response(raw_message: str) -> dict[str, Any] | None:
     return parsed if isinstance(parsed, dict) else None
 
 
+def _normalize_provider_base_url(value: str) -> str:
+    normalized = value.rstrip("/")
+    if normalized.endswith("/chat/completions"):
+        normalized = normalized.removesuffix("/chat/completions")
+    return normalized
+
+
 def _call_openai_for_plan(
     title: str,
     content: str,
@@ -391,7 +398,9 @@ def _call_openai_for_plan(
     if not settings.ai_generation_enabled:
         return {"_fallback_reason": "ai_disabled"}
 
-    effective_base_url = (base_url or settings.openai_base_url or "https://api.openai.com/v1").rstrip("/")
+    effective_base_url = _normalize_provider_base_url(
+        base_url or settings.openai_base_url or "https://api.openai.com/v1"
+    )
     effective_model = model or settings.openai_model or "gpt-4o-mini"
     if (
         not settings.openai_api_key
@@ -428,7 +437,9 @@ def _call_openai_for_plan(
 
     endpoint = f"{effective_base_url}/chat/completions"
     headers = {"Content-Type": "application/json"}
-    configured_base_url = (settings.openai_base_url or "https://api.openai.com/v1").rstrip("/")
+    configured_base_url = _normalize_provider_base_url(
+        settings.openai_base_url or "https://api.openai.com/v1"
+    )
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     elif settings.openai_api_key and effective_base_url == configured_base_url:

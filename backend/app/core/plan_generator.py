@@ -232,6 +232,8 @@ def _normalize_plan_task(item: dict[str, Any]) -> dict[str, Any]:
 
 
 def _parse_json_response(raw_message: str) -> dict[str, Any] | None:
+    if not isinstance(raw_message, str):
+        return None
     candidate = raw_message.strip()
     if not candidate:
         return None
@@ -307,8 +309,24 @@ def _call_openai_for_plan(
         )
         response.raise_for_status()
         data = response.json()
-        message = data["choices"][0]["message"]["content"]
-        parsed = _parse_json_response(message)
+        choices = data.get("choices") if isinstance(data, dict) else None
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+            logger.warning("AI study plan response did not contain a choice; using the built-in plan")
+            return {}
+
+        message = choices[0].get("message")
+        content_value = message.get("content") if isinstance(message, dict) else None
+        if isinstance(content_value, list):
+            content_value = "\n".join(
+                part["text"]
+                for part in content_value
+                if isinstance(part, dict) and isinstance(part.get("text"), str)
+            )
+        if not isinstance(content_value, str):
+            logger.warning("AI study plan response did not contain text; using the built-in plan")
+            return {}
+
+        parsed = _parse_json_response(content_value)
         if isinstance(parsed, dict):
             return parsed
         logger.warning("AI study plan response was not a JSON object; using the built-in plan")

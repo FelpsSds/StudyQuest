@@ -553,6 +553,10 @@ def _call_openai_for_plan(
         "tasks deve conter 4 objetos com title, type, difficulty, xp_reward, estimated_minutes e description. "
         "Cada title deve ter até 200 caracteres e cada description até 2000 caracteres. "
         "Use somente os tipos review, exercises, practice ou project e as dificuldades easy, medium ou hard. "
+        "Respeite estas regras do estilo escolhido: leve usa até 4 tarefas, todas easy, com no máximo 25 minutos "
+        "e 35 XP cada; intensivo inclui ao menos uma tarefa hard; prática inclui ao menos 2 tarefas do tipo "
+        "exercises, practice ou project quando houver mais de uma tarefa; objetivo inclui review, exercises e "
+        "practice ou project quando houver pelo menos 3 tarefas. "
         f"xp_reward e estimated_minutes devem ser números inteiros; XP deve ficar entre 0 e {MAX_GENERATED_TASK_XP_REWARD} "
         f"e minutos entre 1 e {MAX_GENERATED_TASK_MINUTES}."
     )

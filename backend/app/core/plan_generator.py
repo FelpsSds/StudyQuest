@@ -19,6 +19,7 @@ STOP_WORDS = {
     "muitas", "tudo", "todos", "todas",
 }
 MAX_GENERATED_PLAN_TASKS = 20
+MAX_GENERATED_TASK_DESCRIPTION_LENGTH = 2_000
 MAX_LEARNING_OBJECTIVES = 12
 MAX_LEARNING_OBJECTIVE_LENGTH = 500
 
@@ -240,6 +241,9 @@ def _normalize_plan_task(item: dict[str, Any]) -> dict[str, Any]:
     title = str(item.get("title") or "").strip()
     if not title or len(title) > 200:
         raise ValueError("Generated plan task title is invalid")
+    description = str(item.get("description") or "").strip()
+    if len(description) > MAX_GENERATED_TASK_DESCRIPTION_LENGTH:
+        raise ValueError("Generated plan task description is invalid")
 
     xp_reward = int(item.get("xp_reward", 0) or 0)
     estimated_minutes = int(item.get("estimated_minutes", 20) or 20)
@@ -252,7 +256,7 @@ def _normalize_plan_task(item: dict[str, Any]) -> dict[str, Any]:
         "difficulty": QuestDifficulty(str(item.get("difficulty", QuestDifficulty.MEDIUM.value)).lower()).value,
         "xp_reward": xp_reward,
         "estimated_minutes": estimated_minutes,
-        "description": str(item.get("description") or "").strip(),
+        "description": description,
     }
 
 
@@ -308,6 +312,7 @@ def _call_openai_for_plan(
         "Retorne apenas JSON válido com as chaves: learning_objectives e tasks. "
         "learning_objectives deve ser uma lista de 4 strings curtas. "
         "tasks deve ser uma lista de 4 objetos com campos: title, type, difficulty, xp_reward, estimated_minutes, description. "
+        "Cada título deve ter até 200 caracteres e cada descrição até 2000 caracteres. "
         f"Tema: {title}. Conteúdo: {content}. Objetivo: {goal or 'nenhum objetivo específico'}. "
         f"Público: {audience or 'todos os estudantes'}. Estilo: {learning_style or 'objetivo'}. "
         "Tipos válidos: review, exercises, practice, project. Dificuldades válidas: easy, medium, hard."
@@ -396,6 +401,7 @@ def generate_plan_spec(
             learning_objectives = [item.strip() for item in learning_objectives]
         else:
             learning_objectives = build_learning_objectives(title, content, goal, audience, learning_style)
+            generation_source = "local"
 
         tasks = ai_payload.get("tasks")
         try:

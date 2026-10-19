@@ -352,12 +352,11 @@ def generate_study_plan(
         plan_generated_from=title,
         plan_learning_objectives=learning_objectives,
     )
-    db.add(boss_fight)
-    db.flush()
-    for quest in created_quests:
-        quest.boss_fight_id = boss_fight.id
-
     try:
+        db.add(boss_fight)
+        db.flush()
+        for quest in created_quests:
+            quest.boss_fight_id = boss_fight.id
         db.commit()
     except IntegrityError:
         db.rollback()

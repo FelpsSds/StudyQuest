@@ -521,6 +521,7 @@ def generate_plan_spec(
     model: str | None = None,
     api_key: str | None = None,
 ) -> dict[str, Any]:
+    learning_style = _normalize_style(learning_style)
     ai_payload = _call_openai_for_plan(
         title,
         content,

@@ -233,6 +233,16 @@ def build_plan_tasks(
             },
         ]
 
+    plan_context = []
+    if goal and goal.strip():
+        plan_context.append(f"Objetivo: {goal.strip()}.")
+    if audience and audience.strip():
+        plan_context.append(f"Público: {audience.strip()}.")
+    if plan_context:
+        context_suffix = " ".join(plan_context)
+        for task in tasks:
+            task["description"] = f"{task['description']} {context_suffix}"
+
     return tasks
 
 

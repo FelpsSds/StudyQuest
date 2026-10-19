@@ -600,6 +600,20 @@ def generate_plan_spec(
                     for task in normalized_tasks
                 )
                 style_is_respected = applied_tasks >= 2
+            elif style == "objetivo" and len(normalized_tasks) >= 3:
+                task_types = {task["type"] for task in normalized_tasks}
+                style_is_respected = (
+                    QuestType.REVIEW.value in task_types
+                    and QuestType.EXERCISES.value in task_types
+                    and bool(
+                        task_types
+                        & {
+                            QuestType.PRACTICE.value,
+                            QuestType.PROJECT.value,
+                            QuestType.STUDY.value,
+                        }
+                    )
+                )
             if not style_is_respected:
                 logger.warning("AI study plan did not respect the selected style; using the built-in plan")
                 normalized_tasks = None

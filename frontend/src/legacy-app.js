@@ -20,6 +20,35 @@ const PLAN_PROVIDER_PRESETS = {
   'ollama-docker': { base_url: 'http://host.docker.internal:11434/v1', model: 'llama3.1' },
   custom: { base_url: '', model: '' },
 };
+
+function persistedProviderUrl(value) {
+  try {
+    const url = new URL(value);
+    url.username = '';
+    url.password = '';
+    url.hash = '';
+    for (const key of [...url.searchParams.keys()]) {
+      const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (
+        normalizedKey.endsWith('key')
+        || normalizedKey.includes('token')
+        || normalizedKey.includes('secret')
+        || normalizedKey.includes('signature')
+        || normalizedKey.includes('credential')
+        || normalizedKey.includes('auth')
+        || normalizedKey === 'code'
+        || normalizedKey.includes('password')
+        || normalizedKey.includes('passwd')
+      ) {
+        url.searchParams.delete(key);
+      }
+    }
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
 const QUEST_TYPE_LABELS = {
   study: 'Estudo',
   exercises: 'Exercícios',
@@ -1690,7 +1719,11 @@ function persistPlanProviderSettings() {
   if (!provider) return;
 
   localStorage.setItem(PLAN_PROVIDER_KEY, provider);
-  localStorage.setItem(PLAN_PROVIDER_SETTINGS_KEY, JSON.stringify({ provider, baseUrl, model }));
+  localStorage.setItem(PLAN_PROVIDER_SETTINGS_KEY, JSON.stringify({
+    provider,
+    baseUrl: persistedProviderUrl(baseUrl),
+    model,
+  }));
 }
 
 function restorePlanProviderSettings() {

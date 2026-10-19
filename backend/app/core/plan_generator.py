@@ -20,6 +20,8 @@ STOP_WORDS = {
 }
 MAX_GENERATED_PLAN_TASKS = 20
 MAX_GENERATED_TASK_DESCRIPTION_LENGTH = 2_000
+MAX_GENERATED_TASK_XP_REWARD = 200
+MAX_GENERATED_TASK_MINUTES = 240
 MAX_PLAN_KEYWORD_LENGTH = 80
 MAX_LEARNING_OBJECTIVES = 12
 MAX_LEARNING_OBJECTIVE_LENGTH = 500
@@ -323,7 +325,10 @@ def _normalize_plan_task(item: dict[str, Any]) -> dict[str, Any]:
     estimated_minutes = item["estimated_minutes"]
     if type(xp_reward) is not int or type(estimated_minutes) is not int:
         raise ValueError("Generated plan task values are invalid")
-    if not 0 <= xp_reward <= 2_147_483_647 or not 0 < estimated_minutes <= 2_147_483_647:
+    if (
+        not 0 <= xp_reward <= MAX_GENERATED_TASK_XP_REWARD
+        or not 0 < estimated_minutes <= MAX_GENERATED_TASK_MINUTES
+    ):
         raise ValueError("Generated plan task values are invalid")
 
     return {
@@ -395,7 +400,8 @@ def _call_openai_for_plan(
         "tasks deve conter 4 objetos com title, type, difficulty, xp_reward, estimated_minutes e description. "
         "Cada title deve ter até 200 caracteres e cada description até 2000 caracteres. "
         "Use somente os tipos review, exercises, practice ou project e as dificuldades easy, medium ou hard. "
-        "xp_reward e estimated_minutes devem ser números inteiros; XP deve ser maior ou igual a zero e minutos maior que zero."
+        f"xp_reward e estimated_minutes devem ser números inteiros; XP deve ficar entre 0 e {MAX_GENERATED_TASK_XP_REWARD} "
+        f"e minutos entre 1 e {MAX_GENERATED_TASK_MINUTES}."
     )
     user_prompt = json.dumps(
         {

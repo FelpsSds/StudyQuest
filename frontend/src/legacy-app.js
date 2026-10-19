@@ -199,19 +199,38 @@ const authTitle = document.querySelector('#auth-title');
 const authSubmit = document.querySelector('#auth-submit');
 const authToggle = document.querySelector('#auth-toggle');
 
-async function request(path, options = {}) {
+async function request(path, options = {}, timeoutMs = 30_000) {
+  const controller = new AbortController();
+  const timeoutSeconds = Math.ceil(timeoutMs / 1000);
+  const timeoutMessage = `A API demorou mais de ${timeoutSeconds} segundos para responder. Tente novamente.`;
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
   let response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...options,
+      signal: controller.signal,
       headers: { 'Content-Type': 'application/json', ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...(options.headers || {}) },
     });
-  } catch {
+  } catch (error) {
+    window.clearTimeout(timeoutId);
+    if (error?.name === 'AbortError') throw new Error(timeoutMessage);
     throw new Error('Não foi possível acessar a API. Confira se o backend está ativo e se a URL configurada está correta.');
   }
 
   const hasBody = response.status !== 204 && response.headers.get('content-length') !== '0';
-  const payload = hasBody ? await response.json().catch(() => ({})) : null;
+  let payload = null;
+  if (hasBody) {
+    try {
+      payload = await response.json();
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        window.clearTimeout(timeoutId);
+        throw new Error(timeoutMessage);
+      }
+      payload = {};
+    }
+  }
+  window.clearTimeout(timeoutId);
 
   if (response.status === 401 && state.token) {
     clearSession();
@@ -1049,7 +1068,7 @@ async function generateStudyPlan(event) {
         provider_api_key: providerApiKey || null,
         subject_id: subjectId ? Number(subjectId) : null,
       }),
-    });
+    }, 70_000);
 
     renderPlanReview(response);
   } catch (error) {

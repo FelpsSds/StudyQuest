@@ -60,6 +60,10 @@ GENERATION_FALLBACK_NOTES = {
 }
 
 
+def _extract_words(text: str) -> list[str]:
+    return re.findall(r"[^\W_]+", text, flags=re.UNICODE)
+
+
 def _extract_keywords(text: str, limit: int = 4) -> list[str]:
     heading_topics: list[str] = []
     heading_keys: set[str] = set()
@@ -70,7 +74,7 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
             continue
         heading = re.sub(r"\[([^\]]+)\]\([^)]+\)|https?://\S+", r"\1", match.group(1))
         heading = re.sub(r"[`*_~]", "", heading)
-        heading_tokens = re.sub(r"[^A-Za-zÀ-ÿ0-9\s]", " ", heading).split()
+        heading_tokens = _extract_words(heading)
         topic_tokens = []
         for raw_word in heading_tokens:
             word = raw_word.casefold()
@@ -88,8 +92,7 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
             heading_keys.add(topic_key)
             heading_words.update(_normalized_text_key(token) for token in topic_tokens)
 
-    normalized = re.sub(r"[^A-Za-zÀ-ÿ0-9\s]", " ", text)
-    words = [word.strip() for word in normalized.split() if word.strip()]
+    words = _extract_words(text)
     counts: dict[str, int] = {}
     first_positions: dict[str, int] = {}
     for position, raw_word in enumerate(words):

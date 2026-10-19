@@ -31,6 +31,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .plan-review-header { display: grid; gap: 8px; }
 .plan-review-list { display: grid; gap: 12px; }
 .plan-review-task { display: grid; gap: 10px; padding: 12px; border: 1px solid rgba(16, 24, 39, 0.12); border-radius: 10px; background: rgba(255, 255, 255, 0.65); }
+.plan-task-order-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.plan-task-order-actions .text-button { margin-top: 0; }
 .plan-review-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .plan-review-field { display: grid; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .plan-review-field input, .plan-review-field textarea, .plan-review-field select { width: 100%; margin: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--white); }

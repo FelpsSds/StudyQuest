@@ -70,6 +70,8 @@ body { min-width: 320px; }
 .plan-task-edit .compact-field { margin-bottom: 8px; font-size: 10px; }
 .plan-task-edit .compact-field input, .plan-task-edit .compact-field select, .plan-task-edit .compact-field textarea { font-size: 11px; }
 .plan-task-numbers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.plan-task-order-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.plan-task-order-actions .text-button { margin-top: 0; }
 .subject-entry { display: grid; gap: 8px; }
 .subject-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .subject-actions { display: flex; align-items: center; gap: 6px; }

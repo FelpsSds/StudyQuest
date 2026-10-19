@@ -698,6 +698,17 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     });
   }
 
+  function movePlanTask(index, direction) {
+    setPlanDraft((current) => {
+      if (!current) return current;
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= current.tasks.length) return current;
+      const tasks = [...current.tasks];
+      [tasks[index], tasks[targetIndex]] = [tasks[targetIndex], tasks[index]];
+      return { ...current, tasks };
+    });
+  }
+
   async function updateProfile(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -899,6 +910,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
                 <label className="compact-field">Dificuldade<select value={task.difficulty} disabled={busyKeys.has('plan')} onChange={(event) => updatePlanTask(index, 'difficulty', event.target.value)}><option value="easy">Fácil</option><option value="medium">Média</option><option value="hard">Difícil</option></select></label>
                 <div className="plan-task-numbers"><label className="compact-field">XP<input type="number" min="0" max="200" step="1" value={task.xp_reward} disabled={busyKeys.has('plan')} onChange={(event) => updatePlanTask(index, 'xp_reward', event.target.value)} /></label><label className="compact-field">Minutos<input type="number" min="1" max="240" step="1" value={task.estimated_minutes} disabled={busyKeys.has('plan')} onChange={(event) => updatePlanTask(index, 'estimated_minutes', event.target.value)} /></label></div>
                 <label className="compact-field">Descrição<textarea rows="2" maxLength="2000" value={task.description || ''} disabled={busyKeys.has('plan')} onChange={(event) => updatePlanTask(index, 'description', event.target.value)} /></label>
+                <div className="plan-task-order-actions"><button className="text-button" type="button" aria-label={`Mover ${task.title || 'missão'} para cima`} disabled={busyKeys.has('plan') || index === 0} onClick={() => movePlanTask(index, -1)}>↑ Subir</button><button className="text-button" type="button" aria-label={`Mover ${task.title || 'missão'} para baixo`} disabled={busyKeys.has('plan') || index === planDraft.tasks.length - 1} onClick={() => movePlanTask(index, 1)}>↓ Descer</button></div>
                 <button className="text-button" type="button" disabled={busyKeys.has('plan')} onClick={() => removePlanTask(index)}>Remover missão</button>
               </div>)}</div>
               <button className="text-button" type="button" onClick={addPlanTask} disabled={busyKeys.has('plan') || planDraft.tasks.length >= MAX_PLAN_REVIEW_TASKS}>Adicionar missão ({planDraft.tasks.length}/{MAX_PLAN_REVIEW_TASKS})</button>

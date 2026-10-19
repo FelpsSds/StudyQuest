@@ -918,6 +918,16 @@ async function createQuest(event) {
   } catch (error) { window.alert(error.message); }
 }
 
+function updatePlanTaskOrderControls(preview) {
+  const rows = Array.from(preview.querySelectorAll('.plan-review-task'));
+  rows.forEach((row, index) => {
+    const moveUpButton = row.querySelector('[data-move-plan-task="up"]');
+    const moveDownButton = row.querySelector('[data-move-plan-task="down"]');
+    if (moveUpButton) moveUpButton.disabled = index === 0;
+    if (moveDownButton) moveDownButton.disabled = index === rows.length - 1;
+  });
+}
+
 function renderPlanReview(response, saved = false, planInputs = null) {
   const preview = document.querySelector('#plan-preview');
   if (!preview || !response) return;
@@ -981,6 +991,7 @@ function renderPlanReview(response, saved = false, planInputs = null) {
           <label class="plan-review-field">Descrição
             <textarea data-plan-task-field="description" data-plan-task-index="${index}" maxlength="2000" rows="2">${escapeHtml(task.description || '')}</textarea>
           </label>
+          <div class="plan-task-order-actions"><button class="text-button" type="button" data-move-plan-task="up" ${index === 0 ? 'disabled' : ''}>↑ Subir</button><button class="text-button" type="button" data-move-plan-task="down" ${index === tasks.length - 1 ? 'disabled' : ''}>↓ Descer</button></div>
           <button class="text-button" type="button" data-remove-plan-task="${index}">Remover tarefa</button>
         </div>
       `).join('')}
@@ -989,6 +1000,12 @@ function renderPlanReview(response, saved = false, planInputs = null) {
       ? '<p role="status">Plano salvo com sucesso.</p>'
       : `<div class="quest-edit-actions"><button class="text-button" type="button" data-add-plan-task ${tasks.length >= MAX_PLAN_REVIEW_TASKS ? 'disabled' : ''}>Adicionar missão (${tasks.length}/${MAX_PLAN_REVIEW_TASKS})</button><button class="secondary-button review-submit" type="button">Salvar plano revisado</button></div>`}
   `;
+
+  if (saved) {
+    preview.querySelectorAll('input, select, textarea, button').forEach((control) => {
+      control.disabled = true;
+    });
+  }
 
   const addTaskButton = preview.querySelector('[data-add-plan-task]');
   if (addTaskButton) {
@@ -1039,6 +1056,21 @@ function renderPlanReview(response, saved = false, planInputs = null) {
         addButton.disabled = taskCount >= MAX_PLAN_REVIEW_TASKS;
         addButton.textContent = `Adicionar missão (${taskCount}/${MAX_PLAN_REVIEW_TASKS})`;
       }
+      updatePlanTaskOrderControls(preview);
+    });
+  });
+  preview.querySelectorAll('[data-move-plan-task]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const row = button.closest('.plan-review-task');
+      const rows = Array.from(preview.querySelectorAll('.plan-review-task'));
+      const index = rows.indexOf(row);
+      const offset = button.dataset.movePlanTask === 'up' ? -1 : 1;
+      const targetIndex = index + offset;
+      if (index < 0 || targetIndex < 0 || targetIndex >= rows.length) return;
+      const list = preview.querySelector('.plan-review-list');
+      if (offset < 0) list.insertBefore(row, rows[targetIndex]);
+      else list.insertBefore(rows[targetIndex], row);
+      updatePlanTaskOrderControls(preview);
     });
   });
 }

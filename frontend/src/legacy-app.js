@@ -882,6 +882,7 @@ function renderPlanReview(response, saved = false, planInputs = null) {
   const objectives = Array.isArray(response.learning_objectives) ? response.learning_objectives : [];
   state.generatedPlan = saved ? null : {
     title: planInputs?.title ?? response.generated_from ?? '',
+    plan_id: response.plan_id,
     content: planInputs?.content ?? document.querySelector('#plan-content').value.trim(),
     goal: planInputs?.goal ?? document.querySelector('#plan-goal').value.trim(),
     audience: planInputs?.audience ?? document.querySelector('#plan-audience').value.trim(),
@@ -1003,6 +1004,7 @@ async function saveReviewedPlan() {
   try {
     const payload = {
       title: state.generatedPlan.title,
+      plan_id: state.generatedPlan.plan_id,
       content: state.generatedPlan.content,
       goal: state.generatedPlan.goal,
       audience: state.generatedPlan.audience,

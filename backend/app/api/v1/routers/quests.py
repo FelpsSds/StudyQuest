@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
 from typing import Annotated
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -64,6 +66,7 @@ class StudyPlanGenerateRequest(BaseModel):
     goal: str | None = Field(default=None, max_length=300)
     audience: str | None = Field(default=None, max_length=200)
     learning_style: str | None = Field(default="objetivo", max_length=50)
+    plan_id: UUID | None = None
     provider_base_url: str | None = Field(default=None, max_length=500)
     provider_model: str | None = Field(default=None, max_length=200)
     provider_api_key: str | None = Field(default=None, max_length=500)
@@ -134,6 +137,50 @@ def _ensure_subject_for_plan(
     return subject
 
 
+def _serialize_saved_study_plan(
+    db: Session,
+    boss_fight: BossFight,
+    learning_objectives: list[str],
+    generated_from: str,
+) -> dict:
+    subject = db.query(Subject).filter(Subject.id == boss_fight.subject_id).first()
+    quests = (
+        db.query(Quest)
+        .filter(Quest.boss_fight_id == boss_fight.id)
+        .order_by(Quest.id.asc())
+        .all()
+    )
+    return {
+        "subject": {"id": subject.id, "name": subject.name, "user_id": subject.user_id},
+        "quests": [
+            {
+                "id": quest.id,
+                "title": quest.title,
+                "type": quest.type.value,
+                "difficulty": quest.difficulty.value,
+                "xp_reward": quest.xp_reward,
+                "estimated_minutes": quest.estimated_minutes,
+                "status": quest.status.value,
+                "subject_id": quest.subject_id,
+                "boss_fight_id": quest.boss_fight_id,
+            }
+            for quest in quests
+        ],
+        "boss_fight": {
+            "id": boss_fight.id,
+            "title": boss_fight.title,
+            "subject_id": boss_fight.subject_id,
+            "hp_max": boss_fight.hp_max,
+            "hp_current": boss_fight.hp_current,
+            "xp_reward": boss_fight.xp_reward,
+            "status": boss_fight.status,
+        },
+        "learning_objectives": learning_objectives,
+        "generated_from": generated_from,
+        "plan_id": boss_fight.plan_id,
+    }
+
+
 def _validate_boss_link(
     db: Session,
     boss_fight_id: int,
@@ -168,6 +215,25 @@ def generate_study_plan(
     content = (payload.content or "").strip()
     if not title:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Title cannot be blank")
+
+    current_user_id = current_user.id
+    plan_id = str(payload.plan_id) if payload.plan_id else None
+    if not payload.preview_only and payload.tasks is not None and plan_id:
+        existing_plan = (
+            db.query(BossFight)
+            .filter(BossFight.user_id == current_user_id, BossFight.plan_id == plan_id)
+            .first()
+        )
+        if existing_plan:
+            return _serialize_saved_study_plan(
+                db,
+                existing_plan,
+                payload.learning_objectives or [],
+                title,
+            )
+
+    if payload.preview_only and plan_id is None:
+        plan_id = str(uuid4())
 
     subject = _get_subject_for_plan(db, current_user, payload.subject_id)
     subject_preview = {
@@ -247,6 +313,7 @@ def generate_study_plan(
             "generated_from": title,
             "generation_source": generation_source,
             "generation_note": generation_note,
+            "plan_id": plan_id,
         }
 
     subject = _ensure_subject_for_plan(db, current_user, title, payload.subject_id)
@@ -256,7 +323,7 @@ def generate_study_plan(
         quest_type = item["type"] if not isinstance(item["type"], str) else QuestType(item["type"])
         quest_difficulty = item["difficulty"] if not isinstance(item["difficulty"], str) else QuestDifficulty(item["difficulty"])
         quest = Quest(
-            user_id=current_user.id,
+            user_id=current_user_id,
             subject_id=subject.id,
             title=item["title"],
             description=item.get("description") or f"Plano gerado a partir de: {title}",
@@ -271,54 +338,41 @@ def generate_study_plan(
         created_quests.append(quest)
 
     boss_fight = BossFight(
-        user_id=current_user.id,
+        user_id=current_user_id,
         subject_id=subject.id,
         title=f"Boss: {subject.name}",
         hp_max=PLAN_BOSS_TARGET_HP,
         hp_current=PLAN_BOSS_TARGET_HP,
         xp_reward=200,
         status="active",
+        plan_id=plan_id,
     )
     db.add(boss_fight)
     db.flush()
     for quest in created_quests:
         quest.boss_fight_id = boss_fight.id
 
-    db.commit()
-    db.refresh(subject)
-    quest_payload = []
-    for quest in created_quests:
-        db.refresh(quest)
-        quest_payload.append(
-            {
-                "id": quest.id,
-                "title": quest.title,
-                "type": quest.type.value,
-                "difficulty": quest.difficulty.value,
-                "xp_reward": quest.xp_reward,
-                "estimated_minutes": quest.estimated_minutes,
-                "status": quest.status.value,
-                "subject_id": quest.subject_id,
-                "boss_fight_id": quest.boss_fight_id,
-            }
-        )
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if plan_id:
+            existing_plan = (
+                db.query(BossFight)
+                .filter(BossFight.user_id == current_user_id, BossFight.plan_id == plan_id)
+                .first()
+            )
+            if existing_plan:
+                return _serialize_saved_study_plan(
+                    db,
+                    existing_plan,
+                    learning_objectives,
+                    title,
+                )
+        raise
 
     db.refresh(boss_fight)
-    return {
-        "subject": {"id": subject.id, "name": subject.name, "user_id": subject.user_id},
-        "quests": quest_payload,
-        "boss_fight": {
-            "id": boss_fight.id,
-            "title": boss_fight.title,
-            "subject_id": boss_fight.subject_id,
-            "hp_max": boss_fight.hp_max,
-            "hp_current": boss_fight.hp_current,
-            "xp_reward": boss_fight.xp_reward,
-            "status": boss_fight.status,
-        },
-        "learning_objectives": learning_objectives,
-        "generated_from": title,
-    }
+    return _serialize_saved_study_plan(db, boss_fight, learning_objectives, title)
 
 
 @router.get("/{quest_id}", response_model=QuestRead)

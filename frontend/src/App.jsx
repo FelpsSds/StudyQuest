@@ -590,6 +590,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       await request('/quests/generate-plan', jsonRequest('POST', {
         ...planPayload,
         preview_only: false,
+        plan_id: planDraft.plan_id,
         learning_objectives: planDraft.learning_objectives,
         tasks,
       }));

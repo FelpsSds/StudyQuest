@@ -82,7 +82,7 @@ def _build_learning_objectives(
     audience: str | None = None,
     learning_style: str | None = None,
 ) -> list[str]:
-    focus_keywords = _extract_keywords(f"{title} {content} {goal or ''}", limit=4)
+    focus_keywords = _extract_keywords(f"{content} {title} {goal or ''}", limit=4)
     audience_label = (audience or "estudantes").strip() or "estudantes"
     goal_phrase = (goal or f"aprender os conceitos principais de {title}").strip() or f"aprender os conceitos principais de {title}"
     style = _normalize_style(learning_style)
@@ -129,7 +129,7 @@ def build_plan_tasks(
     audience: str | None = None,
     learning_style: str | None = None,
 ) -> list[dict[str, Any]]:
-    focus_keywords = _extract_keywords(f"{title} {content} {goal or ''}", limit=6)
+    focus_keywords = _extract_keywords(f"{content} {title} {goal or ''}", limit=6)
     while len(focus_keywords) < 4:
         focus_keywords.append("estudo")
 

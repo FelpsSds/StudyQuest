@@ -573,6 +573,10 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       onError('Revise os valores de XP e duração: XP deve ser zero ou maior e os minutos devem ser pelo menos 1.');
       return;
     }
+    if (tasks.some((task) => task.xp_reward > 2_147_483_647 || task.estimated_minutes > 2_147_483_647)) {
+      onError('XP e minutos não podem ultrapassar 2.147.483.647.');
+      return;
+    }
     await run('plan', async () => {
       const { provider_api_key: _providerApiKey, ...planPayload } = planDraft.payload;
       await request('/quests/generate-plan', jsonRequest('POST', {

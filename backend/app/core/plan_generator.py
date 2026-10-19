@@ -94,7 +94,7 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
             word = raw_word.casefold()
             topic_label = SHORT_TOPIC_LABELS.get(word)
             is_canonical_short_topic = topic_label is not None and (
-                raw_word.isupper() or raw_word == topic_label
+                raw_word.isupper() or raw_word == topic_label or len(word) == 3
             )
             if (len(word) <= 3 and not is_canonical_short_topic) or word in STOP_WORDS:
                 continue
@@ -114,7 +114,7 @@ def _extract_keywords(text: str, limit: int = 4) -> list[str]:
         word = word[:MAX_PLAN_KEYWORD_LENGTH]
         topic_label = SHORT_TOPIC_LABELS.get(word)
         is_canonical_short_topic = topic_label is not None and (
-            raw_word.isupper() or raw_word == topic_label
+            raw_word.isupper() or raw_word == topic_label or len(word) == 3
         )
         if (len(word) <= 3 and not is_canonical_short_topic) or word in STOP_WORDS:
             continue

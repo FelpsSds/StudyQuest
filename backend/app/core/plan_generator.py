@@ -28,6 +28,9 @@ GENERATION_FALLBACK_NOTES = {
     "missing_api_key": "Configure a chave da OpenAI no backend ou escolha um provedor personalizado; o plano foi gerado localmente.",
     "provider_response_invalid": "O provedor de IA retornou uma resposta inválida; o plano foi gerado localmente.",
     "provider_unavailable": "Não foi possível acessar o provedor de IA; o plano foi gerado localmente.",
+    "provider_auth_error": "O provedor recusou a chave de acesso; confira a chave e tente novamente. O plano foi gerado localmente.",
+    "provider_configuration_error": "O provedor rejeitou o endpoint ou o modelo configurado; revise essas opções. O plano foi gerado localmente.",
+    "provider_rate_limited": "O provedor limitou as solicitações; aguarde e tente novamente. O plano foi gerado localmente.",
     "invalid_ai_output": "A resposta da IA não seguiu os limites esperados; o plano foi gerado localmente.",
 }
 
@@ -450,6 +453,20 @@ def _call_openai_for_plan(
             return parsed
         logger.warning("AI study plan response was not a JSON object; using the built-in plan")
         return {"_fallback_reason": "provider_response_invalid"}
+    except httpx.HTTPStatusError as error:
+        if error.response.status_code in (401, 403):
+            fallback_reason = "provider_auth_error"
+        elif error.response.status_code in (400, 404, 422):
+            fallback_reason = "provider_configuration_error"
+        elif error.response.status_code == 429:
+            fallback_reason = "provider_rate_limited"
+        else:
+            fallback_reason = "provider_unavailable"
+        logger.warning(
+            "AI study plan provider returned HTTP %s; using the built-in plan",
+            error.response.status_code,
+        )
+        return {"_fallback_reason": fallback_reason}
     except (httpx.HTTPError, ValueError, KeyError, TypeError):
         logger.warning("AI study plan request failed; using the built-in plan", exc_info=True)
         return {"_fallback_reason": "provider_unavailable"}

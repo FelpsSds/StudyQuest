@@ -349,7 +349,7 @@ def _normalize_plan_task(item: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw_title, str):
         raise ValueError("Generated plan task title is invalid")
     title = raw_title.strip()
-    if not title or len(title) > 200:
+    if not title or len(title) > 200 or not _normalized_text_key(title):
         raise ValueError("Generated plan task title is invalid")
     raw_description = item.get("description", "")
     if raw_description is not None and not isinstance(raw_description, str):
@@ -591,6 +591,7 @@ def generate_plan_spec(
             and all(
                 isinstance(item, str)
                 and 0 < len(item.strip()) <= MAX_LEARNING_OBJECTIVE_LENGTH
+                and bool(_normalized_text_key(item.strip()))
                 for item in learning_objectives
             )
         )

@@ -81,6 +81,7 @@
               <label class="compact-field">Endpoint IA (opcional para OpenAI)<input id="plan-provider-base-url" type="url" placeholder="Ex.: http://localhost:11434/v1" /></label>
               <label class="compact-field">Modelo IA (opcional)<input id="plan-provider-model" type="text" placeholder="Ex.: llama3.1" /></label>
               <label id="plan-provider-key-field" class="compact-field" hidden>Chave da API<input id="plan-provider-api-key" type="password" maxlength="500" autocomplete="new-password" /></label>
+              <p class="provider-help">Configure AI_GENERATION_ENABLED=true no backend para usar IA. O endpoint deve estar acessivel pelo backend; no Docker Desktop, use host.docker.internal. Se a IA estiver desativada ou indisponivel, o plano sera gerado localmente.</p>
               <label class="compact-field">Disciplina<select id="plan-subject"><option value="">Criar nova disciplina</option></select></label>
               <button class="secondary-button" type="submit">Gerar plano <span aria-hidden="true">&#8594;</span></button>
               <div id="plan-preview" class="small-empty">Ainda não há plano gerado.</div>

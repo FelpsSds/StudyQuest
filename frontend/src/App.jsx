@@ -784,6 +784,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
               <p className="provider-help">Habilite <code>AI_GENERATION_ENABLED=true</code> no backend. O endpoint precisa estar acessível a partir do backend; no Docker Desktop, use <code>host.docker.internal</code> para acessar um provedor rodando no computador.</p>
             </>}
             <button className="secondary-button" type="submit" disabled={busyKeys.has('plan')}>{busyKeys.has('plan') ? 'Gerando…' : 'Gerar prévia'} <span aria-hidden="true">→</span></button>
+            {planProvider === 'server' && <p className="provider-help">Configure <code>AI_GENERATION_ENABLED=true</code> no backend para usar IA. Se ela estiver desativada ou indisponível, o plano será gerado localmente.</p>}
             {planDraft && <div className="plan-preview" aria-live="polite">
               <h3>{planDraft.generated_from}</h3>
               <p className="provider-help" role="status">{planDraft.generation_source === 'ai' ? 'Plano gerado por IA.' : 'Plano gerado localmente; a IA está desativada, indisponível ou retornou uma resposta inválida.'}</p>

@@ -896,7 +896,7 @@ function renderPlanReview(response, saved = false, planInputs = null) {
   preview.innerHTML = `
     <div class="plan-review-header">
       <strong>${escapeHtml(response.subject?.name || 'Plano gerado')}</strong>
-      ${!saved ? `<small>${response.generation_source === 'ai' ? 'Plano gerado por IA.' : 'Plano gerado localmente; a IA está desativada, indisponível ou retornou uma resposta inválida.'}</small>` : ''}
+      ${!saved ? `<small>${response.generation_source === 'ai' ? 'Plano gerado por IA.' : escapeHtml(response.generation_note || 'Plano gerado localmente; confira as configurações do provedor de IA.')}</small>` : ''}
       <small>${objectives.length ? objectives.map((item) => escapeHtml(item)).join(' • ') : 'Plano pronto para revisão.'}</small>
     </div>
     <div class="plan-review-list">

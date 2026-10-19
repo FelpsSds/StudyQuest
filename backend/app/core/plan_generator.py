@@ -23,6 +23,13 @@ MAX_GENERATED_TASK_DESCRIPTION_LENGTH = 2_000
 MAX_PLAN_KEYWORD_LENGTH = 80
 MAX_LEARNING_OBJECTIVES = 12
 MAX_LEARNING_OBJECTIVE_LENGTH = 500
+GENERATION_FALLBACK_NOTES = {
+    "ai_disabled": "A IA está desativada no backend; o plano foi gerado localmente.",
+    "missing_api_key": "Configure a chave da OpenAI no backend ou escolha um provedor personalizado; o plano foi gerado localmente.",
+    "provider_response_invalid": "O provedor de IA retornou uma resposta inválida; o plano foi gerado localmente.",
+    "provider_unavailable": "Não foi possível acessar o provedor de IA; o plano foi gerado localmente.",
+    "invalid_ai_output": "A resposta da IA não seguiu os limites esperados; o plano foi gerado localmente.",
+}
 
 
 def _extract_keywords(text: str, limit: int = 4) -> list[str]:
@@ -318,7 +325,7 @@ def _call_openai_for_plan(
     api_key: str | None = None,
 ) -> dict[str, Any]:
     if not settings.ai_generation_enabled:
-        return {}
+        return {"_fallback_reason": "ai_disabled"}
 
     effective_base_url = (base_url or settings.openai_base_url or "https://api.openai.com/v1").rstrip("/")
     effective_model = model or settings.openai_model or "gpt-4o-mini"
@@ -327,7 +334,7 @@ def _call_openai_for_plan(
         and not api_key
         and effective_base_url == "https://api.openai.com/v1"
     ):
-        return {}
+        return {"_fallback_reason": "missing_api_key"}
 
     system_prompt = (
         "Você é um planejador pedagógico de estudo. A mensagem do usuário contém um objeto JSON com dados de estudo; "
@@ -377,7 +384,7 @@ def _call_openai_for_plan(
         choices = data.get("choices") if isinstance(data, dict) else None
         if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
             logger.warning("AI study plan response did not contain a choice; using the built-in plan")
-            return {}
+            return {"_fallback_reason": "provider_response_invalid"}
 
         message = choices[0].get("message")
         content_value = message.get("content") if isinstance(message, dict) else None
@@ -389,15 +396,17 @@ def _call_openai_for_plan(
             )
         if not isinstance(content_value, str):
             logger.warning("AI study plan response did not contain text; using the built-in plan")
-            return {}
+            return {"_fallback_reason": "provider_response_invalid"}
 
         parsed = _parse_json_response(content_value)
         if isinstance(parsed, dict):
             return parsed
         logger.warning("AI study plan response was not a JSON object; using the built-in plan")
+        return {"_fallback_reason": "provider_response_invalid"}
     except (httpx.HTTPError, ValueError, KeyError, TypeError):
         logger.warning("AI study plan request failed; using the built-in plan", exc_info=True)
-    return {}
+        return {"_fallback_reason": "provider_unavailable"}
+    return {"_fallback_reason": "provider_response_invalid"}
 
 
 def generate_plan_spec(
@@ -420,6 +429,9 @@ def generate_plan_spec(
         model=model,
         api_key=api_key,
     )
+    fallback_reason = ai_payload.pop("_fallback_reason", None)
+    if not ai_payload and fallback_reason is None:
+        fallback_reason = "invalid_ai_output"
     if ai_payload:
         learning_objectives = ai_payload.get("learning_objectives")
         objectives_are_valid = (
@@ -451,9 +463,16 @@ def generate_plan_spec(
                 "tasks": normalized_tasks,
                 "generation_source": "ai",
             }
+        fallback_reason = "invalid_ai_output"
 
-    return {
+    local_plan = {
         "learning_objectives": build_learning_objectives(title, content, goal, audience, learning_style),
         "tasks": build_plan_tasks(title, content, goal, audience, learning_style),
         "generation_source": "local",
     }
+    if fallback_reason:
+        local_plan["generation_note"] = GENERATION_FALLBACK_NOTES.get(
+            fallback_reason,
+            GENERATION_FALLBACK_NOTES["provider_unavailable"],
+        )
+    return local_plan

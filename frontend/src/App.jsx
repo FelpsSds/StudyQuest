@@ -812,7 +812,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             {planProvider === 'server' && <p className="provider-help">Configure <code>AI_GENERATION_ENABLED=true</code> no backend para usar IA. Se ela estiver desativada ou indisponível, o plano será gerado localmente.</p>}
             {planDraft && <div className="plan-preview" aria-live="polite">
               <h3>{planDraft.generated_from}</h3>
-              <p className="provider-help" role="status">{planDraft.generation_source === 'ai' ? 'Plano gerado por IA.' : 'Plano gerado localmente; a IA está desativada, indisponível ou retornou uma resposta inválida.'}</p>
+              <p className="provider-help" role="status">{planDraft.generation_source === 'ai' ? 'Plano gerado por IA.' : planDraft.generation_note || 'Plano gerado localmente; confira as configurações do provedor de IA.'}</p>
               <p className="plan-subject">Disciplina: {planDraft.subject?.name}</p>
               <strong>Objetivos de aprendizagem</strong>
               <ul>{planDraft.learning_objectives.map((objective, index) => <li key={index}>{objective}</li>)}</ul>

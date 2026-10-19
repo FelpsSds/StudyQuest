@@ -184,6 +184,7 @@ def generate_study_plan(
     provider_base_url = (payload.provider_base_url or "").strip() or None
     provider_model = (payload.provider_model or "").strip() or None
     provider_api_key = (payload.provider_api_key or "").strip() or None
+    generation_note = None
 
     # Release the auth and subject read transaction before waiting on an external provider.
     db.commit()
@@ -226,6 +227,7 @@ def generate_study_plan(
         plan_items = plan_spec["tasks"]
         learning_objectives = plan_spec["learning_objectives"]
         generation_source = plan_spec["generation_source"]
+        generation_note = plan_spec.get("generation_note")
 
     if payload.preview_only:
         return {
@@ -244,6 +246,7 @@ def generate_study_plan(
             "learning_objectives": learning_objectives,
             "generated_from": title,
             "generation_source": generation_source,
+            "generation_note": generation_note,
         }
 
     subject = _ensure_subject_for_plan(db, current_user, title, payload.subject_id)

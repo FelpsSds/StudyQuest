@@ -65,8 +65,9 @@ function readPlanProviderSettings() {
       || localStorage.getItem(LEGACY_PLAN_PROVIDER_SETTINGS_KEY)
       || '{}';
     const saved = JSON.parse(serializedSettings) || {};
+    const provider = saved.provider === 'openai' ? 'custom' : saved.provider;
     return {
-      provider: ['server', 'ollama', 'ollama-docker', 'custom'].includes(saved.provider) ? saved.provider : 'server',
+      provider: ['server', 'ollama', 'ollama-docker', 'custom'].includes(provider) ? provider : 'server',
       baseUrl: typeof saved.baseUrl === 'string' ? saved.baseUrl : '',
       model: typeof saved.model === 'string' ? saved.model : '',
     };

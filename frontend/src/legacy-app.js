@@ -1096,8 +1096,8 @@ async function saveReviewedPlan() {
     return;
   }
 
-  const saveButton = preview.querySelector('.review-submit');
-  if (saveButton) saveButton.disabled = true;
+  const reviewControls = Array.from(preview.querySelectorAll('input, select, textarea, button'));
+  reviewControls.forEach((control) => { control.disabled = true; });
   try {
     const payload = {
       title: state.generatedPlan.title,
@@ -1124,7 +1124,7 @@ async function saveReviewedPlan() {
     document.querySelector('#plan-style').value = 'objetivo';
     await showDashboard();
   } catch (error) {
-    if (saveButton) saveButton.disabled = false;
+    reviewControls.forEach((control) => { control.disabled = false; });
     window.alert(error.message);
   }
 }

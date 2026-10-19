@@ -169,6 +169,8 @@ def generate_study_plan(
     if not title:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Title cannot be blank")
 
+    subject = _get_subject_for_plan(db, current_user, payload.subject_id)
+
     if not content:
         content = title
 
@@ -219,7 +221,6 @@ def generate_study_plan(
         generation_source = plan_spec["generation_source"]
 
     if payload.preview_only:
-        subject = _get_subject_for_plan(db, current_user, payload.subject_id)
         return {
             "subject": {
                 "id": subject.id if subject else None,

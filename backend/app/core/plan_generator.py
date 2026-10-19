@@ -95,6 +95,14 @@ def _build_learning_objectives(
             f"Validar a compreensão do tema com revisão rápida e autocorreção.",
         ]
 
+    if style == "leve":
+        return [
+            f"Compreender um conceito essencial de {focus_keywords[0]} por vez.",
+            f"Praticar {focus_keywords[1] if len(focus_keywords) > 1 else focus_keywords[0]} em atividades curtas.",
+            f"Explicar uma ideia principal de {title} com as próprias palavras.",
+            f"Revisar o que foi aprendido em {title} sem sobrecarregar a rotina.",
+        ]
+
     if style == "intensivo":
         return [
             f"Dominar os fundamentos de {title} com revisão estruturada para {audience_label}.",
@@ -167,6 +175,41 @@ def build_plan_tasks(
                 "xp_reward": 75,
                 "estimated_minutes": 40,
                 "description": "Confrontar o conhecimento em uma situação mais complexa e verificar a retenção.",
+            },
+        ]
+    elif style == "leve":
+        tasks = [
+            {
+                "title": f"Conhecer um fundamento de {focus_keywords[0]}",
+                "type": QuestType.STUDY,
+                "difficulty": QuestDifficulty.EASY,
+                "xp_reward": 25,
+                "estimated_minutes": 15,
+                "description": f"Estude um conceito por vez e anote uma dúvida sobre {title}.",
+            },
+            {
+                "title": f"Explicar {focus_keywords[1]} com suas palavras",
+                "type": QuestType.PRACTICE,
+                "difficulty": QuestDifficulty.EASY,
+                "xp_reward": 25,
+                "estimated_minutes": 15,
+                "description": "Faça uma explicação curta, sem consultar o material durante a tentativa.",
+            },
+            {
+                "title": f"Resolver exercícios introdutórios de {focus_keywords[2]}",
+                "type": QuestType.EXERCISES,
+                "difficulty": QuestDifficulty.EASY,
+                "xp_reward": 35,
+                "estimated_minutes": 20,
+                "description": "Resolva poucos exercícios e confira cada resposta com calma.",
+            },
+            {
+                "title": f"Fazer uma revisão breve de {focus_keywords[3]}",
+                "type": QuestType.REVIEW,
+                "difficulty": QuestDifficulty.EASY,
+                "xp_reward": 25,
+                "estimated_minutes": 15,
+                "description": "Retome os pontos principais e escolha um tópico para estudar depois.",
             },
         ]
     elif style == "intensivo":
@@ -342,8 +385,8 @@ def _call_openai_for_plan(
         "Retorne somente um objeto JSON válido, sem Markdown, com as chaves learning_objectives e tasks. "
         "Baseie os objetivos e as tarefas no conteúdo e na meta informados; evite tarefas genéricas que não ajudem "
         "a estudar esses tópicos. Adapte as tarefas ao learning_style: objetivo equilibra explicação, prática e revisão; "
-        "prática prioriza exercícios, aplicação e explicação com as próprias palavras; intensivo usa uma progressão "
-        "mais exigente, com revisão concentrada e desafios avançados. "
+        "prática prioriza exercícios, aplicação e explicação com as próprias palavras; leve usa tarefas curtas, "
+        "fáceis e sem sobrecarga; intensivo usa uma progressão mais exigente, com revisão concentrada e desafios avançados. "
         "learning_objectives deve conter 4 strings curtas. "
         "tasks deve conter 4 objetos com title, type, difficulty, xp_reward, estimated_minutes e description. "
         "Cada title deve ter até 200 caracteres e cada description até 2000 caracteres. "

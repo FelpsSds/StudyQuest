@@ -792,7 +792,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             {planMaterialError && <p className="error-message plan-file-error" role="alert">{planMaterialError}</p>}
             <label className="compact-field">Objetivo<input name="goal" maxLength="300" placeholder="Ex.: resolver sistemas de equações" /></label>
             <label className="compact-field">Público<input name="audience" maxLength="200" placeholder="Ex.: iniciante" /></label>
-            <label className="compact-field">Estilo<select name="learning_style"><option value="objetivo">Objetivo</option><option value="prática">Prático</option><option value="intensivo">Intensivo</option></select></label>
+            <label className="compact-field">Estilo<select name="learning_style"><option value="objetivo">Objetivo</option><option value="prática">Prático</option><option value="leve">Leve</option><option value="intensivo">Intensivo</option></select></label>
             <label className="compact-field">Disciplina<select name="subject_id" defaultValue=""><option value="">Criar nova disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
             <label className="compact-field">Provedor de IA<select value={planProvider} onChange={(event) => {
               const provider = event.target.value;

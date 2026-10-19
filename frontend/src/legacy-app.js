@@ -1203,7 +1203,6 @@ async function generateStudyPlan(event) {
   const providerModel = document.querySelector('#plan-provider-model').value.trim();
   const providerApiKey = document.querySelector('#plan-provider-api-key').value.trim();
   const subjectId = document.querySelector('#plan-subject').value;
-  const preview = document.querySelector('#plan-preview');
 
   if (!title) {
     window.alert('Informe um tema para gerar o plano de estudo.');
@@ -1220,8 +1219,6 @@ async function generateStudyPlan(event) {
     submitButton.disabled = true;
     submitButton.textContent = 'Gerando prévia...';
   }
-  preview.textContent = 'Gerando plano...';
-
   try {
     const response = await request('/quests/generate-plan', {
       method: 'POST',
@@ -1248,7 +1245,6 @@ async function generateStudyPlan(event) {
       subject_id: subjectId ? Number(subjectId) : null,
     });
   } catch (error) {
-    preview.textContent = error.message;
     window.alert(error.message);
   } finally {
     if (submitButton) {

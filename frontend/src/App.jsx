@@ -558,7 +558,9 @@ function Dashboard({ data, refresh, onLogout, onError }) {
         preview_only: true,
       };
       const preview = await request('/quests/generate-plan', jsonRequest('POST', payload), 70_000);
-      setPlanDraft({ ...preview, payload });
+      const { provider_api_key: _providerApiKey, ...draftPayload } = payload;
+      setPlanDraft({ ...preview, payload: draftPayload });
+      setPlanProviderApiKey('');
     });
   }
 
@@ -619,9 +621,8 @@ function Dashboard({ data, refresh, onLogout, onError }) {
       return;
     }
     await run('plan', async () => {
-      const { provider_api_key: _providerApiKey, ...planPayload } = planDraft.payload;
       await request('/quests/generate-plan', jsonRequest('POST', {
-        ...planPayload,
+        ...planDraft.payload,
         preview_only: false,
         plan_id: planDraft.plan_id,
         learning_objectives: planDraft.learning_objectives,

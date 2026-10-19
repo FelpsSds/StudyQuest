@@ -24,6 +24,14 @@ STOP_WORDS = {
     "estudar", "estude", "compreender", "compreenda", "entender", "entenda", "conceito",
     "conceitos", "fundamento", "fundamentos", "principal", "principais",
 }
+SHORT_TOPIC_LABELS = {
+    "c": "C", "r": "R", "go": "Go", "sql": "SQL", "api": "API", "ia": "IA", "ai": "AI",
+    "ux": "UX", "ui": "UI", "oop": "OOP", "tcp": "TCP", "ip": "IP", "cpu": "CPU",
+    "gpu": "GPU", "ram": "RAM", "xml": "XML", "php": "PHP", "js": "JS", "ts": "TS",
+    "ml": "ML", "dl": "DL", "git": "Git", "aws": "AWS", "ios": "iOS", "eua": "EUA",
+    "onu": "ONU", "oms": "OMS", "dna": "DNA", "rna": "RNA", "hiv": "HIV", "3d": "3D",
+    "2d": "2D",
+}
 MAX_GENERATED_PLAN_TASKS = 20
 MAX_GENERATED_TASK_DESCRIPTION_LENGTH = 2_000
 MAX_GENERATED_TASK_XP_REWARD = 200
@@ -45,20 +53,23 @@ GENERATION_FALLBACK_NOTES = {
 
 
 def _extract_keywords(text: str, limit: int = 4) -> list[str]:
-    normalized = re.sub(r"[^A-Za-zÀ-ÿ0-9\s]", " ", text.lower())
+    normalized = re.sub(r"[^A-Za-zÀ-ÿ0-9\s]", " ", text)
     words = [word.strip() for word in normalized.split() if word.strip()]
     counts: dict[str, int] = {}
     first_positions: dict[str, int] = {}
-    for position, word in enumerate(words):
+    for position, raw_word in enumerate(words):
+        word = raw_word.casefold()
         word = word[:MAX_PLAN_KEYWORD_LENGTH]
-        if len(word) <= 3 or word in STOP_WORDS:
+        is_uppercase_topic = raw_word.isupper() and word in SHORT_TOPIC_LABELS
+        if (len(word) <= 3 and not is_uppercase_topic) or word in STOP_WORDS:
             continue
         if word not in counts:
             first_positions[word] = position
             counts[word] = 0
         counts[word] += 1
     ranked = sorted(counts, key=lambda word: (-counts[word], first_positions[word]))
-    return ranked[:limit] or ["estudo", "prática", "revisão", "aplicação"]
+    topics = [SHORT_TOPIC_LABELS.get(word, word) for word in ranked[:limit]]
+    return topics or ["estudo", "prática", "revisão", "aplicação"]
 
 
 def _normalize_style(style: str | None) -> str:

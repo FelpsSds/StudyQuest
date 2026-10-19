@@ -37,6 +37,10 @@ function persistedProviderUrl(value) {
         || normalizedKey.includes('credential')
         || normalizedKey.includes('auth')
         || normalizedKey === 'code'
+        || normalizedKey === 'sig'
+        || normalizedKey.includes('jwt')
+        || normalizedKey.includes('assertion')
+        || normalizedKey.includes('bearer')
         || normalizedKey.includes('password')
         || normalizedKey.includes('passwd')
       ) {

@@ -15,10 +15,14 @@ const EMPTY_DATA = {
 };
 
 const PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_plan_provider_settings';
+const LEGACY_PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_legacy_plan_provider_settings';
 
 function readPlanProviderSettings() {
   try {
-    const saved = JSON.parse(localStorage.getItem(PLAN_PROVIDER_SETTINGS_KEY) || '{}') || {};
+    const serializedSettings = localStorage.getItem(PLAN_PROVIDER_SETTINGS_KEY)
+      || localStorage.getItem(LEGACY_PLAN_PROVIDER_SETTINGS_KEY)
+      || '{}';
+    const saved = JSON.parse(serializedSettings) || {};
     return {
       provider: ['server', 'ollama', 'ollama-docker', 'custom'].includes(saved.provider) ? saved.provider : 'server',
       baseUrl: typeof saved.baseUrl === 'string' ? saved.baseUrl : '',

@@ -1630,11 +1630,13 @@ function applyAiProviderPreset(type = 'openai') {
 function syncPlanProviderKeyVisibility() {
   const providerType = document.querySelector('#plan-provider-type');
   const keyField = document.querySelector('#plan-provider-key-field');
+  const keyHelp = document.querySelector('#plan-provider-key-help');
   const apiKey = document.querySelector('#plan-provider-api-key');
   const baseUrl = document.querySelector('#plan-provider-base-url');
   if (!providerType || !keyField || !apiKey || !baseUrl) return;
 
   keyField.hidden = providerType.value !== 'custom';
+  if (keyHelp) keyHelp.hidden = providerType.value !== 'custom';
   baseUrl.required = !['openai', 'server'].includes(providerType.value);
   if (keyField.hidden) apiKey.value = '';
 }

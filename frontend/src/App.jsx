@@ -805,7 +805,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
               <label className="compact-field">Endpoint compatível com OpenAI<input name="provider_base_url" type="url" maxLength="500" value={planProviderUrl} onChange={(event) => setPlanProviderUrl(event.target.value)} placeholder="Ex.: http://localhost:11434/v1" required={planProvider !== 'server'} /></label>
               <label className="compact-field">Modelo<input name="provider_model" maxLength="200" value={planProviderModel} onChange={(event) => setPlanProviderModel(event.target.value)} placeholder="Ex.: llama3.1" /></label>
               {planProvider === 'custom' && <label className="compact-field">Chave do provedor<input name="provider_api_key" type="password" autoComplete="new-password" value={planProviderApiKey} onChange={(event) => setPlanProviderApiKey(event.target.value)} maxLength="500" /></label>}
-              {planProvider === 'custom' && <p className="provider-help">A chave é usada para gerar a prévia e não é incluída nas missões salvas.</p>}
+              {planProvider === 'custom' && <p className="provider-help">A chave é usada apenas para gerar a prévia; ela não fica salva no navegador nem é incluída nas missões. Informe novamente depois de recarregar a página.</p>}
               <p className="provider-help">Habilite <code>AI_GENERATION_ENABLED=true</code> no backend. O endpoint precisa estar acessível a partir do backend; no Docker Desktop, use <code>host.docker.internal</code> para acessar um provedor rodando no computador.</p>
             </>}
             <button className="secondary-button" type="submit" disabled={busyKeys.has('plan')}>{busyKeys.has('plan') ? 'Gerando…' : 'Gerar prévia'} <span aria-hidden="true">→</span></button>

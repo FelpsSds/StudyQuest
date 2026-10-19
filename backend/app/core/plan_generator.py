@@ -327,6 +327,20 @@ def _normalize_ai_integer(value: Any) -> int:
     raise ValueError("Generated plan task values are invalid")
 
 
+def _normalized_text_key(value: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", value.casefold())
+    return "".join(
+        character
+        for character in decomposed
+        if not unicodedata.combining(character) and character.isalnum()
+    )
+
+
+def _has_unique_texts(values: list[str]) -> bool:
+    keys = [_normalized_text_key(value) for value in values]
+    return len(keys) == len(set(keys))
+
+
 def _normalize_plan_task(item: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(item, dict):
         raise ValueError("Generated plan tasks must be objects")
@@ -579,6 +593,9 @@ def generate_plan_spec(
         )
         if objectives_are_valid:
             learning_objectives = [item.strip() for item in learning_objectives]
+            if not _has_unique_texts(learning_objectives):
+                objectives_are_valid = False
+                logger.warning("AI study plan objectives were duplicated; using the built-in plan")
         else:
             logger.warning("AI study plan objectives were invalid; using the built-in plan")
 
@@ -589,6 +606,12 @@ def generate_plan_spec(
             normalized_tasks = [_normalize_plan_task(task) for task in tasks]
         except (TypeError, ValueError, OverflowError):
             logger.warning("AI study plan tasks were invalid; using the built-in plan")
+            normalized_tasks = None
+
+        if normalized_tasks is not None and not _has_unique_texts(
+            [task["title"] for task in normalized_tasks]
+        ):
+            logger.warning("AI study plan task titles were duplicated; using the built-in plan")
             normalized_tasks = None
 
         if normalized_tasks is not None:

@@ -381,7 +381,7 @@ def _parse_json_response(raw_message: str) -> dict[str, Any] | None:
 
 
 def _normalize_provider_base_url(value: str) -> str:
-    normalized = value.rstrip("/")
+    normalized = value.strip().rstrip("/")
     if normalized.endswith("/chat/completions"):
         normalized = normalized.removesuffix("/chat/completions")
     return normalized
@@ -400,13 +400,21 @@ def _call_openai_for_plan(
     if not settings.ai_generation_enabled:
         return {"_fallback_reason": "ai_disabled"}
 
+    default_base_url = "https://api.openai.com/v1"
+    configured_base_url = (settings.openai_base_url or "").strip() or default_base_url
     effective_base_url = _normalize_provider_base_url(
-        base_url or settings.openai_base_url or "https://api.openai.com/v1"
+        (base_url or "").strip() or configured_base_url
     )
-    effective_model = model or settings.openai_model or "gpt-4o-mini"
+    effective_model = (
+        (model or "").strip()
+        or (settings.openai_model or "").strip()
+        or "gpt-4o-mini"
+    )
+    configured_api_key = (settings.openai_api_key or "").strip()
+    effective_api_key = (api_key or "").strip()
     if (
-        not settings.openai_api_key
-        and not api_key
+        not configured_api_key
+        and not effective_api_key
         and effective_base_url == "https://api.openai.com/v1"
     ):
         return {"_fallback_reason": "missing_api_key"}
@@ -439,13 +447,11 @@ def _call_openai_for_plan(
 
     endpoint = f"{effective_base_url}/chat/completions"
     headers = {"Content-Type": "application/json"}
-    configured_base_url = _normalize_provider_base_url(
-        settings.openai_base_url or "https://api.openai.com/v1"
-    )
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    elif settings.openai_api_key and effective_base_url == configured_base_url:
-        headers["Authorization"] = f"Bearer {settings.openai_api_key}"
+    configured_base_url = _normalize_provider_base_url(configured_base_url)
+    if effective_api_key:
+        headers["Authorization"] = f"Bearer {effective_api_key}"
+    elif configured_api_key and effective_base_url == configured_base_url:
+        headers["Authorization"] = f"Bearer {configured_api_key}"
 
     try:
         response = httpx.post(

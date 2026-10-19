@@ -15,6 +15,7 @@ const PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_legacy_plan_provider_settings';
 const PLAN_PROVIDER_PRESETS = {
   openai: { base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
   ollama: { base_url: 'http://localhost:11434/v1', model: 'llama3.1' },
+  'ollama-docker': { base_url: 'http://host.docker.internal:11434/v1', model: 'llama3.1' },
   custom: { base_url: '', model: '' },
 };
 const QUEST_TYPE_LABELS = {
@@ -1628,7 +1629,7 @@ function syncPlanProviderKeyVisibility() {
   if (!providerType || !keyField || !apiKey || !baseUrl) return;
 
   keyField.hidden = providerType.value !== 'custom';
-  baseUrl.required = providerType.value === 'custom';
+  baseUrl.required = providerType.value !== 'openai';
   if (keyField.hidden) apiKey.value = '';
 }
 

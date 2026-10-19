@@ -20,7 +20,7 @@ function readPlanProviderSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem(PLAN_PROVIDER_SETTINGS_KEY) || '{}') || {};
     return {
-      provider: ['server', 'ollama', 'custom'].includes(saved.provider) ? saved.provider : 'server',
+      provider: ['server', 'ollama', 'ollama-docker', 'custom'].includes(saved.provider) ? saved.provider : 'server',
       baseUrl: typeof saved.baseUrl === 'string' ? saved.baseUrl : '',
       model: typeof saved.model === 'string' ? saved.model : '',
     };
@@ -773,10 +773,11 @@ function Dashboard({ data, refresh, onLogout, onError }) {
               setPlanProvider(provider);
               if (provider === 'server') { setPlanProviderUrl(''); setPlanProviderModel(''); setPlanProviderApiKey(''); }
               if (provider === 'ollama') { setPlanProviderUrl('http://localhost:11434/v1'); setPlanProviderModel('llama3.1'); setPlanProviderApiKey(''); }
+              if (provider === 'ollama-docker') { setPlanProviderUrl('http://host.docker.internal:11434/v1'); setPlanProviderModel('llama3.1'); setPlanProviderApiKey(''); }
               if (provider === 'custom') { setPlanProviderUrl(''); setPlanProviderModel(''); setPlanProviderApiKey(''); }
-            }}><option value="server">Configuração do servidor</option><option value="ollama">Ollama local</option><option value="custom">API compatível personalizada</option></select></label>
+            }}><option value="server">Configuração do servidor</option><option value="ollama">Ollama no computador</option><option value="ollama-docker">Ollama via Docker Desktop</option><option value="custom">API compatível personalizada</option></select></label>
             {planProvider !== 'server' && <>
-              <label className="compact-field">Endpoint compatível com OpenAI<input name="provider_base_url" type="url" value={planProviderUrl} onChange={(event) => setPlanProviderUrl(event.target.value)} placeholder="Ex.: http://localhost:11434/v1" required={planProvider === 'custom'} /></label>
+              <label className="compact-field">Endpoint compatível com OpenAI<input name="provider_base_url" type="url" value={planProviderUrl} onChange={(event) => setPlanProviderUrl(event.target.value)} placeholder="Ex.: http://localhost:11434/v1" required={planProvider !== 'server'} /></label>
               <label className="compact-field">Modelo<input name="provider_model" value={planProviderModel} onChange={(event) => setPlanProviderModel(event.target.value)} placeholder="Ex.: llama3.1" /></label>
               {planProvider === 'custom' && <label className="compact-field">Chave do provedor<input name="provider_api_key" type="password" autoComplete="new-password" value={planProviderApiKey} onChange={(event) => setPlanProviderApiKey(event.target.value)} maxLength="500" /></label>}
               {planProvider === 'custom' && <p className="provider-help">A chave é usada para gerar a prévia e não é incluída nas missões salvas.</p>}

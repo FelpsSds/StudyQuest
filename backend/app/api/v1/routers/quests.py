@@ -26,6 +26,7 @@ from app.models.user import User
 from app.models.xp_transaction import XPTransaction
 
 router = APIRouter(prefix="/quests", tags=["quests"])
+PLAN_BOSS_TARGET_HP = 120
 
 
 class StudyPlanTaskRequest(BaseModel):
@@ -241,8 +242,9 @@ def generate_study_plan(
         }
 
     subject = _ensure_subject_for_plan(db, current_user, title, payload.subject_id)
+    base_boss_damage, bonus_damage_quests = divmod(PLAN_BOSS_TARGET_HP, len(plan_items))
     created_quests: list[Quest] = []
-    for item in plan_items:
+    for index, item in enumerate(plan_items):
         quest_type = item["type"] if not isinstance(item["type"], str) else QuestType(item["type"])
         quest_difficulty = item["difficulty"] if not isinstance(item["difficulty"], str) else QuestDifficulty(item["difficulty"])
         quest = Quest(
@@ -253,7 +255,7 @@ def generate_study_plan(
             type=quest_type,
             difficulty=quest_difficulty,
             xp_reward=item["xp_reward"],
-            boss_damage=10,
+            boss_damage=base_boss_damage + (1 if index < bonus_damage_quests else 0),
             estimated_minutes=item["estimated_minutes"],
             status=QuestStatus.PENDING,
         )
@@ -264,8 +266,8 @@ def generate_study_plan(
         user_id=current_user.id,
         subject_id=subject.id,
         title=f"Boss: {subject.name}",
-        hp_max=120,
-        hp_current=120,
+        hp_max=PLAN_BOSS_TARGET_HP,
+        hp_current=PLAN_BOSS_TARGET_HP,
         xp_reward=200,
         status="active",
     )

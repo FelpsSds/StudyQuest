@@ -724,7 +724,11 @@ def generate_plan_spec(
                 )
             elif style == "prática" and len(normalized_tasks) > 1:
                 applied_tasks = sum(
-                    task["type"] in {QuestType.EXERCISES.value, QuestType.PRACTICE.value}
+                    task["type"] in {
+                        QuestType.EXERCISES.value,
+                        QuestType.PRACTICE.value,
+                        QuestType.PROJECT.value,
+                    }
                     for task in normalized_tasks
                 )
                 style_is_respected = applied_tasks >= 2

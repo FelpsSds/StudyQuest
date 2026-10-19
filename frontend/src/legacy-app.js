@@ -1875,7 +1875,7 @@ async function handlePlanMaterialFileUpload(event) {
   if (!file || !contentField) return;
 
   if (!file.name.match(/\.(txt|md|markdown)$/i)) {
-    window.alert('Use um arquivo em texto ou Markdown (.txt, .md).');
+    window.alert('Use um arquivo em texto ou Markdown (.txt, .md ou .markdown).');
     event.target.value = '';
     return;
   }

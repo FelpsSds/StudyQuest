@@ -431,6 +431,27 @@ def _normalize_provider_base_url(value: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, path, parts.query, ""))
 
 
+def _provider_base_urls_match(first_url: str, second_url: str) -> bool:
+    try:
+        first = urlsplit(first_url)
+        second = urlsplit(second_url)
+        first_port = first.port
+        second_port = second.port
+        if first_port is None:
+            first_port = 443 if first.scheme.lower() == "https" else 80
+        if second_port is None:
+            second_port = 443 if second.scheme.lower() == "https" else 80
+    except ValueError:
+        return False
+    return (
+        first.scheme.lower() == second.scheme.lower()
+        and (first.hostname or "").lower() == (second.hostname or "").lower()
+        and first_port == second_port
+        and first.path.rstrip("/") == second.path.rstrip("/")
+        and first.query == second.query
+    )
+
+
 def _call_openai_for_plan(
     title: str,
     content: str,
@@ -468,7 +489,7 @@ def _call_openai_for_plan(
     if (
         not configured_api_key
         and not effective_api_key
-        and effective_base_url == "https://api.openai.com/v1"
+        and _provider_base_urls_match(effective_base_url, default_base_url)
     ):
         return {"_fallback_reason": "missing_api_key"}
 
@@ -512,7 +533,10 @@ def _call_openai_for_plan(
     configured_base_url = _normalize_provider_base_url(configured_base_url)
     if effective_api_key:
         headers["Authorization"] = f"Bearer {effective_api_key}"
-    elif configured_api_key and effective_base_url == configured_base_url:
+    elif configured_api_key and _provider_base_urls_match(
+        effective_base_url,
+        configured_base_url,
+    ):
         headers["Authorization"] = f"Bearer {configured_api_key}"
 
     try:

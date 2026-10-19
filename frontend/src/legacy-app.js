@@ -934,6 +934,7 @@ function renderPlanReview(response, saved = false, planInputs = null) {
 
   const tasks = Array.isArray(response.tasks) ? response.tasks : Array.isArray(response.quests) ? response.quests : [];
   const objectives = Array.isArray(response.learning_objectives) ? response.learning_objectives : [];
+  const planSubjectSelect = document.querySelector('#plan-subject');
   state.generatedPlan = saved ? null : {
     title: planInputs?.title ?? response.generated_from ?? '',
     plan_id: response.plan_id,
@@ -950,9 +951,14 @@ function renderPlanReview(response, saved = false, planInputs = null) {
     generation_note: response.generation_note ?? planInputs?.generation_note,
   };
 
+  const selectedSubject = planSubjectSelect?.selectedOptions[0];
+  const subjectName = state.generatedPlan?.subject_id
+    ? planSubjectSelect?.querySelector(`option[value="${state.generatedPlan.subject_id}"]`)?.textContent || response.subject?.name
+    : response.subject?.name || 'Nova disciplina';
+
   preview.innerHTML = `
     <div class="plan-review-header">
-      <strong>${escapeHtml(response.subject?.name || 'Plano gerado')}</strong>
+      ${saved ? `<strong>${escapeHtml(response.subject?.name || 'Plano gerado')}</strong>` : `<label class="plan-review-field">Disciplina<select data-plan-review-subject><option value="">Criar nova disciplina</option>${Array.from(planSubjectSelect?.options || []).slice(1).map((option) => `<option value="${escapeAttribute(option.value)}" ${String(state.generatedPlan.subject_id || '') === option.value ? 'selected' : ''}>${escapeHtml(option.textContent)}</option>`).join('')}</select></label><strong data-plan-review-subject-name>${escapeHtml(subjectName || selectedSubject?.textContent || 'Plano gerado')}</strong>`}
       ${!saved ? `<small>${response.generation_source === 'ai' ? 'Plano gerado por IA.' : escapeHtml(response.generation_note || 'Plano gerado localmente; confira as configurações do provedor de IA.')}</small>` : ''}
       <small>${objectives.length ? objectives.map((item) => escapeHtml(item)).join(' • ') : 'Plano pronto para revisão.'}</small>
     </div>
@@ -1006,6 +1012,14 @@ function renderPlanReview(response, saved = false, planInputs = null) {
       control.disabled = true;
     });
   }
+
+  const reviewSubject = preview.querySelector('[data-plan-review-subject]');
+  reviewSubject?.addEventListener('change', () => {
+    state.generatedPlan.subject_id = reviewSubject.value ? Number(reviewSubject.value) : null;
+    const selected = reviewSubject.selectedOptions[0];
+    const name = preview.querySelector('[data-plan-review-subject-name]');
+    if (name) name.textContent = selected?.textContent || response.subject?.name || 'Nova disciplina';
+  });
 
   const addTaskButton = preview.querySelector('[data-add-plan-task]');
   if (addTaskButton) {

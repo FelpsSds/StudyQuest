@@ -674,6 +674,18 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     } : current);
   }
 
+  function updatePlanSubject(subjectId) {
+    setPlanDraft((current) => {
+      if (!current) return current;
+      const subject = data.subjects.find((item) => String(item.id) === subjectId);
+      return {
+        ...current,
+        subject: subject || { ...current.subject, id: null },
+        payload: { ...current.payload, subject_id: subjectId ? Number(subjectId) : null },
+      };
+    });
+  }
+
   function removePlanTask(index) {
     setPlanDraft((current) => current ? {
       ...current,
@@ -900,7 +912,7 @@ function Dashboard({ data, refresh, onLogout, onError }) {
             {planDraft && <div className="plan-preview" aria-live="polite">
               <h3>{planDraft.generated_from}</h3>
               <p className="provider-help" role="status">{planDraft.generation_source === 'ai' ? 'Plano gerado por IA.' : planDraft.generation_note || 'Plano gerado localmente; confira as configurações do provedor de IA.'}</p>
-              <p className="plan-subject">Disciplina: {planDraft.subject?.name}</p>
+              <label className="compact-field">Disciplina<select value={planDraft.payload.subject_id || ''} disabled={busyKeys.has('plan')} onChange={(event) => updatePlanSubject(event.target.value)}><option value="">Criar nova disciplina</option>{data.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
               <strong>Objetivos de aprendizagem</strong>
               <ul>{planDraft.learning_objectives.map((objective, index) => <li key={index}>{objective}</li>)}</ul>
               <strong>Missões propostas</strong>

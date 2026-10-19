@@ -18,6 +18,9 @@ STOP_WORDS = {
     "sao", "são", "partir", "dentro", "fora", "apenas", "muito", "muita", "muitos",
     "muitas", "tudo", "todos", "todas",
 }
+MAX_GENERATED_PLAN_TASKS = 20
+MAX_LEARNING_OBJECTIVES = 12
+MAX_LEARNING_OBJECTIVE_LENGTH = 500
 
 
 def _extract_keywords(text: str, limit: int = 4) -> list[str]:
@@ -358,15 +361,24 @@ def generate_plan_spec(
     if ai_payload:
         generation_source = "ai"
         learning_objectives = ai_payload.get("learning_objectives")
-        if not isinstance(learning_objectives, list) or not learning_objectives or not all(
-            isinstance(item, str) and item.strip() for item in learning_objectives
-        ):
+        objectives_are_valid = (
+            isinstance(learning_objectives, list)
+            and 0 < len(learning_objectives) <= MAX_LEARNING_OBJECTIVES
+            and all(
+                isinstance(item, str)
+                and 0 < len(item.strip()) <= MAX_LEARNING_OBJECTIVE_LENGTH
+                for item in learning_objectives
+            )
+        )
+        if objectives_are_valid:
+            learning_objectives = [item.strip() for item in learning_objectives]
+        else:
             learning_objectives = build_learning_objectives(title, content, goal, audience, learning_style)
 
         tasks = ai_payload.get("tasks")
         try:
-            if not isinstance(tasks, list) or not tasks:
-                raise ValueError("Generated plan tasks are missing")
+            if not isinstance(tasks, list) or not tasks or len(tasks) > MAX_GENERATED_PLAN_TASKS:
+                raise ValueError("Generated plan tasks are missing or exceed the supported limit")
             normalized_tasks = [_normalize_plan_task(task) for task in tasks]
         except (TypeError, ValueError, OverflowError):
             logger.warning("AI study plan tasks were invalid; using the built-in tasks")

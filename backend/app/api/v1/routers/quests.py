@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, field_validator
@@ -60,8 +61,18 @@ class StudyPlanGenerateRequest(BaseModel):
     provider_base_url: str | None = Field(default=None, max_length=500)
     provider_model: str | None = Field(default=None, max_length=200)
     provider_api_key: str | None = Field(default=None, max_length=500)
-    learning_objectives: list[str] | None = None
-    tasks: list[StudyPlanTaskRequest] | None = None
+    learning_objectives: list[Annotated[str, Field(min_length=1, max_length=500)]] | None = Field(default=None, max_length=12)
+    tasks: list[StudyPlanTaskRequest] | None = Field(default=None, max_length=20)
+
+    @field_validator("learning_objectives")
+    @classmethod
+    def normalize_learning_objectives(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        normalized = [item.strip() for item in value]
+        if any(not item for item in normalized):
+            raise ValueError("Learning objectives cannot be blank")
+        return normalized
 
 
 def _build_subject_name(title: str) -> str:

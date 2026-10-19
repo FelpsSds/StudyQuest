@@ -575,6 +575,12 @@ def generate_plan_spec(
                     task["difficulty"] == QuestDifficulty.HARD.value
                     for task in normalized_tasks
                 )
+            elif style == "prática" and len(normalized_tasks) > 1:
+                applied_tasks = sum(
+                    task["type"] in {QuestType.EXERCISES.value, QuestType.PRACTICE.value}
+                    for task in normalized_tasks
+                )
+                style_is_respected = applied_tasks >= 2
             if not style_is_respected:
                 logger.warning("AI study plan did not respect the selected style; using the built-in plan")
                 normalized_tasks = None

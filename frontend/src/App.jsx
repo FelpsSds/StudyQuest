@@ -17,6 +17,16 @@ const EMPTY_DATA = {
 const PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_plan_provider_settings';
 const LEGACY_PLAN_PROVIDER_SETTINGS_KEY = 'studyquest_legacy_plan_provider_settings';
 
+function normalizePlanTaskTitle(value) {
+  return String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/ß/g, 'ss')
+    .replace(/ς/g, 'σ')
+    .replace(/[^\p{L}\p{N}]/gu, '');
+}
+
 function persistedProviderUrl(value) {
   try {
     const url = new URL(value);
@@ -610,6 +620,11 @@ function Dashboard({ data, refresh, onLogout, onError }) {
     }
     if (tasks.some((task) => !task.title)) {
       onError('Cada missão do plano precisa ter um título.');
+      return;
+    }
+    const normalizedTitles = tasks.map((task) => normalizePlanTaskTitle(task.title));
+    if (normalizedTitles.some((title) => !title) || new Set(normalizedTitles).size !== normalizedTitles.length) {
+      onError('Cada missão precisa ter um título diferente, com letras ou números.');
       return;
     }
     if (tasks.some((task) => String(task.xp_reward).trim() === '' || String(task.estimated_minutes).trim() === '' || !Number.isInteger(task.xp_reward) || task.xp_reward < 0 || !Number.isInteger(task.estimated_minutes) || task.estimated_minutes < 1)) {

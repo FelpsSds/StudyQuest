@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Annotated
+import unicodedata
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -84,6 +85,28 @@ class StudyPlanGenerateRequest(BaseModel):
         if any(not item for item in normalized):
             raise ValueError("Learning objectives cannot be blank")
         return normalized
+
+    @field_validator("tasks")
+    @classmethod
+    def validate_unique_task_titles(
+        cls,
+        value: list[StudyPlanTaskRequest] | None,
+    ) -> list[StudyPlanTaskRequest] | None:
+        if value is None:
+            return None
+        normalized_titles = [
+            "".join(
+                character
+                for character in unicodedata.normalize("NFKD", task.title).casefold()
+                if not unicodedata.combining(character) and character.isalnum()
+            )
+            for task in value
+        ]
+        if any(not title for title in normalized_titles):
+            raise ValueError("Task titles must include letters or numbers")
+        if len(normalized_titles) != len(set(normalized_titles)):
+            raise ValueError("Task titles must be unique")
+        return value
 
 
 def _build_subject_name(title: str) -> str:

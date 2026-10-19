@@ -556,8 +556,11 @@ def _call_openai_for_plan(
             error.response.status_code,
         )
         return {"_fallback_reason": fallback_reason}
-    except (httpx.HTTPError, ValueError, KeyError, TypeError):
-        logger.warning("AI study plan request failed; using the built-in plan", exc_info=True)
+    except (httpx.HTTPError, ValueError, KeyError, TypeError) as error:
+        logger.warning(
+            "AI study plan request failed with %s; using the built-in plan",
+            type(error).__name__,
+        )
         return {"_fallback_reason": "provider_unavailable"}
     return {"_fallback_reason": "provider_response_invalid"}
 

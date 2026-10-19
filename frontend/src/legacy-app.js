@@ -1018,7 +1018,9 @@ function renderPlanReview(response, saved = false, planInputs = null) {
     state.generatedPlan.subject_id = reviewSubject.value ? Number(reviewSubject.value) : null;
     const selected = reviewSubject.selectedOptions[0];
     const name = preview.querySelector('[data-plan-review-subject-name]');
-    if (name) name.textContent = selected?.textContent || response.subject?.name || 'Nova disciplina';
+    if (name) name.textContent = selected?.value
+      ? selected.textContent
+      : `Nova disciplina: ${state.generatedPlan.title}`;
   });
 
   const addTaskButton = preview.querySelector('[data-add-plan-task]');

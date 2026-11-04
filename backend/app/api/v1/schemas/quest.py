@@ -1,0 +1,92 @@
+from datetime import date, datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.models.quest import QuestDifficulty, QuestStatus, QuestType
+
+
+class QuestBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str | None = None
+    type: QuestType = QuestType.STUDY
+    difficulty: QuestDifficulty = QuestDifficulty.MEDIUM
+    xp_reward: int = Field(default=0, ge=0)
+    boss_damage: int = Field(default=10, ge=0)
+    estimated_minutes: int = Field(default=30, gt=0)
+    status: QuestStatus = QuestStatus.PENDING
+    due_date: date | None = None
+    subject_id: int | None = None
+    boss_fight_id: int | None = None
+
+    @field_validator("description", "due_date", mode="before")
+    @classmethod
+    def normalize_optional_text(cls, value: str | date | None) -> str | date | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                return None
+            return normalized
+        return value
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Title cannot be blank")
+        return normalized
+
+
+class QuestCreate(QuestBase):
+    status: Literal["pending", "in_progress"] = QuestStatus.PENDING
+
+
+class QuestUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    type: QuestType | None = None
+    difficulty: QuestDifficulty | None = None
+    xp_reward: int | None = Field(default=None, ge=0)
+    boss_damage: int | None = Field(default=None, ge=0)
+    estimated_minutes: int | None = Field(default=None, gt=0)
+    status: Literal["pending", "in_progress", "archived"] | None = None
+    due_date: date | None = None
+    subject_id: int | None = None
+    boss_fight_id: int | None = None
+
+    @field_validator("description", "due_date", mode="before")
+    @classmethod
+    def normalize_optional_text(cls, value: str | date | None) -> str | date | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                return None
+            return normalized
+        return value
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Title cannot be blank")
+        return normalized
+
+
+class QuestRead(QuestBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    completed_at: datetime | None = None
+
+
+class QuestCompleteRequest(BaseModel):
+    notes: str | None = Field(default=None, max_length=500)

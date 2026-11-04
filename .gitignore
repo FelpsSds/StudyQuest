@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local configuration and databases
+.env
+backend/.env
+backend/*.db
+
+# Frontend dependencies and build output
+node_modules/
+dist/
+
+# IDE and OS files
+.idea/
+.vscode/
+!.vscode/extensions.json
+Thumbs.db
+Desktop.ini

@@ -141,7 +141,10 @@ def test_generate_study_plan_creates_quests_and_boss(client):
     assert payload["boss_fight"]["subject_id"] == payload["subject"]["id"]
 
 
-def test_generate_study_plan_preview_is_saved_only_after_review(client):
+def test_generate_study_plan_preview_is_saved_only_after_review(client, monkeypatch):
+    from app.core import plan_generator
+
+    monkeypatch.setattr(plan_generator.settings, "ai_generation_enabled", False)
     token = _create_user(client, email="plan-preview@example.com")
     headers = {"Authorization": "Bearer " + token}
     preview = client.post(
@@ -152,6 +155,7 @@ def test_generate_study_plan_preview_is_saved_only_after_review(client):
 
     assert preview.status_code == 200
     preview_payload = preview.json()
+    assert preview_payload["generation_mode"] == "local"
     assert preview_payload["subject"]["id"] is None
     assert preview_payload["tasks"]
     assert client.get("/api/v1/quests/", headers=headers).json() == []
@@ -170,6 +174,7 @@ def test_generate_study_plan_preview_is_saved_only_after_review(client):
     )
 
     assert saved.status_code == 200
+    assert saved.json()["generation_mode"] == "reviewed"
     assert len(saved.json()["quests"]) == len(preview_payload["tasks"])
     assert len(client.get("/api/v1/quests/", headers=headers).json()) == len(preview_payload["tasks"])
     assert len(client.get("/api/v1/subjects/", headers=headers).json()) == 1
@@ -231,6 +236,7 @@ def test_generate_plan_spec_prefers_structured_ai_payload(monkeypatch):
 
     assert payload["learning_objectives"][0].startswith("Aplicar")
     assert payload["tasks"][0]["type"] == "review"
+    assert payload["generation_mode"] == "ai"
 
 
 def test_generate_study_plan_accepts_custom_reviewed_tasks(client):
@@ -405,6 +411,7 @@ def test_generate_plan_spec_falls_back_when_ai_tasks_are_invalid(monkeypatch):
     payload = plan_generator.generate_plan_spec("Geometria", "Ângulos e polígonos.")
 
     assert len(payload["tasks"]) == 4
+    assert payload["generation_mode"] == "local"
     assert all(task["title"] for task in payload["tasks"])
 
 

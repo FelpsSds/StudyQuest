@@ -56,6 +56,19 @@ def test_register_rejects_blank_name(client):
     assert response.status_code == 422
 
 
+def test_register_rejects_password_shorter_than_eight_characters(client):
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "name": "Alice",
+            "email": "short-password@example.com",
+            "password": "short",
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_register_rejects_name_and_email_longer_than_database_columns(client):
     long_name_response = client.post(
         "/api/v1/auth/register",

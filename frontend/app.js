@@ -191,6 +191,13 @@ const nameField = document.querySelector('#name-field');
 const authTitle = document.querySelector('#auth-title');
 const authSubmit = document.querySelector('#auth-submit');
 const authToggle = document.querySelector('#auth-toggle');
+const authKicker = document.querySelector('#auth-kicker');
+const authSubmitButton = document.querySelector('#auth-submit-button');
+const passwordInput = document.querySelector('#password');
+const passwordConfirmField = document.querySelector('#password-confirm-field');
+const passwordConfirmInput = document.querySelector('#password-confirm');
+const passwordHint = document.querySelector('#password-hint');
+const passwordVisibility = document.querySelector('#password-visibility');
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -207,7 +214,17 @@ async function request(path, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(payload?.detail || 'Não foi possível concluir a solicitação.');
+    const detail = payload?.detail;
+    const message = Array.isArray(detail)
+      ? detail.map((item) => item?.msg).filter(Boolean).join(' ')
+      : detail;
+    const knownMessages = {
+      'Email already registered': 'Este e-mail já possui uma conta. Entre ou use outro e-mail.',
+      'Invalid email or password': 'E-mail ou senha incorretos.',
+      'Password cannot exceed 72 UTF-8 bytes': 'A senha excede o limite permitido. Use uma senha menor.',
+      'String should have at least 8 characters': 'A senha deve ter pelo menos 8 caracteres.',
+    };
+    throw new Error(knownMessages[message] || message || 'Não foi possível concluir a solicitação.');
   }
 
   return payload;
@@ -225,7 +242,17 @@ function showAuthView() {
 function setRegisterMode(enabled) {
   state.registerMode = enabled;
   nameField.classList.toggle('hidden', !enabled);
+  passwordConfirmField.classList.toggle('hidden', !enabled);
+  passwordHint.classList.toggle('hidden', !enabled);
+  if (!enabled) {
+    passwordConfirmInput.value = '';
+    passwordConfirmInput.setCustomValidity('');
+  }
   document.querySelector('#name').required = enabled;
+  passwordInput.autocomplete = enabled ? 'new-password' : 'current-password';
+  passwordInput.minLength = enabled ? 8 : 0;
+  passwordConfirmInput.required = enabled;
+  authKicker.textContent = enabled ? 'CRIE SUA CONTA GRATUITA' : 'SUA JORNADA DE ESTUDOS';
   authTitle.textContent = enabled ? 'Começar uma nova jornada' : 'Entrar na sua jornada';
   authSubmit.textContent = enabled ? 'Criar conta' : 'Entrar';
   authToggle.textContent = enabled ? 'Já tenho uma conta' : 'Ainda não tenho uma conta';
@@ -237,12 +264,18 @@ function resetAuthForm() {
   authForm.reset();
   if (document.querySelector('#name')) document.querySelector('#name').value = '';
   if (document.querySelector('#email')) document.querySelector('#email').value = '';
-  if (document.querySelector('#password')) document.querySelector('#password').value = '';
+  passwordInput.value = '';
+  passwordConfirmInput.value = '';
+  passwordInput.type = 'password';
+  passwordVisibility.textContent = 'Mostrar';
+  passwordVisibility.setAttribute('aria-label', 'Mostrar senha');
+  passwordVisibility.setAttribute('aria-pressed', 'false');
 }
 function clearSession() {
   state.token = null;
   localStorage.removeItem('studyquest_token');
   resetAuthForm();
+  setRegisterMode(false);
   showAuthView();
   showAuthError();
 }
@@ -250,17 +283,38 @@ function clearSession() {
 async function authenticate(event) {
   event.preventDefault();
   showAuthError();
-  const email = document.querySelector('#email').value;
-  const password = document.querySelector('#password').value;
+  const email = document.querySelector('#email').value.trim();
+  const password = passwordInput.value;
+  if (state.registerMode && password !== passwordConfirmInput.value) {
+    showAuthError('As senhas não coincidem. Confira os dois campos.');
+    passwordConfirmInput.focus();
+    return;
+  }
+
   const body = { email, password };
   if (state.registerMode) body.name = document.querySelector('#name').value;
+  const isRegistering = state.registerMode;
+  authSubmitButton.disabled = true;
+  authToggle.disabled = true;
+  authForm.setAttribute('aria-busy', 'true');
+  authSubmit.textContent = isRegistering ? 'Criando sua conta...' : 'Entrando...';
+  authSubmitButton.classList.add('is-loading');
   try {
     const payload = await request(state.registerMode ? '/auth/register' : '/auth/login', { method: 'POST', body: JSON.stringify(body) });
     saveSession(payload.access_token);
     resetAuthForm();
+    setRegisterMode(false);
     await showDashboard();
   } catch (error) {
-    showAuthError(error.message);
+    showAuthError(error instanceof TypeError
+      ? 'Não foi possível conectar à API. Verifique se o backend está em execução em http://127.0.0.1:8000.'
+      : error.message);
+  } finally {
+    authSubmit.textContent = state.registerMode ? 'Criar conta' : 'Entrar';
+    authSubmitButton.disabled = false;
+    authToggle.disabled = false;
+    authForm.removeAttribute('aria-busy');
+    authSubmitButton.classList.remove('is-loading');
   }
 }
 
@@ -396,9 +450,14 @@ async function loadQuests() {
           </form>
         </div>
         <div class="quest-actions">
-          <button class="mini-edit" data-edit-quest-id="${quest.id}" type="button">Editar</button>
           <button class="complete-button" data-quest-id="${quest.id}" ${quest.status === 'completed' || quest.status === 'archived' ? 'disabled' : ''}>${quest.status === 'completed' ? 'Concluída' : quest.status === 'archived' ? 'Arquivada' : 'Concluir'}</button>
-          <button class="delete-button" data-delete-quest-id="${quest.id}" type="button">Excluir</button>
+          <details class="quest-more-menu">
+            <summary aria-label="Mais opções da missão">•••</summary>
+            <div class="quest-more-menu-panel">
+              <button class="mini-edit" data-edit-quest-id="${quest.id}" type="button">Editar</button>
+              <button class="delete-button" data-delete-quest-id="${quest.id}" type="button">Excluir</button>
+            </div>
+          </details>
         </div>
       </article>
     `).join('');
@@ -717,6 +776,7 @@ async function deleteSubject(id) {
 async function startQuestEdit(quest, article) {
   const form = article.querySelector('[data-quest-edit-form]');
   if (!form) return;
+  article.querySelector('.quest-more-menu')?.removeAttribute('open');
   const subjectSelect = form.elements.subject_id;
   const editButton = article.querySelector('[data-edit-quest-id]');
   editButton.disabled = true;
@@ -863,6 +923,11 @@ function renderPlanReview(response, saved = false) {
 
   const tasks = Array.isArray(response.tasks) ? response.tasks : Array.isArray(response.quests) ? response.quests : [];
   const objectives = Array.isArray(response.learning_objectives) ? response.learning_objectives : [];
+  const generationStatus = {
+    ai: 'Plano gerado com o provedor de IA configurado.',
+    local: 'Plano criado pelo gerador local. A IA está desativada ou indisponível neste momento.',
+    reviewed: 'Plano salvo com as alterações que você revisou.',
+  }[response.generation_mode] || 'Plano pronto para revisão.';
   state.generatedPlan = saved ? null : {
     title: response.generated_from || '',
     content: document.querySelector('#plan-content').value.trim(),
@@ -879,6 +944,7 @@ function renderPlanReview(response, saved = false) {
       <strong>${escapeHtml(response.subject?.name || 'Plano gerado')}</strong>
       <small>${objectives.length ? objectives.map((item) => escapeHtml(item)).join(' • ') : 'Plano pronto para revisão.'}</small>
     </div>
+    <p class="plan-generation-status" role="status">${escapeHtml(generationStatus)}</p>
     <div class="plan-review-list">
       ${tasks.map((task, index) => `
         <div class="plan-review-task">
@@ -1643,6 +1709,14 @@ function escapeHtml(value) { const element = document.createElement('div'); elem
 function escapeAttribute(value) { return escapeHtml(value).replace(/"/g, '&quot;'); }
 authForm.addEventListener('submit', authenticate);
 authToggle.addEventListener('click', () => setRegisterMode(!state.registerMode));
+passwordVisibility.addEventListener('click', () => {
+  const isVisible = passwordInput.type === 'text';
+  passwordInput.type = isVisible ? 'password' : 'text';
+  passwordVisibility.textContent = isVisible ? 'Mostrar' : 'Ocultar';
+  passwordVisibility.setAttribute('aria-label', isVisible ? 'Mostrar senha' : 'Ocultar senha');
+  passwordVisibility.setAttribute('aria-pressed', String(!isVisible));
+  passwordInput.focus();
+});
 document.querySelector('#logout-button').addEventListener('click', () => {
   clearSession();
   showAuthError('Sessão encerrada com sucesso.');
@@ -1667,6 +1741,18 @@ document.querySelector('#plan-provider-model').addEventListener('input', () => {
   if (providerType && providerType.value !== 'custom') {
     providerType.value = 'custom';
     localStorage.setItem(PLAN_PROVIDER_KEY, 'custom');
+  }
+});
+passwordConfirmInput.addEventListener('input', () => {
+  passwordConfirmInput.setCustomValidity(passwordConfirmInput.value && passwordConfirmInput.value !== passwordInput.value
+    ? 'As senhas não coincidem.'
+    : '');
+});
+passwordInput.addEventListener('input', () => {
+  if (passwordConfirmInput.value) {
+    passwordConfirmInput.setCustomValidity(passwordConfirmInput.value !== passwordInput.value
+      ? 'As senhas não coincidem.'
+      : '');
   }
 });
 document.querySelectorAll('.preset-button').forEach((button) => {

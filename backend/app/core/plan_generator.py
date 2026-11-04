@@ -322,6 +322,7 @@ def generate_plan_spec(
 ) -> dict[str, Any]:
     ai_payload = _call_openai_for_plan(title, content, goal, audience, learning_style, base_url=base_url, model=model)
     if ai_payload:
+        generation_mode = "ai"
         learning_objectives = ai_payload.get("learning_objectives")
         if not isinstance(learning_objectives, list) or not all(
             isinstance(item, str) and item.strip() for item in learning_objectives
@@ -336,10 +337,16 @@ def generate_plan_spec(
         except (TypeError, ValueError, OverflowError):
             logger.warning("AI study plan tasks were invalid; using the built-in tasks")
             normalized_tasks = build_plan_tasks(title, content, goal, audience, learning_style)
+            generation_mode = "local"
 
-        return {"learning_objectives": learning_objectives, "tasks": normalized_tasks}
+        return {
+            "learning_objectives": learning_objectives,
+            "tasks": normalized_tasks,
+            "generation_mode": generation_mode,
+        }
 
     return {
         "learning_objectives": build_learning_objectives(title, content, goal, audience, learning_style),
         "tasks": build_plan_tasks(title, content, goal, audience, learning_style),
+        "generation_mode": "local",
     }

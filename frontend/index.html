@@ -20,17 +20,24 @@
         </div>
         <div class="auth-panel">
           <div class="panel-heading">
-            <span class="kicker">BEM-VINDO DE VOLTA</span>
+            <span class="kicker" id="auth-kicker">SUA JORNADA DE ESTUDOS</span>
             <h2 id="auth-title">Entrar na sua jornada</h2>
+            <p class="auth-subtitle">Acompanhe seu progresso e transforme seus estudos em conquistas.</p>
           </div>
           <form id="auth-form">
-            <label id="name-field" class="field hidden">Nome<input id="name" type="text" autocomplete="name" /></label>
-            <label class="field">E-mail<input id="email" type="email" autocomplete="email" required /></label>
-            <label class="field">Senha<input id="password" type="password" autocomplete="current-password" required /></label>
-            <button class="primary-button" type="submit"><span id="auth-submit">Entrar</span><span aria-hidden="true">&#8594;</span></button>
+            <label id="name-field" class="field hidden" for="name">Nome<input id="name" type="text" autocomplete="name" maxlength="120" /></label>
+            <label class="field" for="email">E-mail<input id="email" type="email" autocomplete="username" maxlength="255" required /></label>
+            <div class="auth-password-field">
+              <label class="field" for="password">Senha<input id="password" type="password" autocomplete="current-password" required /></label>
+              <button id="password-visibility" class="password-visibility" type="button" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button>
+            </div>
+            <p id="password-hint" class="password-hint hidden">Use pelo menos 8 caracteres.</p>
+            <label id="password-confirm-field" class="field hidden" for="password-confirm">Confirmar senha<input id="password-confirm" type="password" autocomplete="new-password" /></label>
+            <button class="primary-button" id="auth-submit-button" type="submit"><span id="auth-submit">Entrar</span><span class="auth-submit-arrow" aria-hidden="true">&#8594;</span></button>
           </form>
-          <p id="auth-error" class="error-message" role="alert"></p>
+          <p id="auth-error" class="error-message" role="alert" aria-live="polite"></p>
           <button id="auth-toggle" class="text-button" type="button">Ainda não tenho uma conta</button>
+          <p class="auth-footnote">Seu progresso fica salvo na sua conta.</p>
         </div>
       </section>
 
@@ -65,7 +72,12 @@
               <button class="secondary-button" type="submit">Adicionar missão <span aria-hidden="true">&#8594;</span></button>
             </form>
             <form id="generate-plan-form" class="creation-card wide-creation-card">
-              <div><span class="kicker">INTELIGÊNCIA SIMPLES</span><h2>Gerar plano de estudo</h2></div>
+              <div><span class="kicker">PLANO PERSONALIZADO</span><h2>Gerar plano de estudo</h2></div>
+              <p class="ai-setup-note">A IA é opcional. Sem provedor configurado, o StudyQuest cria um plano local e avisa aqui qual modo foi usado.</p>
+              <details class="ai-setup-help">
+                <summary>Como ativar a IA</summary>
+                <p>No arquivo <code>backend\.env</code>, defina <code>AI_GENERATION_ENABLED=true</code> e configure <code>OPENAI_API_KEY</code>. Para usar Ollama, inicie o serviço local e selecione Ollama aqui. Reinicie a API depois de alterar as configurações. Nunca coloque sua chave no frontend.</p>
+              </details>
               <label class="compact-field">Tema<input id="plan-title" type="text" placeholder="Ex.: Álgebra linear" required /></label>
               <label class="compact-field">Conteúdo<textarea id="plan-content" rows="3" placeholder="Cole tópicos, capítulos ou um resumo do material para gerar as missões."></textarea></label>
               <label class="compact-field">Material em arquivo<input id="plan-material-file" type="file" accept=".txt,.md,.markdown,text/plain" /></label>
@@ -81,7 +93,7 @@
               <label class="compact-field">Modelo IA (opcional)<input id="plan-provider-model" type="text" placeholder="Ex.: llama3.1" /></label>
               <label class="compact-field">Disciplina<select id="plan-subject"><option value="">Criar nova disciplina</option></select></label>
               <button class="secondary-button" type="submit">Gerar plano <span aria-hidden="true">&#8594;</span></button>
-              <div id="plan-preview" class="small-empty">Ainda não há plano gerado.</div>
+              <div id="plan-preview" class="small-empty" aria-live="polite">Ainda não há plano gerado.</div>
             </form>
             <form id="session-form" class="creation-card">
               <div><span class="kicker">FOCO NO AGORA</span><h2>Iniciar sessão</h2></div>
@@ -116,7 +128,7 @@
             </form>
           </section>
           <section class="quests-section"><div class="section-heading"><div><span class="kicker">SEU MAPA</span><h2>Missões atuais</h2></div><div class="row-actions"><label class="compact-field inline-filter"><span>Filtrar</span><select id="quest-filter"><option value="all">Todas</option></select></label><label class="compact-field inline-filter"><span>Ordenar</span><select id="quest-sort"><option value="priority">Prioridade</option><option value="due_date">Prazo</option><option value="xp">XP</option><option value="minutes">Tempo</option><option value="title">Título</option></select></label><button id="refresh-button" class="icon-button" type="button" title="Atualizar missões">Atualizar <span aria-hidden="true">&#8635;</span></button></div></div><div id="quests-list" class="quests-list"></div></section>
-          <aside class="side-panel"><span class="kicker">ÚLTIMO MOVIMENTO</span><h2>Recompensas</h2><div id="reward-summary" class="reward-summary"><strong>0 XP</strong><span>Seu histórico aparece aqui.</span></div><div class="side-rule"></div><div id="activity-list" class="activity-list"></div><div class="side-rule"></div><div class="side-card"><span class="kicker">INSIGHTS</span><div id="insights-list" class="insights-list"></div></div><div class="side-card momentum-card"><span class="kicker">MOMENTUM</span><div id="momentum-summary" class="momentum-summary"></div></div><div class="side-card profile-card"><span class="kicker">PERFIL</span><div class="profile-summary"><strong id="profile-name">Estudante</strong><small id="profile-email">email@estudo.com</small><span id="profile-status">Nível em evolução.</span><button id="profile-edit-toggle" class="mini-edit" type="button">Editar nome</button><form id="profile-edit-form" class="profile-edit-form hidden"><label class="compact-field" for="profile-name-input">Nome<input id="profile-name-input" name="name" type="text" maxlength="120" required /></label><p id="profile-edit-error" class="quest-edit-error" role="alert"></p><div class="quest-edit-actions"><button class="secondary-button" type="submit">Salvar</button><button id="profile-edit-cancel" class="text-button" type="button">Cancelar</button></div></form></div></div><div class="side-card focus-card"><span class="kicker">PRÓXIMO ALVO</span><div id="next-focus" class="focus-summary"><strong>Sem missão pendente.</strong><span>Escolha a próxima tarefa para manter o ritmo.</span></div></div><div class="side-card"><span class="kicker">RANKING</span><div id="leaderboard-list" class="mini-list"></div></div><div class="side-card"><span class="kicker">CONQUISTAS</span><div id="achievement-list" class="mini-list"></div></div><div class="side-rule"></div><span class="kicker">LEMBRETE</span><p class="quote">A consistência vence a pressa.</p></aside>
+          <aside class="side-panel"><span class="kicker">ÚLTIMO MOVIMENTO</span><h2>Recompensas</h2><div id="reward-summary" class="reward-summary"><strong>0 XP</strong><span>Seu histórico aparece aqui.</span></div><div class="side-rule"></div><div id="activity-list" class="activity-list"></div><div class="side-rule"></div><div class="side-card"><span class="kicker">INSIGHTS</span><div id="insights-list" class="insights-list"></div></div><div class="side-card momentum-card"><span class="kicker">MOMENTUM</span><div id="momentum-summary" class="momentum-summary"></div></div><div class="side-card profile-card"><span class="kicker">PERFIL</span><div class="profile-summary"><strong id="profile-name">Estudante</strong><small id="profile-email">email@estudo.com</small><span id="profile-status">Nível em evolução.</span><button id="profile-edit-toggle" class="mini-edit" type="button">Editar nome</button><form id="profile-edit-form" class="profile-edit-form hidden"><label class="compact-field" for="profile-name-input">Nome<input id="profile-name-input" name="name" type="text" maxlength="120" required /></label><p id="profile-edit-error" class="quest-edit-error" role="alert"></p><div class="quest-edit-actions"><button class="secondary-button" type="submit">Salvar</button><button id="profile-edit-cancel" class="text-button" type="button">Cancelar</button></div></form></div></div><div class="side-card focus-card"><span class="kicker">PRÓXIMO ALVO</span><div id="next-focus" class="focus-summary"><strong>Sem missão pendente.</strong><span>Escolha a próxima tarefa para manter o ritmo.</span></div></div><div class="side-card research-card"><span class="kicker">GUIA BASEADO EM PESQUISA</span><h2>Métodos que ajudam a aprender</h2><p class="research-intro">Não existe uma porcentagem universal que represente todos os estudantes. Revisões científicas classificam as técnicas pela consistência dos resultados em diferentes estudos.</p><details class="research-method" open><summary>Prática de recuperação <span>Alta utilidade</span></summary><p>Tente lembrar ou responder perguntas sem consultar o material; depois confira e corrija.</p><small>Karpicke, Butler &amp; Roediger (2009): pesquisa com 177 universitários observou que a maioria relia, enquanto poucos praticavam a recuperação.</small><a href="https://doi.org/10.1080/09658210802647009" target="_blank" rel="noopener noreferrer">Ver estudo</a></details><details class="research-method"><summary>Revisão espaçada <span>Alta utilidade</span></summary><p>Distribua revisões em dias diferentes, em vez de concentrar tudo numa única sessão.</p><small>Revisão quantitativa de Cepeda et al. (2006), reunindo 839 avaliações em tarefas de recordação.</small><a href="https://doi.org/10.1037/0033-2909.132.3.354" target="_blank" rel="noopener noreferrer">Ver estudo</a></details><details class="research-method"><summary>Intercalar exercícios <span>Evidência moderada</span></summary><p>Alterne tipos de problema para praticar como identificar qual estratégia aplicar.</p><small>Dunlosky et al. (2013) classificaram prática de testes e prática distribuída como técnicas de alta utilidade; a intercalação teve evidência mais dependente do contexto.</small><a href="https://doi.org/10.1111/j.1539-6053.2013.01059.x" target="_blank" rel="noopener noreferrer">Ver revisão</a></details><p class="research-caveat">Os números descrevem amostras e estudos específicos, não uma porcentagem mundial de preferência ou garantia individual.</p></div><div class="side-card"><span class="kicker">RANKING</span><div id="leaderboard-list" class="mini-list"></div></div><div class="side-card"><span class="kicker">CONQUISTAS</span><div id="achievement-list" class="mini-list"></div></div><div class="side-rule"></div><span class="kicker">LEMBRETE</span><p class="quote">A consistência vence a pressa.</p></aside>
         </div>
       </section>
     </main>

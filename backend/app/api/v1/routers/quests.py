@@ -159,6 +159,7 @@ def generate_study_plan(
     provider_model = (payload.provider_model or "").strip() or None
 
     if payload.tasks:
+        generation_mode = "reviewed"
         plan_items = [
             {
                 "title": task.title,
@@ -190,6 +191,7 @@ def generate_study_plan(
         )
         plan_items = plan_spec["tasks"]
         learning_objectives = plan_spec["learning_objectives"]
+        generation_mode = plan_spec["generation_mode"]
 
     if payload.preview_only:
         subject = _get_subject_for_plan(db, current_user, payload.subject_id)
@@ -211,6 +213,7 @@ def generate_study_plan(
             ],
             "learning_objectives": learning_objectives,
             "generated_from": title,
+            "generation_mode": generation_mode,
         }
 
     subject = _ensure_subject_for_plan(db, current_user, title, payload.subject_id)
@@ -281,6 +284,7 @@ def generate_study_plan(
         },
         "learning_objectives": learning_objectives,
         "generated_from": title,
+        "generation_mode": generation_mode,
     }
 
 

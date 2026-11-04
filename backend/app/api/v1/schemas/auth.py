@@ -28,7 +28,7 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     name: str = Field(max_length=120)
     email: str = Field(max_length=255)
-    password: str
+    password: str = Field(min_length=8)
 
     @field_validator("name")
     @classmethod

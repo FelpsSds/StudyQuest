@@ -306,8 +306,29 @@ def _call_openai_for_plan(
         if isinstance(parsed, dict):
             return parsed
         logger.warning("AI study plan response was not a JSON object; using the built-in plan")
+    except httpx.HTTPStatusError as error:
+        code = error.response.status_code
+        if code in {401, 403}:
+            message = "A OpenAI rejeitou a chave. Confira se a chave atual está ativa e pertence ao projeto correto."
+        elif code == 429:
+            message = "A OpenAI recusou a solicitação por limite ou cota. Confira o billing e os limites do projeto."
+        elif code == 404:
+            message = "O endpoint ou modelo não foi encontrado. Confira OPENAI_BASE_URL e OPENAI_MODEL."
+        elif code == 400:
+            message = "A OpenAI rejeitou o formato da solicitação. Confira se o modelo configurado aceita chat completions."
+        else:
+            message = f"A OpenAI respondeu com erro HTTP {code}. Confira o terminal do backend."
+        logger.warning("AI study plan provider returned HTTP %s; using the built-in plan", code, exc_info=True)
+        return {"_generation_message": message}
+    except httpx.TimeoutException:
+        logger.warning("AI study plan provider timed out; using the built-in plan", exc_info=True)
+        return {"_generation_message": "A solicitação à IA excedeu o tempo limite. Tente novamente."}
+    except httpx.ConnectError:
+        logger.warning("AI study plan provider could not be reached; using the built-in plan", exc_info=True)
+        return {"_generation_message": "Não foi possível conectar ao provedor de IA. Confira sua conexão e o endereço do provedor."}
     except (httpx.HTTPError, ValueError, KeyError, TypeError):
         logger.warning("AI study plan request failed; using the built-in plan", exc_info=True)
+        return {"_generation_message": "O provedor de IA retornou uma resposta inesperada. Confira o terminal do backend."}
     return {}
 
 
@@ -321,6 +342,7 @@ def generate_plan_spec(
     model: str | None = None,
 ) -> dict[str, Any]:
     ai_payload = _call_openai_for_plan(title, content, goal, audience, learning_style, base_url=base_url, model=model)
+    provider_message = ai_payload.pop("_generation_message", None)
     effective_base_url = (base_url or settings.openai_base_url or "https://api.openai.com/v1").rstrip("/")
     is_local_provider = any(
         marker in effective_base_url.lower()
@@ -334,6 +356,8 @@ def generate_plan_spec(
         generation_message = "O provedor local não respondeu ou o modelo não está disponível. Confirme se o serviço está ativo e se o nome do modelo está correto."
     else:
         generation_message = "O provedor de IA não respondeu como esperado. Confira a chave, o modelo e a conexão no terminal do backend."
+    if provider_message:
+        generation_message = provider_message
 
     if ai_payload:
         generation_mode = "ai"

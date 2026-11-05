@@ -430,6 +430,24 @@ def test_generate_plan_spec_explains_missing_openai_configuration(monkeypatch):
     assert "OPENAI_API_KEY" in payload["generation_message"]
 
 
+def test_generate_plan_spec_explains_openai_auth_failure(monkeypatch):
+    import httpx
+    from app.core import plan_generator
+
+    monkeypatch.setattr(plan_generator.settings, "ai_generation_enabled", True)
+    monkeypatch.setattr(plan_generator.settings, "openai_api_key", "test-key")
+    monkeypatch.setattr(plan_generator.settings, "openai_base_url", "https://api.openai.com/v1")
+    monkeypatch.setattr(plan_generator.settings, "openai_model", "gpt-4o-mini")
+    request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+    response = httpx.Response(401, request=request)
+    monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: response)
+
+    payload = plan_generator.generate_plan_spec("Geometria", "Ângulos e polígonos.")
+
+    assert payload["generation_mode"] == "local"
+    assert "rejeitou a chave" in payload["generation_message"]
+
+
 def test_generate_plan_spec_does_not_send_openai_key_to_override(monkeypatch):
     import httpx
     from app.core import plan_generator

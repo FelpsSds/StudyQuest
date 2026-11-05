@@ -160,6 +160,7 @@ def generate_study_plan(
 
     if payload.tasks:
         generation_mode = "reviewed"
+        generation_message = "Plano salvo com as alterações que você revisou."
         plan_items = [
             {
                 "title": task.title,
@@ -192,6 +193,7 @@ def generate_study_plan(
         plan_items = plan_spec["tasks"]
         learning_objectives = plan_spec["learning_objectives"]
         generation_mode = plan_spec["generation_mode"]
+        generation_message = plan_spec["generation_message"]
 
     if payload.preview_only:
         subject = _get_subject_for_plan(db, current_user, payload.subject_id)
@@ -214,6 +216,7 @@ def generate_study_plan(
             "learning_objectives": learning_objectives,
             "generated_from": title,
             "generation_mode": generation_mode,
+            "generation_message": generation_message,
         }
 
     subject = _ensure_subject_for_plan(db, current_user, title, payload.subject_id)
@@ -285,6 +288,7 @@ def generate_study_plan(
         "learning_objectives": learning_objectives,
         "generated_from": title,
         "generation_mode": generation_mode,
+        "generation_message": generation_message,
     }
 
 

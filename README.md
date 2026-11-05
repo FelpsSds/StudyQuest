@@ -28,7 +28,9 @@ Os valores padrão já servem para desenvolvimento local; ajuste `JWT_SECRET_KEY
 
 A geração de planos funciona sem provedor de IA, usando um gerador local. Para ativar a integração compatível com a API da OpenAI, configure `AI_GENERATION_ENABLED=true` e `OPENAI_API_KEY` em `backend\.env`. Provedores locais compatíveis, como Ollama, podem ser selecionados na interface sem chave da OpenAI.
 
-Para usar o Ollama local, mantenha `AI_GENERATION_ENABLED=true` em `backend\.env` e deixe o servidor Ollama acessível em `http://localhost:11434`; selecione Ollama no formulário de geração. A interface informa se cada plano foi criado pela IA, pelo gerador local ou salvo após sua revisão. Se a IA estiver desativada ou indisponível, o gerador local continua funcionando.
+Para executar o backend sem Docker, copie `backend\.env.example` para `backend\.env`, use `DATABASE_URL=sqlite:///./studyquest.db`, defina `AI_GENERATION_ENABLED=true` e coloque a chave OpenAI em `OPENAI_API_KEY`. A configuração em `backend\.env.example` é apenas um modelo e não é carregada automaticamente. Reinicie o backend depois de criar/alterar `backend\.env`; o app informa se cada plano foi criado pela IA ou pelo gerador local e explica quando a configuração de IA não foi carregada.
+
+Para usar o Ollama local, mantenha `AI_GENERATION_ENABLED=true` em `backend\.env`, deixe o servidor Ollama acessível em `http://localhost:11434` com o modelo selecionado já baixado e escolha Ollama no formulário. Não coloque chaves no frontend ou em arquivos `.env.example`.
 
 O painel também reúne recomendações de aprendizagem com referências a revisões e estudos publicados. Os estudos disponíveis usam amostras e contextos específicos; o app não apresenta esses resultados como uma porcentagem universal de preferência ou sucesso para toda a população.
 

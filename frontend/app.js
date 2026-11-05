@@ -923,11 +923,11 @@ function renderPlanReview(response, saved = false) {
 
   const tasks = Array.isArray(response.tasks) ? response.tasks : Array.isArray(response.quests) ? response.quests : [];
   const objectives = Array.isArray(response.learning_objectives) ? response.learning_objectives : [];
-  const generationStatus = {
+  const generationStatus = response.generation_message || ({
     ai: 'Plano gerado com o provedor de IA configurado.',
     local: 'Plano criado pelo gerador local. A IA está desativada ou indisponível neste momento.',
     reviewed: 'Plano salvo com as alterações que você revisou.',
-  }[response.generation_mode] || 'Plano pronto para revisão.';
+  }[response.generation_mode] || 'Plano pronto para revisão.');
   state.generatedPlan = saved ? null : {
     title: response.generated_from || '',
     content: document.querySelector('#plan-content').value.trim(),

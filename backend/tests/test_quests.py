@@ -156,6 +156,7 @@ def test_generate_study_plan_preview_is_saved_only_after_review(client, monkeypa
     assert preview.status_code == 200
     preview_payload = preview.json()
     assert preview_payload["generation_mode"] == "local"
+    assert "AI_GENERATION_ENABLED=true" in preview_payload["generation_message"]
     assert preview_payload["subject"]["id"] is None
     assert preview_payload["tasks"]
     assert client.get("/api/v1/quests/", headers=headers).json() == []
@@ -413,6 +414,20 @@ def test_generate_plan_spec_falls_back_when_ai_tasks_are_invalid(monkeypatch):
     assert len(payload["tasks"]) == 4
     assert payload["generation_mode"] == "local"
     assert all(task["title"] for task in payload["tasks"])
+
+
+def test_generate_plan_spec_explains_missing_openai_configuration(monkeypatch):
+    from app.core import plan_generator
+
+    monkeypatch.setattr(plan_generator.settings, "ai_generation_enabled", True)
+    monkeypatch.setattr(plan_generator.settings, "openai_api_key", None)
+    monkeypatch.setattr(plan_generator.settings, "openai_base_url", "https://api.openai.com/v1")
+    monkeypatch.setattr(plan_generator, "_call_openai_for_plan", lambda *args, **kwargs: {})
+
+    payload = plan_generator.generate_plan_spec("Geometria", "Ângulos e polígonos.")
+
+    assert payload["generation_mode"] == "local"
+    assert "OPENAI_API_KEY" in payload["generation_message"]
 
 
 def test_generate_plan_spec_does_not_send_openai_key_to_override(monkeypatch):

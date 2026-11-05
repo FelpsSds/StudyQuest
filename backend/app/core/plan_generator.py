@@ -321,6 +321,20 @@ def generate_plan_spec(
     model: str | None = None,
 ) -> dict[str, Any]:
     ai_payload = _call_openai_for_plan(title, content, goal, audience, learning_style, base_url=base_url, model=model)
+    effective_base_url = (base_url or settings.openai_base_url or "https://api.openai.com/v1").rstrip("/")
+    is_local_provider = any(
+        marker in effective_base_url.lower()
+        for marker in ("localhost", "127.0.0.1", "ollama", "lmstudio")
+    )
+    if not settings.ai_generation_enabled:
+        generation_message = "A IA está desativada. Defina AI_GENERATION_ENABLED=true no backend\\.env e reinicie a API."
+    elif not settings.openai_api_key and not is_local_provider:
+        generation_message = "A API não carregou uma chave OpenAI. Configure OPENAI_API_KEY em backend\\.env e reinicie a API."
+    elif is_local_provider:
+        generation_message = "O provedor local não respondeu ou o modelo não está disponível. Confirme se o serviço está ativo e se o nome do modelo está correto."
+    else:
+        generation_message = "O provedor de IA não respondeu como esperado. Confira a chave, o modelo e a conexão no terminal do backend."
+
     if ai_payload:
         generation_mode = "ai"
         learning_objectives = ai_payload.get("learning_objectives")
@@ -338,15 +352,22 @@ def generate_plan_spec(
             logger.warning("AI study plan tasks were invalid; using the built-in tasks")
             normalized_tasks = build_plan_tasks(title, content, goal, audience, learning_style)
             generation_mode = "local"
+            generation_message = "A IA respondeu em um formato inválido; foi usado o gerador local."
 
         return {
             "learning_objectives": learning_objectives,
             "tasks": normalized_tasks,
             "generation_mode": generation_mode,
+            "generation_message": (
+                "Plano gerado com o provedor de IA configurado."
+                if generation_mode == "ai"
+                else generation_message
+            ),
         }
 
     return {
         "learning_objectives": build_learning_objectives(title, content, goal, audience, learning_style),
         "tasks": build_plan_tasks(title, content, goal, audience, learning_style),
         "generation_mode": "local",
+        "generation_message": generation_message,
     }
